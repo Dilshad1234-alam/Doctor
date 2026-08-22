@@ -1,17 +1,17 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    return;
+  }
+
   try {
-    if (!process.env.MONGODB_URI) {
-      console.log('MONGODB_URI is not defined in .env file. Skipping database connection for now.');
-      return;
-    }
     const conn = await mongoose.connect(process.env.MONGODB_URI);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`Error connecting to MongoDB: ${error.message}`);
-    process.exit(1);
+    console.error(`Error: ${error.message}`);
+    // Don't exit process in Next.js edge/serverless environments
   }
 };
 
-module.exports = connectDB;
+export default connectDB;
