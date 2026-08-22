@@ -1,77 +1,83 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import connectDB from "../../../../backend/config/db.js";
-import Clinic from "../../../../backend/models/Clinic.js";
-import DoctorProfile from "../../../../backend/models/DoctorProfile.js";
-import Appointment from "../../../../backend/models/Appointment.js";
 import { verifyToken } from "../../../../backend/utils/jwt.js";
+import Clinic from "../../../../backend/models/Clinic.js";
+import Appointment from "../../../../backend/models/Appointment.js";
+import User from "../../../../backend/models/User.js";
 
-export async function GET(req) {
+export const dynamic = "force-dynamic";
+
+export async function GET() {
   try {
-    await connectDB();
-
-    const token = req.cookies.get("token")?.value;
-    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const decoded = verifyToken(token);
-    if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-
-    // Fetch clinic and doctor profile
-    const clinic = await Clinic.findOne({ ownerId: decoded.id });
-    if (!clinic) {
-      return NextResponse.json({ hasCompletedOnboarding: false }, { status: 200 });
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    if (!token) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    const doctorProfile = await DoctorProfile.findOne({ userId: decoded.id });
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      return NextResponse.json({ success: false, message: "Invalid session" }, { status: 401 });
+    }
 
-    // Fetch today's appointments
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    await connectDB();
 
-    const todayAppointments = await Appointment.find({
-      clinicId: clinic._id,
-      appointmentDate: {
-        $gte: today,
-        $lt: tomorrow
-      }
-    });
+    const [user, clinic] = await Promise.all([
+      User.findById(decoded.id).select("name email"),
+      Clinic.findOne({ ownerId: decoded.id })
+    ]);
 
-    const todayAppointmentsCount = todayAppointments.length;
-    const pendingCount = todayAppointments.filter(a => a.status === 'PENDING').length;
-    const completedCount = todayAppointments.filter(a => a.status === 'COMPLETED').length;
-    
-    // Total revenue is sum of price of completed appointments for today
-    const totalRevenue = todayAppointments
-      .filter(a => a.status === 'COMPLETED')
-      .reduce((sum, a) => sum + (a.price || 0), 0);
+    if (!clinic) {
+      return NextResponse.json({ success: false, hasCompletedOnboarding: false }, { status: 200 });
+    }
 
-    // Recent 5 appointments
-    const recentAppointments = await Appointment.find({ clinicId: clinic._id })
+    // Fetch all appointments for this clinic
+    const appointments = await Appointment.find({ clinicId: clinic._id })
       .sort({ createdAt: -1 })
-      .limit(5)
-      .select('patientName patientPhone timeSlot serviceName status createdAt');
+      .lean();
+
+    // Stats calculations across all current records
+    const pendingCount = appointments.filter(
+      (a) => a.status === "CONFIRMED" || a.status === "PENDING"
+    ).length;
+
+    const completedCount = appointments.filter(
+      (a) => a.status === "COMPLETED"
+    ).length;
+
+    const todayAppointmentsCount = appointments.length;
+
+    // Calculate revenue (₹500 default per completed if service price is not set)
+    const totalRevenue = appointments
+      .filter((a) => a.status === "COMPLETED")
+      .reduce((sum, a) => {
+        const p = a.price ?? 500;
+        return sum + Number(p);
+      }, 0);
 
     return NextResponse.json({
+      success: true,
       hasCompletedOnboarding: true,
-      clinic: {
-        id: clinic._id,
-        name: clinic.name,
-        slug: clinic.slug
-      },
-      doctor: {
-        fullName: doctorProfile?.fullName || 'Doctor'
-      },
+      doctor: { name: user?.name || "Doctor" },
+      clinic: { name: clinic.name, slug: clinic.slug },
       stats: {
         todayAppointmentsCount,
         pendingCount,
         completedCount,
-        totalRevenue
+        totalRevenue,
       },
-      recentAppointments
-    }, { status: 200 });
+      recentAppointments: appointments.map((a) => ({
+        _id: a._id.toString(),
+        patientName: a.patientName,
+        patientPhone: a.patientPhone,
+        serviceName: a.serviceName || "OPD Consultation",
+        timeSlot: a.timeSlot,
+        status: a.status,
+      })),
+    });
   } catch (error) {
     console.error("Dashboard Stats Error:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ success: false, message: "Server error" }, { status: 500 });
   }
 }
