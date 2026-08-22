@@ -72,14 +72,19 @@ export default async function ClinicPage(props) {
   }
 
   const { clinic, doctor, services, availability } = data;
+  const clinicData = JSON.parse(JSON.stringify(clinic));
+  const doctorData = JSON.parse(JSON.stringify(doctor || {}));
+  const servicesData = JSON.parse(JSON.stringify(services || []));
+  const availabilityData = JSON.parse(JSON.stringify(availability || []));
+
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   
   const currentDayIndex = new Date().getDay();
-  const isOpenToday = isClinicOpenToday(availability, currentDayIndex);
+  const isOpenToday = isClinicOpenToday(availabilityData, currentDayIndex);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-200 scroll-smooth">
-      <PublicNavbar clinic={clinic} />
+      <PublicNavbar clinic={clinicData} />
 
       {/* Section 1: Hero (#home) */}
       <section id="home" className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white pt-20 pb-32 px-4 border-b border-slate-800">
@@ -94,15 +99,15 @@ export default async function ClinicPage(props) {
               <ShieldCheck className="w-4 h-4" /> Verified Medical Professional
             </div>
             <h2 className="text-5xl md:text-7xl font-black tracking-tight leading-tight">
-              {doctor?.fullName || 'Doctor'}
+              {doctorData?.fullName || 'Doctor'}
             </h2>
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
-              <span className="bg-blue-600 text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-sm">{doctor?.specialization}</span>
-              <span className="bg-slate-800 text-slate-300 text-sm font-bold px-4 py-1.5 rounded-full border border-slate-700">{doctor?.qualification}</span>
-              <span className="bg-slate-800 text-slate-300 text-sm font-bold px-4 py-1.5 rounded-full border border-slate-700">{doctor?.experienceYrs}+ Yrs Exp</span>
+              <span className="bg-blue-600 text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-sm">{doctorData?.specialization}</span>
+              <span className="bg-slate-800 text-slate-300 text-sm font-bold px-4 py-1.5 rounded-full border border-slate-700">{doctorData?.qualification}</span>
+              <span className="bg-slate-800 text-slate-300 text-sm font-bold px-4 py-1.5 rounded-full border border-slate-700">{doctorData?.experienceYrs}+ Yrs Exp</span>
             </div>
             <p className="text-lg md:text-xl text-slate-300 font-medium max-w-2xl mx-auto lg:mx-0">
-              Providing premium healthcare and expert consultations at <strong>{clinic.name}</strong>. Book your online appointment to skip the waiting room.
+              Providing premium healthcare and expert consultations at <strong>{clinicData.name}</strong>. Book your online appointment to skip the waiting room.
             </p>
             <div className="pt-4 flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
               <a href="#book" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-slate-900 px-8 py-4 rounded-full font-black text-lg transition-all shadow-xl shadow-white/10 hover:shadow-white/20 hover:scale-105">
@@ -122,13 +127,13 @@ export default async function ClinicPage(props) {
                 <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 border-4 border-slate-800 flex items-center justify-center relative z-10 shadow-xl mb-6">
                   <User className="w-16 h-16 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-white relative z-10">{doctor?.fullName || 'Doctor'}</h3>
-                <p className="text-blue-400 font-medium mt-1 relative z-10">{doctor?.specialization}</p>
+                <h3 className="text-2xl font-bold text-white relative z-10">{doctorData?.fullName || 'Doctor'}</h3>
+                <p className="text-blue-400 font-medium mt-1 relative z-10">{doctorData?.specialization}</p>
                 
                 <div className="mt-8 grid grid-cols-2 gap-4 border-t border-slate-800 pt-6 relative z-10">
                   <div>
                     <p className="text-xs text-slate-400 font-bold uppercase">Experience</p>
-                    <p className="text-xl font-black text-white">{doctor?.experienceYrs} Years</p>
+                    <p className="text-xl font-black text-white">{doctorData?.experienceYrs} Years</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-400 font-bold uppercase">Reg. No</p>
@@ -153,12 +158,12 @@ export default async function ClinicPage(props) {
               <h2 className="text-4xl font-black text-slate-900 mb-6">Dedicated to providing world-class healthcare.</h2>
               <div className="space-y-4 text-lg text-slate-600 leading-relaxed font-medium">
                 <p>
-                  {doctor?.fullName || 'Our Doctor'} is a highly experienced and dedicated medical professional specializing in {doctor?.specialization}. 
-                  With over {doctor?.experienceYrs} years of clinical practice, they have helped thousands of patients in {clinic.city} lead healthier lives.
+                  {doctorData?.fullName || 'Our Doctor'} is a highly experienced and dedicated medical professional specializing in {doctorData?.specialization}. 
+                  With over {doctorData?.experienceYrs} years of clinical practice, they have helped thousands of patients in {clinicData.city} lead healthier lives.
                 </p>
                 <p>
-                  Holding top qualifications including {doctor?.qualification}, they are committed to providing ethical, transparent, and compassionate care. 
-                  At {clinic.name}, the focus is always on patient-first treatments and long-term well-being.
+                  Holding top qualifications including {doctorData?.qualification}, they are committed to providing ethical, transparent, and compassionate care. 
+                  At {clinicData.name}, the focus is always on patient-first treatments and long-term well-being.
                 </p>
               </div>
             </div>
@@ -187,7 +192,7 @@ export default async function ClinicPage(props) {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map(service => (
+            {servicesData.map(service => (
               <div key={service._id.toString()} className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col justify-between h-full relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
                   <Stethoscope className="w-24 h-24" />
@@ -217,7 +222,7 @@ export default async function ClinicPage(props) {
             
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
-                <h2 className="text-4xl font-black text-slate-900 mb-8">{clinic.name}</h2>
+                <h2 className="text-4xl font-black text-slate-900 mb-8">{clinicData.name}</h2>
                 <div className="space-y-6">
                   <div className="flex gap-4">
                     <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
@@ -225,7 +230,7 @@ export default async function ClinicPage(props) {
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 text-lg">Address</p>
-                      <p className="text-slate-600 font-medium mt-1 leading-relaxed max-w-md">{clinic.address}, {clinic.city}</p>
+                      <p className="text-slate-600 font-medium mt-1 leading-relaxed max-w-md">{clinicData.address}, {clinicData.city}</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
@@ -234,7 +239,7 @@ export default async function ClinicPage(props) {
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 text-lg">Direct Phone</p>
-                      <p className="text-slate-600 font-medium mt-1">{clinic.phone}</p>
+                      <p className="text-slate-600 font-medium mt-1">{clinicData.phone}</p>
                     </div>
                   </div>
                   <div className="flex gap-4">
@@ -243,7 +248,7 @@ export default async function ClinicPage(props) {
                     </div>
                     <div>
                       <p className="font-bold text-slate-900 text-lg">Email Support</p>
-                      <p className="text-slate-600 font-medium mt-1">support@{clinic.slug}.com</p>
+                      <p className="text-slate-600 font-medium mt-1">support@{clinicData.slug}.com</p>
                     </div>
                   </div>
                 </div>
@@ -266,7 +271,7 @@ export default async function ClinicPage(props) {
                 </div>
                 
                 <div className="space-y-4">
-                  {availability.sort((a,b) => a.dayOfWeek - b.dayOfWeek).map(day => {
+                  {availabilityData.sort((a,b) => a.dayOfWeek - b.dayOfWeek).map(day => {
                     const isToday = day.dayOfWeek === currentDayIndex;
                     return (
                       <div key={day._id.toString()} className={`flex justify-between items-center p-3 rounded-xl ${isToday ? 'bg-blue-50 border border-blue-100' : ''}`}>
@@ -298,10 +303,10 @@ export default async function ClinicPage(props) {
             
             <div className="relative z-10 bg-white rounded-3xl shadow-xl overflow-hidden min-h-[600px]">
               <BookingClientWrapper 
-                clinic={JSON.parse(JSON.stringify(clinic))} 
-                doctor={JSON.parse(JSON.stringify(doctor || {}))} 
-                services={JSON.parse(JSON.stringify(services))} 
-                availability={JSON.parse(JSON.stringify(availability))}
+                clinic={clinicData} 
+                doctor={doctorData} 
+                services={servicesData} 
+                availability={availabilityData}
                 slug={slug} 
                 embedded={true}
               />
@@ -317,17 +322,17 @@ export default async function ClinicPage(props) {
               <p className="text-lg text-slate-600 font-medium mb-10">Our support team is available to assist you with directions, booking modifications, or any general queries.</p>
               
               <div className="space-y-6">
-                <a href={`tel:${clinic.phone}`} className="flex items-center gap-6 p-6 bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
+                <a href={`tel:${clinicData.phone}`} className="flex items-center gap-6 p-6 bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
                   <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
                     <PhoneCall className="w-8 h-8 text-blue-600 group-hover:text-white transition-colors" />
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Call Us</p>
-                    <p className="text-2xl font-black text-slate-900">{clinic.phone}</p>
+                    <p className="text-2xl font-black text-slate-900">{clinicData.phone}</p>
                   </div>
                 </a>
                 
-                <a href={`https://maps.google.com/?q=${encodeURIComponent(clinic.address + ' ' + clinic.city)}`} target="_blank" rel="noreferrer" className="flex items-center gap-6 p-6 bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
+                <a href={`https://maps.google.com/?q=${encodeURIComponent(clinicData.address + ' ' + clinicData.city)}`} target="_blank" rel="noreferrer" className="flex items-center gap-6 p-6 bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
                   <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-600 transition-colors">
                     <Navigation className="w-8 h-8 text-emerald-600 group-hover:text-white transition-colors" />
                   </div>
@@ -348,13 +353,13 @@ export default async function ClinicPage(props) {
                 loading="lazy" 
                 allowFullScreen 
                 referrerPolicy="no-referrer-when-downgrade" 
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(clinic.address + ' ' + clinic.city)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(clinicData.address + ' ' + clinicData.city)}&t=&z=13&ie=UTF8&iwloc=&output=embed`}
               ></iframe>
               <div className="absolute inset-0 bg-slate-800/10 pointer-events-none"></div>
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-lg flex items-center gap-3">
                   <MapPin className="w-6 h-6 text-red-500" />
-                  <span className="font-bold text-slate-900">{clinic.city}</span>
+                  <span className="font-bold text-slate-900">{clinicData.city}</span>
                 </div>
               </div>
             </div>
@@ -367,10 +372,10 @@ export default async function ClinicPage(props) {
       <footer className="bg-slate-950 text-slate-400 py-16 px-4 border-t border-slate-900 text-center">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center mx-auto text-white font-black text-2xl border border-slate-800">
-            {clinic.name.charAt(0)}
+            {clinicData.name.charAt(0)}
           </div>
-          <h2 className="text-2xl font-black text-white">{clinic.name}</h2>
-          <p className="font-bold text-slate-500 text-lg">© {new Date().getFullYear()} {clinic.name}. All rights reserved.</p>
+          <h2 className="text-2xl font-black text-white">{clinicData.name}</h2>
+          <p suppressHydrationWarning className="font-bold text-slate-500 text-lg">© {new Date().getFullYear()} {clinicData.name}. All rights reserved.</p>
           <p className="text-sm max-w-2xl mx-auto font-medium leading-relaxed">
             This clinic uses DocPulse for digital appointment management. The medical information on this page is provided directly by the medical practitioner.
           </p>

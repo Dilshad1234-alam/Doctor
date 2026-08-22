@@ -26,13 +26,17 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded 
   
   const [isBooking, setIsBooking] = useState(false);
   const [bookingResult, setBookingResult] = useState(null);
+  const [nextDays, setNextDays] = useState([]);
 
-  // Generate next 14 days
-  const nextDays = Array.from({ length: 14 }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return d;
-  });
+  // Generate next 14 days on mount to prevent hydration mismatch
+  useEffect(() => {
+    const days = Array.from({ length: 14 }).map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      return d;
+    });
+    setNextDays(days);
+  }, []);
 
   const fetchSlots = async (date) => {
     setSelectedDate(date);
