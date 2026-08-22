@@ -31,6 +31,10 @@ const ClinicSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  coverImageUrl: {
+    type: String,
+    default: "",
+  },
 }, { timestamps: true });
 
 export default mongoose.models.Clinic || mongoose.model("Clinic", ClinicSchema);

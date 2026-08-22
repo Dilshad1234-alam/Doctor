@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+
+export const dynamic = "force-dynamic";
 import connectDB from "../../../../backend/config/db.js";
 import Clinic from "../../../../backend/models/Clinic.js";
 import Availability from "../../../../backend/models/Availability.js";
@@ -23,7 +25,16 @@ async function authenticateAndGetClinic() {
 export async function GET() {
   try {
     const clinic = await authenticateAndGetClinic();
-    const availability = await Availability.find({ clinicId: clinic._id }).sort({ dayOfWeek: 1 }).lean();
+    let availability = await Availability.find({ clinicId: clinic._id }).sort({ dayOfWeek: 1 }).lean();
+    
+    // Fallback for old documents that have isClosed but not isOpen
+    availability = availability.map(day => {
+      if (day.isOpen === undefined) {
+        day.isOpen = day.isClosed !== undefined ? !day.isClosed : true;
+      }
+      return day;
+    });
+
     return NextResponse.json({ success: true, availability }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 401 });
@@ -47,7 +58,7 @@ export async function PUT(req) {
         { 
           startTime: day.startTime,
           endTime: day.endTime,
-          isClosed: day.isClosed
+          isOpen: day.isOpen !== undefined ? day.isOpen : (day.isClosed !== undefined ? !day.isClosed : true)
         },
         { upsert: true }
       );

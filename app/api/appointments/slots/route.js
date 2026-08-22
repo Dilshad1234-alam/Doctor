@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import connectDB from "../../../../backend/config/db.js";
+
+export const dynamic = "force-dynamic";
 import Clinic from "../../../../backend/models/Clinic.js";
 import Availability from "../../../../backend/models/Availability.js";
 import Appointment from "../../../../backend/models/Appointment.js";
@@ -25,8 +27,13 @@ export async function GET(req) {
     const targetDate = new Date(dateStr);
     const dayOfWeek = targetDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
-    const availability = await Availability.findOne({ clinicId: clinic._id, dayOfWeek });
-    if (!availability || availability.isClosed) {
+    const availability = await Availability.findOne({ clinicId: clinic._id, dayOfWeek }).lean();
+    if (!availability) {
+      return NextResponse.json({ slots: [] }, { status: 200 });
+    }
+
+    const isOpen = availability.isOpen !== undefined ? availability.isOpen : !availability.isClosed;
+    if (!isOpen) {
       return NextResponse.json({ slots: [] }, { status: 200 });
     }
 

@@ -27,6 +27,10 @@ const DoctorProfileSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  avatarUrl: {
+    type: String,
+    default: "",
+  },
 }, { timestamps: true });
 
 export default mongoose.models.DoctorProfile || mongoose.model("DoctorProfile", DoctorProfileSchema);

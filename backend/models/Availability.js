@@ -18,9 +18,9 @@ const AvailabilitySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  isClosed: {
+  isOpen: {
     type: Boolean,
-    default: false,
+    default: true,
   }
 }, { timestamps: true });
 

@@ -87,8 +87,9 @@ export default async function ClinicPage(props) {
       <PublicNavbar clinic={clinicData} />
 
       {/* Section 1: Hero (#home) */}
-      <section id="home" className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white pt-20 pb-32 px-4 border-b border-slate-800">
+      <section id="home" className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white pt-20 pb-32 px-4 border-b border-slate-800" style={clinicData.coverImageUrl ? { backgroundImage: `url(${clinicData.coverImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
         <div className="absolute inset-0 opacity-10 mix-blend-overlay" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\\'60\\' height=\\'60\\' viewBox=\\'0 0 60 60\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Cg fill=\\'none\\' fill-rule=\\'evenodd\\'%3E%3Cg fill=\\'%23ffffff\\' fill-opacity=\\'1\\'%3E%3Cpath d=\\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"}}></div>
+        {clinicData.coverImageUrl && <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-[2px]"></div>}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-blue-500/20 blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none"></div>
         
@@ -124,8 +125,8 @@ export default async function ClinicPage(props) {
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-2 rounded-3xl shadow-2xl">
               <div className="bg-slate-900 rounded-2xl p-8 text-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-600/20 to-transparent"></div>
-                <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 border-4 border-slate-800 flex items-center justify-center relative z-10 shadow-xl mb-6">
-                  <User className="w-16 h-16 text-white" />
+                <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 border-4 border-slate-800 flex items-center justify-center relative z-10 shadow-xl mb-6 overflow-hidden">
+                  {doctorData?.avatarUrl ? <img src={doctorData.avatarUrl} alt={doctorData.fullName} className="w-full h-full object-cover" /> : <User className="w-16 h-16 text-white" />}
                 </div>
                 <h3 className="text-2xl font-bold text-white relative z-10">{doctorData?.fullName || 'Doctor'}</h3>
                 <p className="text-blue-400 font-medium mt-1 relative z-10">{doctorData?.specialization}</p>
