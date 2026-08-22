@@ -6,7 +6,7 @@ import Link from "next/link";
 import { 
   Calendar, Clock, CheckCircle2, CreditCard, RefreshCw, 
   ExternalLink, Copy, Check, AlertCircle, Clock3, PlusCircle, 
-  Settings, X, Loader2, Save, Trash2
+  Settings, X, Loader2, Save, Trash2, Lock, MessageCircle, Link as LinkIcon, Users, Sparkles
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -42,6 +42,10 @@ export default function DashboardPage() {
           return;
         }
       } else {
+        if (json.requiresSubscription) {
+          router.push("/pricing?onboarding=true");
+          return;
+        }
         setData(json);
       }
     } catch (err) {
@@ -202,12 +206,17 @@ export default function DashboardPage() {
     );
   }
 
-  const { stats, clinic, doctor, recentAppointments } = data || {
+  const { stats, clinic, doctor, recentAppointments, subscription } = data || {
     stats: { todayAppointmentsCount: 0, pendingCount: 0, completedCount: 0, totalRevenue: 0 },
     clinic: { name: "My Clinic", slug: "" },
     doctor: { name: "Doctor" },
     recentAppointments: [],
+    subscription: { planId: "STARTER" }
   };
+
+  const planId = subscription.planId;
+  const isStarter = planId === "STARTER";
+  const isEnterprise = planId === "ENTERPRISE";
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10">
@@ -370,9 +379,9 @@ export default function DashboardPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold text-slate-900">Welcome, {doctor.name}</h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 border border-emerald-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live Sync
-              </span>
+              <Link href="/pricing" className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">
+                <Sparkles className="w-3 h-3" /> {planId} PLAN
+              </Link>
             </div>
             <p className="mt-1 text-sm text-slate-500">{clinic.name} Dashboard</p>
           </div>
@@ -436,7 +445,13 @@ export default function DashboardPage() {
             <p className="mt-1 text-xs text-slate-500">Successfully consulted today</p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm relative overflow-hidden">
+            {isStarter && (
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-4 text-center">
+                <Lock className="h-5 w-5 text-slate-400 mb-2" />
+                <span className="text-xs font-bold text-slate-600 bg-white px-2 py-1 rounded-md shadow-sm">Pro Feature - Upgrade to Unlock</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-slate-500">Today&apos;s Revenue</span>
               <div className="rounded-xl bg-purple-50 p-2.5 text-purple-600">
@@ -532,6 +547,45 @@ export default function DashboardPage() {
                     <Settings className="h-5 w-5 text-slate-500" /> Clinic Settings
                   </div>
                 </button>
+
+                {/* Gated Features */}
+                {!isStarter ? (
+                  <>
+                    <button className="flex w-full items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <MessageCircle className="h-5 w-5 text-emerald-600" /> WhatsApp Reminders
+                      </div>
+                      <span className="text-xs bg-white px-2 py-0.5 rounded-full border border-emerald-200">Active</span>
+                    </button>
+                    <button className="flex w-full items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50 p-3.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <LinkIcon className="h-5 w-5 text-indigo-600" /> Custom Domain
+                      </div>
+                    </button>
+                  </>
+                ) : (
+                  <Link href="/pricing" className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm font-semibold text-slate-400 hover:bg-slate-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <MessageCircle className="h-5 w-5" /> WhatsApp Reminders
+                    </div>
+                    <Lock className="h-4 w-4" />
+                  </Link>
+                )}
+                
+                {isEnterprise ? (
+                  <button className="flex w-full items-center justify-between rounded-xl border border-purple-200 bg-purple-50 p-3.5 text-sm font-semibold text-purple-800 hover:bg-purple-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5 text-purple-600" /> Team & Multi-Doctor
+                    </div>
+                  </button>
+                ) : (
+                  <Link href="/pricing" className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-sm font-semibold text-slate-400 hover:bg-slate-100 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5" /> Team & Multi-Doctor
+                    </div>
+                    <Lock className="h-4 w-4" />
+                  </Link>
+                )}
               </div>
             </div>
 

@@ -5,6 +5,7 @@ import { verifyToken } from "../../../../backend/utils/jwt.js";
 import Clinic from "../../../../backend/models/Clinic.js";
 import Appointment from "../../../../backend/models/Appointment.js";
 import User from "../../../../backend/models/User.js";
+import Subscription from "../../../../backend/models/Subscription.js";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,15 @@ export async function GET() {
 
     if (!clinic) {
       return NextResponse.json({ success: false, hasCompletedOnboarding: false }, { status: 200 });
+    }
+
+    const subscription = await Subscription.findOne({ 
+      clinicId: clinic._id, 
+      status: { $in: ['TRIAL', 'ACTIVE'] } 
+    }).lean();
+
+    if (!subscription) {
+      return NextResponse.json({ success: true, requiresSubscription: true, clinic: { name: clinic.name, slug: clinic.slug } }, { status: 200 });
     }
 
     // Fetch all appointments for this clinic
@@ -59,8 +69,14 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       hasCompletedOnboarding: true,
+      requiresSubscription: false,
       doctor: { name: user?.name || "Doctor" },
       clinic: { name: clinic.name, slug: clinic.slug },
+      subscription: {
+        planId: subscription.planId,
+        status: subscription.status,
+        billingCycle: subscription.billingCycle,
+      },
       stats: {
         todayAppointmentsCount,
         pendingCount,

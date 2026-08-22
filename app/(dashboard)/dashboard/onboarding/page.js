@@ -119,7 +119,7 @@ export default function OnboardingWizard() {
       if (!res.ok) throw new Error(data.error || "Onboarding failed");
 
       // Success
-      router.push("/dashboard");
+      router.push("/pricing?onboarding=true");
     } catch (err) {
       setError(err.message);
       setLoading(false);
