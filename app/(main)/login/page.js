@@ -58,7 +58,7 @@ function LoginForm() {
       if (data.user.hasCompletedOnboarding) {
         router.push("/dashboard");
       } else {
-        router.push("/onboarding");
+        router.push("/dashboard/onboarding");
       }
       
     } catch (err) {
