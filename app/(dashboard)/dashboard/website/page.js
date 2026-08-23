@@ -217,7 +217,7 @@ export default function WebsiteBuilderPage() {
                     <div className="flex gap-4 items-start">
                       <div className="w-16 h-16 rounded-full bg-slate-200 shrink-0"></div>
                       <div>
-                        <div className="font-bold text-lg text-slate-900">Dr. {doctor?.fullName || 'Doctor Name'}</div>
+                        <div className="font-bold text-lg text-slate-900">{doctor?.fullName ? `Dr. ${doctor.fullName.replace(/^Dr\.?\s*/i, '')}` : 'Dr. Doctor Name'}</div>
                         <div className="text-slate-500">{doctor?.specialization || 'Specialization'}</div>
                         <p className="text-sm text-slate-600 mt-2 leading-relaxed">{doctor?.bio || 'Experienced medical professional dedicated to providing the highest quality of care.'}</p>
                       </div>

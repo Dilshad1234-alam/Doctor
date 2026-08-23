@@ -58,10 +58,15 @@ export default function DashboardOverviewPage() {
 
   useEffect(() => {
     fetchDashboardData();
-    fetchMedia();
     const interval = setInterval(fetchDashboardData, 15000);
     return () => clearInterval(interval);
   }, [fetchDashboardData]);
+
+  useEffect(() => {
+    if (data?.clinic) {
+      fetchMedia();
+    }
+  }, [data?.clinic, fetchMedia]);
 
   const handleStatusChange = async (appointmentId, newStatus) => {
     try {

@@ -2,8 +2,10 @@
 import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 
-export default function PublicNavbar({ clinic }) {
+export default function PublicNavbar({ clinic, websiteConfig }) {
   const [isOpen, setIsOpen] = useState(false);
+  const primaryColor = websiteConfig?.primaryColor || clinic?.websiteConfig?.primaryColor || '#0f766e';
+  const buttonStyle = websiteConfig?.buttonStyle || clinic?.websiteConfig?.buttonStyle || 'rounded-xl';
   
   const navLinks = [
     { name: "Home", href: "#home" },
@@ -17,7 +19,7 @@ export default function PublicNavbar({ clinic }) {
     <nav className="sticky top-0 z-50 w-full backdrop-blur-xl bg-white/90 border-b border-slate-200 shadow-sm transition-all">
       <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-bold text-xl shadow-inner">
+          <div className={`w-10 h-10 ${buttonStyle} flex items-center justify-center text-white font-bold text-xl shadow-inner`} style={{ backgroundColor: primaryColor }}>
             {clinic.name.charAt(0)}
           </div>
           <div>
@@ -28,14 +30,14 @@ export default function PublicNavbar({ clinic }) {
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center gap-8">
           {navLinks.map(link => (
-            <a key={link.name} href={link.href} className="text-sm font-bold text-slate-600 hover:text-blue-600 transition-colors">
+            <a key={link.name} href={link.href} className="text-sm font-bold text-slate-600 hover:opacity-80 transition-colors" style={{ '--tw-text-opacity': 1 }}>
               {link.name}
             </a>
           ))}
         </div>
 
         <div className="hidden lg:flex items-center gap-4">
-          <a href="#book" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-bold text-sm transition-colors shadow-md hover:shadow-lg">
+          <a href="#book" className={`text-white px-6 py-2.5 ${buttonStyle} font-bold text-sm transition-all shadow-md hover:shadow-lg hover:opacity-95`} style={{ backgroundColor: primaryColor }}>
             Book Appointment
           </a>
         </div>
@@ -54,7 +56,7 @@ export default function PublicNavbar({ clinic }) {
               {link.name}
             </a>
           ))}
-          <a href="#book" onClick={() => setIsOpen(false)} className="bg-blue-600 text-center text-white p-3 rounded-xl font-bold shadow-sm mt-2">
+          <a href="#book" onClick={() => setIsOpen(false)} className={`text-center text-white p-3 ${buttonStyle} font-bold shadow-sm mt-2`} style={{ backgroundColor: primaryColor }}>
             Book Appointment
           </a>
         </div>

@@ -23,7 +23,7 @@ const WebsiteConfigSchema = new mongoose.Schema(
     },
     buttonStyle: {
       type: String,
-      enum: ["rounded-xl", "rounded-full", "rounded-none"],
+      enum: ["rounded-lg", "rounded-xl", "rounded-2xl", "rounded-full", "rounded-none"],
       default: "rounded-xl",
     },
     showSections: {

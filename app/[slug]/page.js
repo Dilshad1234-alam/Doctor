@@ -4,6 +4,7 @@ import Clinic from '../../backend/models/Clinic.js';
 import DoctorProfile from '../../backend/models/DoctorProfile.js';
 import Service from '../../backend/models/Service.js';
 import Availability from '../../backend/models/Availability.js';
+import WebsiteConfig from '../../backend/models/WebsiteConfig.js';
 import PublicNavbar from '../../frontend/components/clinic/PublicNavbar.js';
 import BookingClientWrapper from '../../frontend/components/booking/BookingClient.js';
 import { 
@@ -21,13 +22,14 @@ export async function generateMetadata(props) {
   if (!clinic) return { title: 'Clinic Not Found' };
   const doctor = await DoctorProfile.findOne({ clinicId: clinic._id }).lean();
   
-  const docName = doctor?.fullName || 'Doctor';
+  const rawDocName = doctor?.fullName || 'Doctor';
+  const cleanDocName = `Dr. ${rawDocName.replace(/^Dr\.?\s*/i, "").trim() || 'Doctor'}`;
   const spec = doctor?.specialization || 'Specialist';
   const qual = doctor?.qualification || 'Medical Professional';
 
   return {
-    title: `${docName} | ${clinic.name} - Online OPD Booking`,
-    description: `Consult ${docName} (${spec}, ${qual}) at ${clinic.name}, ${clinic.address}. Book instant confirmed OPD slot.`,
+    title: `${cleanDocName} | ${clinic.name} - Online OPD Booking`,
+    description: `Consult ${cleanDocName} (${spec}, ${qual}) at ${clinic.name}, ${clinic.address}. Book instant confirmed OPD slot.`,
     keywords: `OPD booking, ${clinic.name}, ${clinic.city}, ${spec}, doctor appointment`
   };
 }
@@ -40,8 +42,9 @@ async function getClinicData(slug) {
   const doctor = await DoctorProfile.findOne({ clinicId: clinic._id }).lean();
   const services = await Service.find({ clinicId: clinic._id, isActive: true }).lean();
   const availability = await Availability.find({ clinicId: clinic._id }).lean();
+  const websiteConfig = await WebsiteConfig.findOne({ clinicId: clinic._id }).lean();
   
-  return { clinic, doctor, services, availability };
+  return { clinic, doctor, services, availability, websiteConfig };
 }
 
 function isClinicOpenToday(availability, currentDay) {
@@ -64,18 +67,23 @@ export default async function ClinicPage(props) {
         <p className="text-slate-600 mb-8 text-center max-w-md">
           We couldn't find a clinic with the URL slug "<strong>{slug}</strong>".
         </p>
-        <Link href="/login" className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium transition-colors shadow-sm">
+        <Link href="/login" className="px-6 py-3 bg-teal-600 text-white rounded-xl font-medium transition-colors shadow-sm">
           Doctor Login
         </Link>
       </div>
     );
   }
 
-  const { clinic, doctor, services, availability } = data;
+  const { clinic, doctor, services, availability, websiteConfig } = data;
   const clinicData = JSON.parse(JSON.stringify(clinic));
   const doctorData = JSON.parse(JSON.stringify(doctor || {}));
   const servicesData = JSON.parse(JSON.stringify(services || []));
   const availabilityData = JSON.parse(JSON.stringify(availability || []));
+  const websiteConfigData = websiteConfig ? JSON.parse(JSON.stringify(websiteConfig)) : null;
+
+  const cleanDoctorName = `Dr. ${doctorData?.fullName?.replace(/^Dr\.?\s*/i, "") || "Doctor"}`;
+  const primaryColor = websiteConfigData?.primaryColor || clinicData.websiteConfig?.primaryColor || '#0f766e';
+  const buttonStyle = websiteConfigData?.buttonStyle || clinicData.websiteConfig?.buttonStyle || 'rounded-xl';
 
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   
@@ -83,15 +91,15 @@ export default async function ClinicPage(props) {
   const isOpenToday = isClinicOpenToday(availabilityData, currentDayIndex);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-blue-200 scroll-smooth">
-      <PublicNavbar clinic={clinicData} />
+    <div className="min-h-screen bg-slate-50 font-sans selection:bg-teal-200 scroll-smooth" style={{ '--primary-color': primaryColor }}>
+      <PublicNavbar clinic={clinicData} websiteConfig={websiteConfigData} />
 
       {/* Section 1: Hero (#home) */}
-      <section id="home" className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white pt-20 pb-32 px-4 border-b border-slate-800" style={clinicData.coverImageUrl ? { backgroundImage: `url(${clinicData.coverImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
+      <section id="home" className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-teal-950 text-white pt-20 pb-32 px-4 border-b border-slate-800" style={clinicData.coverImageUrl ? { backgroundImage: `url(${clinicData.coverImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
         <div className="absolute inset-0 opacity-10 mix-blend-overlay" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\\'60\\' height=\\'60\\' viewBox=\\'0 0 60 60\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Cg fill=\\'none\\' fill-rule=\\'evenodd\\'%3E%3Cg fill=\\'%23ffffff\\' fill-opacity=\\'1\\'%3E%3Cpath d=\\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"}}></div>
         {clinicData.coverImageUrl && <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-[2px]"></div>}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-blue-500/20 blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none"></div>
+        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full blur-3xl pointer-events-none opacity-20" style={{ backgroundColor: primaryColor }}></div>
+        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full blur-3xl pointer-events-none opacity-20" style={{ backgroundColor: primaryColor }}></div>
         
         <div className="relative max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12">
           {/* Text */}
@@ -100,10 +108,10 @@ export default async function ClinicPage(props) {
               <ShieldCheck className="w-4 h-4" /> Verified Medical Professional
             </div>
             <h2 className="text-5xl md:text-7xl font-black tracking-tight leading-tight">
-              {doctorData?.fullName || 'Doctor'}
+              {cleanDoctorName}
             </h2>
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
-              <span className="bg-blue-600 text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-sm">{doctorData?.specialization}</span>
+              <span className="text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-sm" style={{ backgroundColor: primaryColor }}>{doctorData?.specialization}</span>
               <span className="bg-slate-800 text-slate-300 text-sm font-bold px-4 py-1.5 rounded-full border border-slate-700">{doctorData?.qualification}</span>
               <span className="bg-slate-800 text-slate-300 text-sm font-bold px-4 py-1.5 rounded-full border border-slate-700">{doctorData?.experienceYrs}+ Yrs Exp</span>
             </div>
@@ -111,10 +119,10 @@ export default async function ClinicPage(props) {
               Providing premium healthcare and expert consultations at <strong>{clinicData.name}</strong>. Book your online appointment to skip the waiting room.
             </p>
             <div className="pt-4 flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
-              <a href="#book" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white text-slate-900 px-8 py-4 rounded-full font-black text-lg transition-all shadow-xl shadow-white/10 hover:shadow-white/20 hover:scale-105">
+              <a href="#book" className={`w-full sm:w-auto flex items-center justify-center gap-2 text-white px-8 py-4 ${buttonStyle} font-black text-lg transition-all shadow-xl shadow-black/20 hover:scale-105`} style={{ backgroundColor: primaryColor }}>
                 Book Appointment <ArrowRight className="w-5 h-5" />
               </a>
-              <a href="#about" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 px-8 py-4 rounded-full font-bold text-lg transition-all hover:bg-white/20">
+              <a href="#about" className={`w-full sm:w-auto flex items-center justify-center gap-2 bg-white/10 text-white border border-white/20 px-8 py-4 ${buttonStyle} font-bold text-lg transition-all hover:bg-white/20`}>
                 Learn More
               </a>
             </div>
@@ -124,12 +132,12 @@ export default async function ClinicPage(props) {
           <div className="w-full max-w-sm shrink-0">
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-2 rounded-3xl shadow-2xl">
               <div className="bg-slate-900 rounded-2xl p-8 text-center relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-blue-600/20 to-transparent"></div>
-                <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 border-4 border-slate-800 flex items-center justify-center relative z-10 shadow-xl mb-6 overflow-hidden">
-                  {doctorData?.avatarUrl ? <img src={doctorData.avatarUrl} alt={doctorData.fullName} className="w-full h-full object-cover" /> : <User className="w-16 h-16 text-white" />}
+                <div className="absolute top-0 left-0 w-full h-32 opacity-20" style={{ background: `linear-gradient(to bottom, ${primaryColor}, transparent)` }}></div>
+                <div className="w-32 h-32 mx-auto rounded-full border-4 border-slate-800 flex items-center justify-center relative z-10 shadow-xl mb-6 overflow-hidden" style={{ backgroundColor: `${primaryColor}30` }}>
+                  {doctorData?.avatarUrl ? <img src={doctorData.avatarUrl} alt={cleanDoctorName} className="w-full h-full object-cover" /> : <User className="w-16 h-16 text-white" />}
                 </div>
-                <h3 className="text-2xl font-bold text-white relative z-10">{doctorData?.fullName || 'Doctor'}</h3>
-                <p className="text-blue-400 font-medium mt-1 relative z-10">{doctorData?.specialization}</p>
+                <h3 className="text-2xl font-bold text-white relative z-10">{cleanDoctorName}</h3>
+                <p className="font-medium mt-1 relative z-10" style={{ color: primaryColor }}>{doctorData?.specialization}</p>
                 
                 <div className="mt-8 grid grid-cols-2 gap-4 border-t border-slate-800 pt-6 relative z-10">
                   <div>
@@ -153,13 +161,13 @@ export default async function ClinicPage(props) {
         <section id="about" className="scroll-mt-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 text-blue-600 font-bold uppercase tracking-wider text-sm mb-4">
-                <Heart className="w-5 h-5 fill-blue-100" /> About The Doctor
+              <div className="inline-flex items-center gap-2 font-bold uppercase tracking-wider text-sm mb-4" style={{ color: primaryColor }}>
+                <Heart className="w-5 h-5" style={{ fill: `${primaryColor}40` }} /> About The Doctor
               </div>
               <h2 className="text-4xl font-black text-slate-900 mb-6">Dedicated to providing world-class healthcare.</h2>
               <div className="space-y-4 text-lg text-slate-600 leading-relaxed font-medium">
                 <p>
-                  {doctorData?.fullName || 'Our Doctor'} is a highly experienced and dedicated medical professional specializing in {doctorData?.specialization}. 
+                  {cleanDoctorName} is a highly experienced and dedicated medical professional specializing in {doctorData?.specialization}. 
                   With over {doctorData?.experienceYrs} years of clinical practice, they have helped thousands of patients in {clinicData.city} lead healthier lives.
                 </p>
                 <p>
@@ -175,7 +183,7 @@ export default async function ClinicPage(props) {
                 <p className="text-slate-500 text-sm">Successfully treated and managed over the years.</p>
               </div>
               <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                <Sparkles className="w-10 h-10 text-blue-500 mb-4" />
+                <Sparkles className="w-10 h-10 mb-4" style={{ color: primaryColor }} />
                 <h4 className="font-bold text-slate-900 text-xl mb-2">Top Rated</h4>
                 <p className="text-slate-500 text-sm">Highly recommended by patients in {clinic.city}.</p>
               </div>
@@ -186,7 +194,7 @@ export default async function ClinicPage(props) {
         {/* Section 3: Services Offered (#services) */}
         <section id="services" className="scroll-mt-32">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 text-blue-600 font-bold uppercase tracking-wider text-sm mb-4">
+            <div className="inline-flex items-center gap-2 font-bold uppercase tracking-wider text-sm mb-4" style={{ color: primaryColor }}>
               <Stethoscope className="w-5 h-5" /> Treatments & Procedures
             </div>
             <h2 className="text-4xl font-black text-slate-900">Services Offered</h2>
@@ -204,11 +212,11 @@ export default async function ClinicPage(props) {
                   </div>
                   <div className="flex gap-2 mb-8">
                     <span className="bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-lg">{service.durationMins} Mins</span>
-                    <span className="bg-blue-50 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-lg">OPD Consultation</span>
+                    <span className="text-xs font-bold px-3 py-1.5 rounded-lg" style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}>OPD Consultation</span>
                   </div>
-                  <p className="text-4xl font-black text-blue-600 mb-8">₹{service.price}</p>
+                  <p className="text-4xl font-black mb-8" style={{ color: primaryColor }}>₹{service.price}</p>
                 </div>
-                <a href={`#book`} className="relative z-10 w-full inline-flex items-center justify-center gap-2 text-center bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl transition-colors shadow-md">
+                <a href={`#book`} className={`relative z-10 w-full inline-flex items-center justify-center gap-2 text-center text-white font-bold py-4 ${buttonStyle} transition-all shadow-md hover:shadow-lg opacity-90 hover:opacity-100`} style={{ backgroundColor: primaryColor }}>
                   Select & Book <ArrowRight className="w-4 h-4" />
                 </a>
               </div>
@@ -305,9 +313,10 @@ export default async function ClinicPage(props) {
             <div className="relative z-10 bg-white rounded-3xl shadow-xl overflow-hidden min-h-[600px]">
               <BookingClientWrapper 
                 clinic={clinicData} 
-                doctor={doctorData} 
+                doctor={{ ...doctorData, fullName: cleanDoctorName }} 
                 services={servicesData} 
                 availability={availabilityData}
+                websiteConfig={websiteConfigData}
                 slug={slug} 
                 embedded={true}
               />

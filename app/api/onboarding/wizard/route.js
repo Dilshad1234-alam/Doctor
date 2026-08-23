@@ -63,6 +63,16 @@ export async function POST(req) {
     const user = await User.findById(userId);
     if (!user) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
 
+    // Clean up doctor name to prevent duplicate "Dr." prefixes:
+    let rawDocName = body.doctorProfile?.fullName || body.doctorName || "Doctor";
+    rawDocName = rawDocName.replace(/^Dr\.?\s*/i, "").trim();
+    const normalizedDoctorName = `Dr. ${rawDocName}`;
+
+    // Sanitize buttonStyle before saving to prevent validation crashes:
+    const allowedStyles = ['rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full', 'rounded-none'];
+    const incomingStyle = body.websiteConfig?.buttonStyle || 'rounded-xl';
+    const sanitizedStyle = allowedStyles.includes(incomingStyle) ? incomingStyle : 'rounded-xl';
+
     // 1. Upsert Clinic
     const clinicName = clinicDetails?.name || "My Clinic";
     const phone = clinicDetails?.phone || "9999999999";
@@ -82,11 +92,12 @@ export async function POST(req) {
     );
 
     // 2. Upsert DoctorProfile
+    const cleanDoctorProfile = { ...doctorProfile, fullName: normalizedDoctorName };
     let profile = await DoctorProfile.findOne({ clinicId: clinic._id });
     if (!profile) {
-      profile = new DoctorProfile({ clinicId: clinic._id, userId: user._id, ...doctorProfile });
+      profile = new DoctorProfile({ clinicId: clinic._id, userId: user._id, ...cleanDoctorProfile });
     } else {
-      Object.assign(profile, doctorProfile);
+      Object.assign(profile, cleanDoctorProfile);
     }
     await profile.save();
 
@@ -130,11 +141,12 @@ export async function POST(req) {
 
     // 6. Upsert WebsiteConfig
     if (websiteConfig) {
+      const cleanWebsiteConfig = { ...websiteConfig, buttonStyle: sanitizedStyle };
       let webConfig = await WebsiteConfig.findOne({ clinicId: clinic._id });
       if (!webConfig) {
-        webConfig = new WebsiteConfig({ clinicId: clinic._id, ...websiteConfig, isPublished: true, publishedUrl: `/${clinic.slug}` });
+        webConfig = new WebsiteConfig({ clinicId: clinic._id, ...cleanWebsiteConfig, isPublished: true, publishedUrl: `/${clinic.slug}` });
       } else {
-        Object.assign(webConfig, websiteConfig);
+        Object.assign(webConfig, cleanWebsiteConfig);
         webConfig.isPublished = true;
         webConfig.publishedUrl = `/${clinic.slug}`;
       }
