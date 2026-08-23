@@ -45,22 +45,32 @@ export async function PUT(req) {
   try {
     const clinic = await authenticateAndGetClinic();
     const body = await req.json();
-    const { schedule } = body; // Array of { dayOfWeek, startTime, endTime, isClosed }
+    const { schedule } = body;
     
     if (!Array.isArray(schedule)) {
       return NextResponse.json({ success: false, error: "Invalid schedule format" }, { status: 400 });
     }
     
-    // Update each day
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    // Update each of the 7 days
     for (const day of schedule) {
+      const dayNum = Number(day.dayOfWeek);
+      if (isNaN(dayNum) || dayNum < 0 || dayNum > 6) continue;
+      
+      const dayName = day.dayName || dayNames[dayNum] || "Day";
+      const isOpen = day.isOpen !== undefined ? Boolean(day.isOpen) : (day.isClosed !== undefined ? !day.isClosed : true);
+      
       await Availability.findOneAndUpdate(
-        { clinicId: clinic._id, dayOfWeek: day.dayOfWeek },
+        { clinicId: clinic._id, dayOfWeek: dayNum },
         { 
-          startTime: day.startTime,
-          endTime: day.endTime,
-          isOpen: day.isOpen !== undefined ? day.isOpen : (day.isClosed !== undefined ? !day.isClosed : true)
+          dayOfWeek: dayNum,
+          dayName,
+          startTime: day.startTime || "09:00",
+          endTime: day.endTime || "17:00",
+          isOpen
         },
-        { upsert: true }
+        { upsert: true, new: true }
       );
     }
     

@@ -47,10 +47,10 @@ export default function SaaSLandingPage() {
   ];
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 overflow-x-hidden p-0 m-0 text-[#0f172a] selection:bg-[#164e63] selection:text-white scroll-smooth">
+    <div className="w-full min-h-screen bg-slate-50 font-sans overflow-x-hidden p-0 m-0 text-[#0f172a] selection:bg-[#164e63] selection:text-white scroll-smooth">
       
       {/* 1. Full-Width Navbar */}
-      <nav className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 sm:px-12 lg:px-16 py-3 flex items-center justify-between transition-all">
+      <nav className="sticky top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 sm:px-12 lg:px-16 py-3.5 flex items-center justify-between shadow-sm transition-all">
         <div className="flex items-center gap-2">
           <HeartPulse className="w-6 h-6 text-[#164e63]" />
           <h1 className="text-xl font-black text-[#0f172a] tracking-tight">DocPulse</h1>
@@ -76,7 +76,7 @@ export default function SaaSLandingPage() {
         </button>
 
         {isMobileMenuOpen && (
-          <div className="lg:hidden absolute top-[100%] left-0 w-full bg-white border-b border-slate-200 shadow-xl py-6 px-6 flex flex-col gap-4 animate-in slide-in-from-top-2">
+          <div className="lg:hidden absolute top-full left-0 w-full bg-white border-b border-slate-200 shadow-xl py-6 px-6 flex flex-col gap-4 animate-in slide-in-from-top-2">
             {navLinks.map(link => (
               <a key={link.name} href={link.href} onClick={() => setIsMobileMenuOpen(false)} className="text-base font-bold text-slate-800 p-2 hover:bg-slate-50 rounded-xl">
                 {link.name}
