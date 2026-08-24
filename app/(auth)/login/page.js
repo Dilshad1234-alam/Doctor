@@ -23,8 +23,12 @@ export default function LoginPage() {
       });
       const data = await res.json();
       
-      if (res.ok) {
-        router.push('/dashboard');
+      if (res.ok && data.success) {
+        if (data.user?.role === 'ADMIN' || data.user?.role === 'SUPER_ADMIN' || data.redirectUrl === '/admin') {
+          router.push('/admin');
+        } else {
+          router.push(data.redirectUrl || '/dashboard');
+        }
         router.refresh();
       } else {
         setError(data.message || data.error || 'Invalid login credentials');

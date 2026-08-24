@@ -40,17 +40,35 @@ export default function SaaSLandingPage() {
     { q: "Is my website mobile friendly?", a: "100%. All our templates are fully responsive and look perfect on mobile phones, tablets, and desktops." }
   ];
 
-  const pricingPlans = [
-    { name: "Starter", monthly: 499, yearly: 399, features: ["Doctor Website", "Online Booking", "Basic Templates", "5 Services", "Community Support"] },
+  const [plans, setPlans] = useState([
+    { name: "Starter", monthly: 499, yearly: 399, popular: false, features: ["Doctor Website", "Online Booking", "Basic Templates", "5 Services", "Community Support"] },
     { name: "Pro", monthly: 1299, yearly: 999, popular: true, features: ["Everything in Starter", "Unlimited Services", "Custom Availability", "Premium Templates", "Priority Support", "Analytics Dashboard"] },
-    { name: "Premium", monthly: 2999, yearly: 2499, features: ["Everything in Pro", "Custom Domain", "White-label Solution", "Dedicated Account Manager", "Advanced CRM", "Multi-Doctor Support"] }
-  ];
+    { name: "Premium", monthly: 2999, yearly: 2499, popular: false, features: ["Everything in Pro", "Custom Domain", "White-label Solution", "Dedicated Account Manager", "Advanced CRM", "Multi-Doctor Support"] }
+  ]);
+
+  React.useEffect(() => {
+    fetch("/api/plans")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.plans && data.plans.length > 0) {
+          const mapped = data.plans.map((p) => ({
+            name: p.name,
+            monthly: p.priceMonthly,
+            yearly: p.priceYearly || Math.round(p.priceMonthly * 0.8),
+            popular: Boolean(p.isPopular),
+            features: p.features || []
+          }));
+          setPlans(mapped);
+        }
+      })
+      .catch((err) => console.error("Could not load dynamic plans:", err));
+  }, []);
 
   return (
     <div className="w-full min-h-screen bg-slate-50 font-sans overflow-x-hidden p-0 m-0 text-[#0f172a] selection:bg-[#164e63] selection:text-white scroll-smooth">
       
-      {/* 1. Full-Width Navbar */}
-      <nav className="sticky top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 sm:px-12 lg:px-16 py-3.5 flex items-center justify-between shadow-sm transition-all">
+      {/* 1. Full-Width Fixed Navbar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 sm:px-12 lg:px-16 py-3.5 flex items-center justify-between shadow-sm transition-all">
         <div className="flex items-center gap-2">
           <HeartPulse className="w-6 h-6 text-[#164e63]" />
           <h1 className="text-xl font-black text-[#0f172a] tracking-tight">DocPulse</h1>
@@ -93,7 +111,7 @@ export default function SaaSLandingPage() {
       </nav>
 
       {/* 2. Full-Width Hero Section */}
-      <section className="w-full min-h-[92vh] bg-gradient-to-b from-[#0a2635] via-[#0d3b4d] to-[#124e5e] text-white pt-20 pb-16 px-6 sm:px-16 lg:px-24 flex flex-col items-center justify-between text-center relative overflow-hidden">
+      <section className="w-full min-h-[92vh] bg-gradient-to-b from-[#0a2635] via-[#0d3b4d] to-[#124e5e] text-white pt-28 pb-16 px-6 sm:px-16 lg:px-24 flex flex-col items-center justify-between text-center relative overflow-hidden">
         {/* Subtle glow effects */}
         <div className="absolute top-0 right-0 -mr-40 -mt-40 w-[600px] h-[600px] rounded-full bg-[#164e63]/40 blur-[100px] pointer-events-none"></div>
         
@@ -311,7 +329,7 @@ export default function SaaSLandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, i) => (
+            {plans.map((plan, i) => (
               <div key={i} className={`bg-white rounded-[3rem] p-10 relative transition-transform hover:-translate-y-2 ${plan.popular ? 'border-[4px] border-[#0f172a] shadow-2xl' : 'border border-slate-200 shadow-sm mt-0 md:mt-4'}`}>
                 {plan.popular && <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#0f172a] text-white font-bold px-6 py-2 rounded-full text-sm shadow-lg">Most Popular</div>}
                 
