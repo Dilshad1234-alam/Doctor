@@ -51,14 +51,23 @@ export default function SaaSLandingPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.plans && data.plans.length > 0) {
-          const mapped = data.plans.map((p) => ({
-            name: p.name,
-            monthly: p.priceMonthly,
-            yearly: p.priceYearly || Math.round(p.priceMonthly * 0.8),
-            popular: Boolean(p.isPopular),
-            features: p.features || []
-          }));
-          setPlans(mapped);
+          const uniqueMap = new Map();
+          data.plans.forEach((p) => {
+            const key = (p.name || p.planId || "").toLowerCase();
+            if (!uniqueMap.has(key)) {
+              uniqueMap.set(key, {
+                name: p.name,
+                monthly: p.priceMonthly,
+                yearly: p.priceYearly || Math.round(p.priceMonthly * 0.8),
+                popular: Boolean(p.isPopular),
+                features: p.features || []
+              });
+            }
+          });
+          const mapped = Array.from(uniqueMap.values());
+          if (mapped.length > 0) {
+            setPlans(mapped);
+          }
         }
       })
       .catch((err) => console.error("Could not load dynamic plans:", err));

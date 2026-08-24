@@ -26,7 +26,14 @@ export default function BillingPage() {
           setSub(statsJson.subscription);
         }
         if (plansJson.success && plansJson.plans) {
-          setPlans(plansJson.plans);
+          const uniqueMap = new Map();
+          plansJson.plans.forEach((p) => {
+            const key = (p.planId || p.name || "").toLowerCase();
+            if (!uniqueMap.has(key)) {
+              uniqueMap.set(key, p);
+            }
+          });
+          setPlans(Array.from(uniqueMap.values()));
         }
       } catch (err) {
         console.error("Billing Page Fetch Error:", err);

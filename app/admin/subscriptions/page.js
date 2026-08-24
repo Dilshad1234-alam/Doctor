@@ -43,7 +43,16 @@ export default function AdminSubscriptionsPage() {
       const [subJson, planJson] = await Promise.all([subRes.json(), planRes.json()]);
 
       if (subJson.success) setData(subJson);
-      if (planJson.success && planJson.plans) setPlans(planJson.plans);
+      if (planJson.success && planJson.plans) {
+        const uniqueMap = new Map();
+        planJson.plans.forEach((p) => {
+          const key = (p.planId || p.name || "").toLowerCase();
+          if (!uniqueMap.has(key)) {
+            uniqueMap.set(key, p);
+          }
+        });
+        setPlans(Array.from(uniqueMap.values()));
+      }
     } catch (err) {
       console.error("Failed to load subscriptions/plans:", err);
     } finally {
