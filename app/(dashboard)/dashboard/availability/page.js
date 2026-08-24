@@ -93,36 +93,36 @@ export default function AvailabilityPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100vh-2rem)] items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-teal-400" />
+      <div className="flex h-[calc(100vh-2rem)] items-center justify-center bg-[#071720]">
+        <Loader2 className="h-10 w-10 animate-spin text-[#2dd4bf]" />
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-2rem)] max-h-screen overflow-hidden flex flex-col justify-between p-4 md:p-6 max-w-5xl mx-auto">
+    <div className="h-[calc(100vh-2rem)] max-h-screen overflow-hidden flex flex-col justify-between p-4 md:p-6 max-w-5xl mx-auto font-sans bg-[#071720] text-slate-100">
       {/* Header */}
       <div className="flex items-center justify-between mb-2 shrink-0">
         <div>
-          <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2 tracking-tight">
-            <Clock className="w-6 h-6 text-teal-300" />
+          <h1 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2 tracking-tight">
+            <Clock className="w-6 h-6 text-[#2dd4bf]" />
             OPD Operating Hours
           </h1>
-          <p className="text-xs text-slate-300 font-medium">Configure weekly consultation timings. Real-time slots are synchronized with patient bookings.</p>
+          <p className="text-xs text-[#62879a] font-medium">Configure weekly consultation timings. Real-time slots are synchronized with patient bookings.</p>
         </div>
       </div>
 
       {/* Main Single-Screen Container */}
-      <div className="bg-white/10 backdrop-blur-xl border border-white/15 rounded-2xl p-3 sm:p-4 shadow-2xl flex-1 flex flex-col justify-between overflow-hidden my-1">
+      <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-4 sm:p-6 shadow-xl flex-1 flex flex-col justify-between overflow-hidden my-1">
         {/* 7 Day Rows */}
-        <div className="space-y-1 flex-1 flex flex-col justify-around">
+        <div className="space-y-1.5 flex-1 flex flex-col justify-around">
           {schedule.map((day, idx) => (
             <div 
               key={day.dayOfWeek} 
-              className={`flex items-center justify-between py-1.5 px-4 my-0.5 rounded-xl border transition-all ${
+              className={`flex items-center justify-between py-2 px-4 rounded-2xl border transition-all ${
                 !day.isOpen 
-                ? 'bg-black/20 border-white/5 opacity-70' 
-                : 'bg-white/5 border-white/10 hover:border-teal-400/30 hover:bg-white/[0.07]'
+                ? 'bg-[#040d13] border-[#0f2c3b] opacity-60' 
+                : 'bg-[#06151f] border-[#163c4e] hover:border-[#2dd4bf]/40 hover:bg-[#0b3342]/20'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -132,7 +132,7 @@ export default function AvailabilityPage() {
                     type="button" 
                     onClick={() => handleChange(idx, 'isOpen', !day.isOpen)}
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                      day.isOpen ? 'bg-emerald-500 shadow-sm shadow-emerald-500/30' : 'bg-slate-700'
+                      day.isOpen ? 'bg-[#00c9a7] shadow-sm shadow-[#00c9a7]/30' : 'bg-[#0d2a38]'
                     }`}
                   >
                     <span 
@@ -143,8 +143,8 @@ export default function AvailabilityPage() {
                   </button>
                   <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-md border ${
                     day.isOpen 
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
-                    : 'bg-white/5 text-slate-400 border-white/10'
+                    ? 'bg-[#063b36] text-[#2dd4bf] border-[#0d5952]' 
+                    : 'bg-[#06151f] text-[#62879a] border-[#163c4e]'
                   }`}>
                     {day.isOpen ? 'Open' : 'Closed'}
                   </span>
@@ -154,43 +154,43 @@ export default function AvailabilityPage() {
               {day.isOpen ? (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-teal-200 uppercase">From:</span>
+                    <span className="text-[10px] font-bold text-[#62879a] uppercase">From:</span>
                     <input 
                       type="time" 
                       value={day.startTime} 
                       onChange={(e) => handleChange(idx, 'startTime', e.target.value)} 
-                      className="rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-xs font-bold text-teal-300 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/30 outline-none" 
+                      className="rounded-xl border border-[#163c4e] bg-[#040d13] px-2.5 py-1 text-xs font-bold text-[#2dd4bf] focus:border-[#2dd4bf] outline-none" 
                     />
                   </div>
-                  <span className="text-slate-400 font-bold text-xs">-</span>
+                  <span className="text-[#3b6072] font-bold text-xs">-</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] font-bold text-teal-200 uppercase">To:</span>
+                    <span className="text-[10px] font-bold text-[#62879a] uppercase">To:</span>
                     <input 
                       type="time" 
                       value={day.endTime} 
                       onChange={(e) => handleChange(idx, 'endTime', e.target.value)} 
-                      className="rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-xs font-bold text-teal-300 focus:border-teal-400 focus:ring-1 focus:ring-teal-400/30 outline-none" 
+                      className="rounded-xl border border-[#163c4e] bg-[#040d13] px-2.5 py-1 text-xs font-bold text-[#2dd4bf] focus:border-[#2dd4bf] outline-none" 
                     />
                   </div>
                 </div>
               ) : (
-                <div className="text-[11px] font-medium text-slate-400 italic">Clinic Closed</div>
+                <div className="text-[11px] font-medium text-[#62879a] italic">Clinic Closed</div>
               )}
             </div>
           ))}
         </div>
 
         {/* Fixed Footer */}
-        <div className="pt-2 border-t border-white/10 flex items-center justify-between shrink-0 mt-1">
-          <p className="text-[11px] text-slate-400 font-medium">Slots will be automatically generated at 30-min intervals.</p>
+        <div className="pt-3 border-t border-[#133748] flex items-center justify-between shrink-0 mt-1">
+          <p className="text-[11px] text-[#62879a] font-medium">Slots will be automatically generated at 30-min intervals.</p>
           <button
             type="button"
             onClick={saveSchedule}
             disabled={saving}
-            className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2 text-xs font-bold shadow-lg transition-all active:scale-95 ${
+            className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2 text-xs font-bold shadow-lg transition-all active:scale-95 cursor-pointer ${
               savedSuccess
-                ? "bg-emerald-500 text-white shadow-emerald-500/20"
-                : "bg-gradient-to-r from-teal-400 to-cyan-500 hover:from-teal-300 hover:to-cyan-400 text-[#081e2b] shadow-teal-500/20 disabled:opacity-60"
+                ? "bg-[#063b36] text-[#2dd4bf] border border-[#0d5952]"
+                : "bg-[#00c9a7] hover:bg-[#00b596] text-[#051a24] font-black shadow-[#00c9a7]/20 disabled:opacity-60"
             }`}
           >
             {saving ? (

@@ -19,16 +19,53 @@ export default function BookingClient({ clinic, services, slug }) {
   const [patient, setPatient] = useState({ name: "", phone: "", age: "", gender: "Male" });
   const [appointment, setAppointment] = useState(null);
 
+  // Helper: Check if slot time is in the past for today
+  const isSlotInPast = (selectedDateStr, slotTimeString) => {
+    if (!selectedDateStr || !slotTimeString) return false;
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    // If selected date is in the future, all slots are valid
+    if (selectedDateStr > todayStr) return false;
+    // If selected date is in the past, all slots are disabled/hidden
+    if (selectedDateStr < todayStr) return true;
+
+    // If selected date is TODAY, compare slot time with current time
+    const parts = slotTimeString.trim().split(' ');
+    if (parts.length < 2) return false;
+    const time = parts[0];
+    const modifier = parts[1].toUpperCase();
+    let [hours, minutes] = time.split(':').map(Number);
+
+    if (modifier === 'PM' && hours < 12) hours += 12;
+    if (modifier === 'AM' && hours === 12) hours = 0;
+
+    const slotDateTime = new Date();
+    slotDateTime.setHours(hours, minutes, 0, 0);
+
+    return slotDateTime <= now;
+  };
+
+  const slotsCacheRef = React.useRef({});
+
   // Fetch slots when date or service changes
   useEffect(() => {
     if (selectedDate && selectedService) {
+      if (slotsCacheRef.current[selectedDate]) {
+        setAvailableSlots(slotsCacheRef.current[selectedDate]);
+        setSlotsLoading(false);
+        return;
+      }
+
       const fetchSlots = async () => {
         setSlotsLoading(true);
         try {
           const res = await fetch(`/api/appointments/slots?clinicSlug=${slug}&date=${selectedDate}&serviceId=${selectedService}`);
           const data = await res.json();
           if (res.ok) {
-            setAvailableSlots(data.slots);
+            const slots = data.slots || [];
+            slotsCacheRef.current[selectedDate] = slots;
+            setAvailableSlots(slots);
           } else {
             setAvailableSlots([]);
           }
@@ -186,15 +223,29 @@ export default function BookingClient({ clinic, services, slug }) {
                       </div>
                     ) : (
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                        {availableSlots.map(slot => (
-                          <button
-                            key={slot}
-                            onClick={() => setSelectedSlot(slot)}
-                            className={`py-2 px-1 text-center text-sm font-medium rounded-lg border transition-all ${selectedSlot === slot ? 'bg-blue-600 border-blue-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400 hover:text-blue-600'}`}
-                          >
-                            {slot}
-                          </button>
-                        ))}
+                        {availableSlots.map(slot => {
+                          const isPast = isSlotInPast(selectedDate, slot);
+                          const isSelected = selectedSlot === slot;
+
+                          return (
+                            <button
+                              key={slot}
+                              disabled={isPast}
+                              onClick={() => {
+                                if (!isPast) setSelectedSlot(slot);
+                              }}
+                              className={`py-2.5 px-3 text-center text-xs rounded-xl border transition-all ${
+                                isPast 
+                                  ? "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed line-through opacity-60 pointer-events-none font-medium"
+                                  : isSelected 
+                                  ? "bg-blue-600 text-white border-blue-600 shadow-md font-bold"
+                                  : "bg-white text-slate-700 border-slate-200 hover:border-blue-500 hover:text-blue-600 cursor-pointer font-semibold"
+                              }`}
+                            >
+                              {slot}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -267,43 +318,64 @@ export default function BookingClient({ clinic, services, slug }) {
               </div>
             )}
 
-            {/* Step 4: Success */}
-            {step === 4 && appointment && (
-              <div className="text-center py-8 animate-in zoom-in duration-500">
-                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                  <CheckCircle2 className="w-10 h-10" />
-                </div>
-                <h3 className="text-3xl font-bold text-slate-900 mb-2">Booking Confirmed!</h3>
-                <p className="text-slate-600 mb-8">Your appointment has been successfully scheduled.</p>
-                
-                <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 text-left max-w-sm mx-auto mb-8 shadow-inner">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Patient Name</p>
-                      <p className="font-medium text-slate-900">{appointment.patientName}</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+            {/* Step 4: Approval Status */}
+            {step === 4 && appointment && (() => {
+              const isApproved = appointment.status === 'CONFIRMED';
+              const isCancelled = appointment.status === 'CANCELLED';
+              const tokenNumber = appointment.tokenNumber || (appointment._id ? appointment._id.slice(-4).toUpperCase() : "101");
+
+              return (
+                <div className="text-center py-8 animate-in zoom-in duration-500">
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm ${
+                    isApproved ? 'bg-emerald-100 text-emerald-600' : isCancelled ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'
+                  }`}>
+                    {isApproved ? <CheckCircle2 className="w-10 h-10" /> : isCancelled ? <AlertCircle className="w-10 h-10" /> : <Clock className="w-10 h-10 animate-pulse" />}
+                  </div>
+
+                  <h3 className="text-3xl font-bold text-slate-900 mb-2">
+                    {isApproved ? `Appointment Confirmed! Token #${tokenNumber}` : isCancelled ? "Appointment Cancelled" : "Appointment Request Submitted!"}
+                  </h3>
+                  <p className="text-slate-600 mb-8 max-w-md mx-auto">
+                    {isApproved 
+                      ? "Your consultation has been confirmed by the doctor." 
+                      : isCancelled 
+                      ? "The doctor was unable to accept this booking. Please select another slot." 
+                      : `Your booking request has been sent to ${clinic.name}. It will be confirmed shortly.`}
+                  </p>
+                  
+                  <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 text-left max-w-sm mx-auto mb-8 shadow-inner">
+                    <div className="space-y-4">
                       <div>
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</p>
-                        <p className="font-medium text-slate-900">{new Date(appointment.appointmentDate).toLocaleDateString()}</p>
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Patient Name</p>
+                        <p className="font-medium text-slate-900">{appointment.patientName}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</p>
+                          <p className="font-medium text-slate-900">{new Date(appointment.appointmentDate).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Requested Time</p>
+                          <p className="font-medium text-slate-900 text-blue-600">{appointment.timeSlot}</p>
+                        </div>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Time</p>
-                        <p className="font-medium text-slate-900 text-blue-600">{appointment.timeSlot}</p>
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</p>
+                        <span className={`inline-block px-3 py-0.5 rounded-full text-xs font-bold ${
+                          isApproved ? 'bg-emerald-100 text-emerald-700' : isCancelled ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {appointment.status || "PENDING"}
+                        </span>
                       </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Consultation</p>
-                      <p className="font-medium text-slate-900">{appointment.serviceName}</p>
                     </div>
                   </div>
-                </div>
 
-                <Link href={`/${slug}`} className="inline-block px-8 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors font-medium shadow-md">
-                  Back to Clinic Home
-                </Link>
-              </div>
-            )}
+                  <Link href={`/${slug}`} className="inline-block px-8 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors font-medium shadow-md">
+                    Back to Clinic Home
+                  </Link>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>

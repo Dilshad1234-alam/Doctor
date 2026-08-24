@@ -48,7 +48,7 @@ export async function POST(req) {
       price: service.price,
       appointmentDate: targetDate,
       timeSlot,
-      status: 'CONFIRMED'
+      status: 'PENDING'
     });
 
     return NextResponse.json({ success: true, appointment }, { status: 201 });

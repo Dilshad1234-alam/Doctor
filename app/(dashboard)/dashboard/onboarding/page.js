@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
-  CheckCircle2, ChevronRight, Loader2, Sparkles, Building, UserCircle, 
-  Stethoscope, Clock, LayoutTemplate, Palette, Globe, Play, ArrowRight 
+  CheckCircle2, ChevronRight, ChevronLeft, Loader2, Sparkles, Building, UserCircle, 
+  Stethoscope, Clock, LayoutTemplate, Palette, Globe, Play, ArrowRight, ShieldCheck,
+  Zap, Check, ExternalLink, Sliders, MapPin, Phone, Mail, Award, Plus, Trash2
 } from "lucide-react";
 
 const getDisplayDoctorName = (name) => {
@@ -18,14 +19,18 @@ export default function OnboardingWizard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isCompleted, setIsCompleted] = useState(false);
   const [successSlug, setSuccessSlug] = useState("");
+  const [billingCycle, setBillingCycle] = useState("MONTHLY");
+  const [availablePlans, setAvailablePlans] = useState([]);
 
   const [formData, setFormData] = useState({
-    plan: { planId: "STARTER", billingCycle: "MONTHLY", price: 499 },
+    plan: { planId: "PRO", billingCycle: "MONTHLY", price: 1299 },
     doctorProfile: { fullName: "", qualification: "", specialization: "", experienceYrs: "", regNumber: "", bio: "" },
     clinicDetails: { name: "", phone: "", email: "", address: "", city: "", state: "", pincode: "", slug: "" },
     services: [
-      { name: "General Consultation", description: "Standard consultation", price: "500", durationMins: "15" }
+      { name: "General Consultation", description: "Standard clinical examination and prescription", price: "500", durationMins: "15" },
+      { name: "Follow-up Checkup", description: "Post-treatment routine review", price: "300", durationMins: "15" }
     ],
     availability: [
       { dayOfWeek: 0, isOpen: false, startTime: "09:00", endTime: "17:00" }, // Sunday
@@ -38,21 +43,32 @@ export default function OnboardingWizard() {
     ],
     websiteConfig: {
       templateId: "template-1",
-      primaryColor: "#2563eb",
+      primaryColor: "#0f766e",
       fontStyle: "Plus Jakarta Sans",
-      buttonStyle: "rounded-2xl",
+      buttonStyle: "rounded-full",
       showSections: { about: true, services: true, timings: true, contact: true }
     }
   });
 
   useEffect(() => {
-    // Fetch existing state
-    const fetchState = async () => {
+    const initOnboarding = async () => {
       try {
-        const res = await fetch("/api/onboarding/wizard");
-        const json = await res.json();
-        if (json.success && json.data) {
-          const { user, clinic, doctorProfile, services, availability, websiteConfig, subscription } = json.data;
+        const [wizardRes, plansRes] = await Promise.all([
+          fetch("/api/onboarding/wizard"),
+          fetch("/api/plans")
+        ]);
+
+        const [wizardJson, plansJson] = await Promise.all([
+          wizardRes.json(),
+          plansRes.json()
+        ]);
+
+        if (plansJson.success && plansJson.plans?.length > 0) {
+          setAvailablePlans(plansJson.plans);
+        }
+
+        if (wizardJson.success && wizardJson.data) {
+          const { user, clinic, doctorProfile, services, availability, websiteConfig, subscription } = wizardJson.data;
           
           if (user?.hasCompletedOnboarding) {
             router.push("/dashboard");
@@ -62,20 +78,20 @@ export default function OnboardingWizard() {
           setFormData(prev => ({
             ...prev,
             plan: subscription || prev.plan,
-            doctorProfile: doctorProfile || prev.doctorProfile,
-            clinicDetails: clinic || prev.clinicDetails,
+            doctorProfile: doctorProfile || { ...prev.doctorProfile, fullName: user?.name ? getDisplayDoctorName(user.name) : "" },
+            clinicDetails: clinic || { ...prev.clinicDetails, email: user?.email || "", phone: user?.phone || "" },
             services: services?.length > 0 ? services : prev.services,
             availability: availability?.length > 0 ? availability : prev.availability,
             websiteConfig: websiteConfig || prev.websiteConfig,
           }));
         }
       } catch (err) {
-        console.error(err);
+        console.error("Onboarding fetch error:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchState();
+    initOnboarding();
   }, [router]);
 
   const updateForm = (section, field, value) => {
@@ -93,33 +109,54 @@ export default function OnboardingWizard() {
     });
   };
 
-  const handleNext = () => setCurrentStep(prev => Math.min(prev + 1, 10));
+  const handleNext = () => {
+    if (currentStep === 3) {
+      if (!formData.clinicDetails.name?.trim()) {
+        alert("Please enter your Clinic Name to continue.");
+        return;
+      }
+      if (!formData.clinicDetails.phone?.trim()) {
+        alert("Please enter a Contact Phone Number for patients.");
+        return;
+      }
+    }
+    setCurrentStep(prev => Math.min(prev + 1, 10));
+  };
+
   const handlePrev = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
-  const handleFinish = async () => {
+  const handleCompleteOnboarding = async () => {
     const { name, phone } = formData.clinicDetails;
     if (!name || !phone) {
-      alert("Clinic Name and Phone are required. Please fill them out in Step 4.");
-      setCurrentStep(4);
+      alert("Clinic Name and Phone are required. Please verify them in Clinic Details.");
+      setCurrentStep(3);
       return;
     }
 
     setSaving(true);
     try {
+      const submissionPayload = {
+        ...formData,
+        plan: {
+          ...formData.plan,
+          billingCycle
+        }
+      };
+
       const res = await fetch("/api/onboarding/wizard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submissionPayload)
       });
       const json = await res.json();
       if (json.success) {
-        setSuccessSlug(json.slug);
-        setCurrentStep(10);
+        setSuccessSlug(json.slug || formData.clinicDetails.slug);
+        setIsCompleted(true);
       } else {
-        alert("Error saving: " + json.error);
+        alert("Error completing setup: " + (json.error || "Please check all fields."));
       }
     } catch (err) {
-      alert("Network error. Please try again.");
+      alert("Network connection error. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -133,287 +170,523 @@ export default function OnboardingWizard() {
     );
   }
 
-  return (
-    <div className="h-screen max-h-screen overflow-hidden w-full font-sans antialiased bg-gradient-to-b from-[#0a2635] via-[#0d3b4d] to-[#124e5e] text-white flex flex-col justify-between">
-      {/* Progress Bar */}
-      <div className="w-full px-6 sm:px-12 lg:px-16 py-4 flex items-center justify-between border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex w-full items-center justify-between">
-          <div className="flex items-center gap-2 font-extrabold text-white tracking-tight">
-            <Stethoscope className="w-6 h-6 text-teal-300 drop-shadow-md" /> DocPulse Setup
+  if (isCompleted) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-b from-[#0a2635] via-[#0d3b4d] to-[#124e5e] text-white flex items-center justify-center p-6 font-sans">
+        <div className="rounded-[2.5rem] border border-white/20 bg-white/10 backdrop-blur-2xl p-8 sm:p-14 shadow-2xl max-w-xl w-full text-center relative overflow-hidden animate-in zoom-in-95 duration-500">
+          <div className="w-20 h-20 rounded-3xl bg-teal-400/20 border border-teal-300/40 p-4 inline-flex items-center justify-center text-teal-300 mb-6 shadow-xl">
+            <Sparkles className="w-10 h-10 text-teal-300" />
           </div>
-          <div className="flex items-center gap-3">
-            <span className="font-medium text-xs text-teal-200 bg-white/10 px-3 py-1 rounded-full border border-white/10">Step {currentStep} of 10</span>
-            <div className="bg-white/10 border border-white/10 h-2 w-32 sm:w-48 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-teal-400 to-cyan-300 rounded-full transition-all duration-300" style={{ width: `${(currentStep / 10) * 100}%` }}></div>
+
+          <div className="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-4 py-1.5 rounded-full text-xs font-black tracking-wider uppercase mb-4">
+            🎉 Setup Completed & Verified
+          </div>
+
+          <h1 className="font-black text-3xl sm:text-4xl text-white tracking-tight mb-3">
+            Your Clinic Website is Live!
+          </h1>
+          <p className="text-sm sm:text-base text-slate-200 leading-relaxed mb-8">
+            Congratulations! Patients can now visit your verified portal, review your medical services, and book appointments online 24/7.
+          </p>
+
+          <div className="bg-black/30 border border-white/15 p-4 rounded-2xl mb-8 flex items-center justify-between text-left">
+            <div className="min-w-0 pr-3">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Live Website URL</span>
+              <span className="font-bold text-teal-300 text-sm truncate block">
+                {typeof window !== "undefined" ? window.location.origin : ""}/{successSlug}
+              </span>
             </div>
+            <a
+              href={`/${successSlug}`}
+              target="_blank"
+              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white shrink-0 transition-colors"
+              title="Open Public Link"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a
+              href={`/${successSlug}`}
+              target="_blank"
+              className="w-full sm:w-auto bg-teal-400 hover:bg-teal-300 text-[#081e2b] font-black px-8 py-3.5 rounded-full shadow-lg shadow-teal-500/20 transition-all flex items-center justify-center gap-2 text-sm"
+            >
+              <Globe className="w-4 h-4" /> Visit Website
+            </a>
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-8 py-3.5 rounded-full transition-all text-sm"
+            >
+              Go to Dashboard →
+            </button>
           </div>
         </div>
       </div>
+    );
+  }
 
-      <div className="w-full max-w-2xl mx-auto px-6 py-12 my-auto">
-{currentStep === 1 && (
-          <div className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 sm:p-12 shadow-2xl shadow-black/30 text-center relative overflow-hidden">
-            <div className="rounded-2xl bg-teal-400/20 border border-teal-300/30 p-4 inline-flex text-teal-300 mb-6 shadow-inner">
-              <Sparkles className="w-10 h-10" />
+  return (
+    <div className="min-h-screen w-full font-sans antialiased bg-gradient-to-b from-[#0a2635] via-[#0d3b4d] to-[#124e5e] text-white flex flex-col justify-between selection:bg-teal-400 selection:text-[#0a2635]">
+      {/* 1. Header Progress Bar */}
+      <header className="w-full px-6 sm:px-12 py-4 flex items-center justify-between border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto flex w-full items-center justify-between">
+          <div className="flex items-center gap-2.5 font-black text-white tracking-tight text-lg">
+            <Stethoscope className="w-6 h-6 text-teal-300" />
+            <span>DocPulse Clinic Setup</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="font-bold text-xs text-teal-200 bg-white/10 px-3.5 py-1 rounded-full border border-white/10">
+              Step {currentStep} of 10
+            </span>
+            <div className="bg-white/10 border border-white/10 h-2.5 w-28 sm:w-44 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-teal-400 to-cyan-300 rounded-full transition-all duration-300" 
+                style={{ width: `${(currentStep / 10) * 100}%` }}
+              />
             </div>
-            <h1 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight mb-4">Welcome to DocPulse</h1>
-            <p className="text-sm sm:text-base text-slate-200 mt-2 max-w-lg mx-auto leading-relaxed mb-10">
-              You are just a few steps away from launching your professional clinic website and starting to accept online appointments.
+          </div>
+        </div>
+      </header>
+
+      {/* 2. Main Step Content Container */}
+      <main className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 my-auto">
+        
+        {/* STEP 1: Welcome */}
+        {currentStep === 1 && (
+          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-14 shadow-2xl text-center relative overflow-hidden animate-in fade-in duration-300">
+            <div className="rounded-3xl bg-teal-400/20 border border-teal-300/30 p-5 inline-flex text-teal-300 mb-6 shadow-inner">
+              <Sparkles className="w-12 h-12" />
+            </div>
+            <h1 className="font-black text-3xl sm:text-4xl text-white tracking-tight mb-3">
+              Welcome to DocPulse
+            </h1>
+            <p className="text-sm sm:text-base text-slate-200 max-w-xl mx-auto leading-relaxed mb-8 font-medium">
+              Let&apos;s build and configure your professional clinic website in 10 quick steps. You&apos;ll set up your doctor profile, OPD hours, medical services, design theme, and select your subscription tier.
             </p>
-            <button onClick={handleNext} className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-white/5 text-[#0a2635] px-8 py-3.5 text-sm font-bold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] active:scale-[0.98]">
-              Start Setup <ChevronRight className="w-5 h-5" />
+            <button 
+              onClick={handleNext} 
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-teal-400 hover:bg-teal-300 text-[#081e2b] px-10 py-4 text-sm font-black shadow-xl shadow-teal-500/20 transition-all hover:scale-105"
+            >
+              <span>Begin Setup</span>
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         )}
 
+        {/* STEP 2: Doctor Profile */}
         {currentStep === 2 && (
-          <div className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 sm:p-12 shadow-2xl shadow-black/30 text-center relative overflow-hidden">
-            <h2 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight mb-2">Choose Your Plan</h2>
-            <p className="text-sm sm:text-base text-slate-200 mt-2 max-w-lg mx-auto leading-relaxed mb-8">Select a subscription plan that fits your clinic&apos;s needs.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { id: "STARTER", name: "Starter", price: 499 },
-                { id: "PRO", name: "Pro", price: 1299 },
-                { id: "ENTERPRISE", name: "Enterprise", price: 2999 },
-              ].map(plan => (
-                <div key={plan.id} onClick={() => setFormData(p => ({ ...p, plan: { planId: plan.id, price: plan.price, billingCycle: "MONTHLY" } }))} 
-                  className={`border-2 rounded-2xl p-6 cursor-pointer transition-all ${formData.plan.planId === plan.id ? 'border-teal-400 bg-white/10 shadow-md' : 'border-white/10 hover:border-teal-400/50'}`}>
-                  <h3 className="font-bold text-lg">{plan.name}</h3>
-                  <div className="text-3xl font-black my-2">₹{plan.price}<span className="text-sm font-medium text-slate-300">/mo</span></div>
-                  {formData.plan.planId === plan.id && <div className="mt-4 flex items-center gap-1 text-sm font-bold text-teal-300"><CheckCircle2 className="w-4 h-4" /> Selected</div>}
-                </div>
-              ))}
+          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-2xl bg-white/10 text-teal-300">
+                <UserCircle className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="font-black text-2xl text-white tracking-tight">Doctor Profile</h2>
+                <p className="text-xs text-slate-300">Enter your medical credentials and clinical biography</p>
+              </div>
             </div>
-            <div className="mt-10 flex justify-end">
-              <button onClick={handleNext} className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-white/5 text-[#0a2635] px-8 py-3.5 text-sm font-bold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] active:scale-[0.98]">Next Step</button>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
+              <div>
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Doctor Full Name</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Dr. Jane Smith" 
+                  value={formData.doctorProfile.fullName} 
+                  onChange={e => updateForm('doctorProfile', 'fullName', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Medical Qualification</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. MBBS, MD, MS" 
+                  value={formData.doctorProfile.qualification} 
+                  onChange={e => updateForm('doctorProfile', 'qualification', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Specialization</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Cardiologist / General Physician" 
+                  value={formData.doctorProfile.specialization} 
+                  onChange={e => updateForm('doctorProfile', 'specialization', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Years of Experience</label>
+                <input 
+                  type="number" 
+                  placeholder="e.g. 8" 
+                  value={formData.doctorProfile.experienceYrs} 
+                  onChange={e => updateForm('doctorProfile', 'experienceYrs', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Medical Registration Number</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. MCI-294829" 
+                  value={formData.doctorProfile.regNumber} 
+                  onChange={e => updateForm('doctorProfile', 'regNumber', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Short Clinical Bio</label>
+                <textarea 
+                  placeholder="Tell patients about your expertise, background, and patient care philosophy..." 
+                  rows={3} 
+                  value={formData.doctorProfile.bio} 
+                  onChange={e => updateForm('doctorProfile', 'bio', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 p-4 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+              <button onClick={handlePrev} className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2">Back</button>
+              <button onClick={handleNext} className="bg-white hover:bg-slate-100 text-[#0a2635] font-black text-xs px-8 py-3.5 rounded-full shadow-lg transition-all">Next Step →</button>
             </div>
           </div>
         )}
 
+        {/* STEP 3: Clinic Details & Slug */}
         {currentStep === 3 && (
-          <div className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 sm:p-12 shadow-2xl shadow-black/30 text-center relative overflow-hidden">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <UserCircle className="w-8 h-8 text-teal-300" />
-              <h2 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight">Doctor Profile</h2>
+          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-2xl bg-white/10 text-teal-300">
+                <Building className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="font-black text-2xl text-white tracking-tight">Clinic Details & Public URL</h2>
+                <p className="text-xs text-slate-300">Location, patient coordinates, and custom website slug</p>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <input type="text" placeholder="Full Name (e.g. Dr. John Doe)" value={formData.doctorProfile.fullName} onChange={e => updateForm('doctorProfile', 'fullName', e.target.value)} className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all" />
-              <input type="text" placeholder="Qualification (e.g. MBBS, MD)" value={formData.doctorProfile.qualification} onChange={e => updateForm('doctorProfile', 'qualification', e.target.value)} className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all" />
-              <input type="text" placeholder="Specialization (e.g. Cardiologist)" value={formData.doctorProfile.specialization} onChange={e => updateForm('doctorProfile', 'specialization', e.target.value)} className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all" />
-              <input type="number" placeholder="Experience (Years)" value={formData.doctorProfile.experienceYrs} onChange={e => updateForm('doctorProfile', 'experienceYrs', e.target.value)} className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all" />
-              <input type="text" placeholder="Medical Registration Number" value={formData.doctorProfile.regNumber} onChange={e => updateForm('doctorProfile', 'regNumber', e.target.value)} className="border border-slate-200 rounded-2xl p-3 focus:ring-2 focus:ring-blue-600 outline-none md:col-span-2" />
-              <textarea placeholder="Short Bio / Description" rows={3} value={formData.doctorProfile.bio} onChange={e => updateForm('doctorProfile', 'bio', e.target.value)} className="border border-slate-200 rounded-2xl p-3 focus:ring-2 focus:ring-blue-600 outline-none md:col-span-2"></textarea>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
+              <div>
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Clinic Name *</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Apex Heart & Dental Center" 
+                  value={formData.clinicDetails.name} 
+                  onChange={e => updateForm('clinicDetails', 'name', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Public Website URL Slug</label>
+                <div className="flex items-center rounded-2xl bg-white/10 border border-white/20 px-4 py-2.5">
+                  <span className="text-slate-400 font-mono text-xs pr-1">/</span>
+                  <input 
+                    type="text" 
+                    placeholder="my-clinic" 
+                    value={formData.clinicDetails.slug} 
+                    onChange={e => updateForm('clinicDetails', 'slug', e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-"))} 
+                    className="w-full bg-transparent text-teal-300 font-bold focus:outline-none" 
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Contact Phone *</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. +91 9876543210" 
+                  value={formData.clinicDetails.phone} 
+                  onChange={e => updateForm('clinicDetails', 'phone', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Contact Email</label>
+                <input 
+                  type="email" 
+                  placeholder="e.g. clinic@example.com" 
+                  value={formData.clinicDetails.email} 
+                  onChange={e => updateForm('clinicDetails', 'email', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Street Address</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. 45 Park Avenue, Healthcare Hub" 
+                  value={formData.clinicDetails.address} 
+                  onChange={e => updateForm('clinicDetails', 'address', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">City</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. New Delhi" 
+                  value={formData.clinicDetails.city} 
+                  onChange={e => updateForm('clinicDetails', 'city', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-bold uppercase text-[10px] mb-2">Pincode</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. 110001" 
+                  value={formData.clinicDetails.pincode} 
+                  onChange={e => updateForm('clinicDetails', 'pincode', e.target.value)} 
+                  className="w-full rounded-2xl bg-white/10 border border-white/20 px-4 py-3.5 text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-400" 
+                />
+              </div>
             </div>
-            <div className="mt-10 flex justify-between">
-              <button onClick={handlePrev} className="text-slate-300 hover:text-white text-xs font-semibold px-4 py-2 transition-all mt-8">Back</button>
-              <button onClick={handleNext} className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-white/5 text-[#0a2635] px-8 py-3.5 text-sm font-bold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] active:scale-[0.98]">Next Step</button>
+
+            <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+              <button onClick={handlePrev} className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2">Back</button>
+              <button onClick={handleNext} className="bg-white hover:bg-slate-100 text-[#0a2635] font-black text-xs px-8 py-3.5 rounded-full shadow-lg transition-all">Next Step →</button>
             </div>
           </div>
         )}
 
+        {/* STEP 4: Services & Consultation Fees */}
         {currentStep === 4 && (
-          <div className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 sm:p-12 shadow-2xl shadow-black/30 text-center relative overflow-hidden">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <Building className="w-8 h-8 text-teal-300" />
-              <h2 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight">Clinic Details</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <input type="text" placeholder="Clinic Name" value={formData.clinicDetails.name} onChange={e => updateForm('clinicDetails', 'name', e.target.value)} className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all" />
-              <input type="text" placeholder="Website Slug (e.g. my-clinic)" value={formData.clinicDetails.slug} onChange={e => updateForm('clinicDetails', 'slug', e.target.value)} className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all" />
-              <input type="text" placeholder="Phone Number" value={formData.clinicDetails.phone} onChange={e => updateForm('clinicDetails', 'phone', e.target.value)} className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all" />
-              <input type="email" placeholder="Email Address" value={formData.clinicDetails.email} onChange={e => updateForm('clinicDetails', 'email', e.target.value)} className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all" />
-              <input type="text" placeholder="Full Address" value={formData.clinicDetails.address} onChange={e => updateForm('clinicDetails', 'address', e.target.value)} className="border border-slate-200 rounded-2xl p-3 focus:ring-2 focus:ring-blue-600 outline-none md:col-span-2" />
-              <input type="text" placeholder="City" value={formData.clinicDetails.city} onChange={e => updateForm('clinicDetails', 'city', e.target.value)} className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all" />
-              <input type="text" placeholder="Pincode" value={formData.clinicDetails.pincode} onChange={e => updateForm('clinicDetails', 'pincode', e.target.value)} className="w-full rounded-xl bg-white/10 border border-white/20 px-4 py-3 text-white placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent transition-all" />
-            </div>
-            <div className="mt-10 flex justify-between">
-              <button onClick={handlePrev} className="text-slate-300 hover:text-white text-xs font-semibold px-4 py-2 transition-all mt-8">Back</button>
-              <button onClick={handleNext} className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-white/5 text-[#0a2635] px-8 py-3.5 text-sm font-bold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] active:scale-[0.98]">Next Step</button>
-            </div>
-          </div>
-        )}
-
-        {currentStep === 5 && (
-          <div className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 sm:p-12 shadow-2xl shadow-black/30 text-center relative overflow-hidden">
+          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <Stethoscope className="w-8 h-8 text-teal-300" />
-                <h2 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight">Services & Pricing</h2>
+                <div className="p-3 rounded-2xl bg-white/10 text-teal-300">
+                  <Stethoscope className="w-7 h-7" />
+                </div>
+                <div>
+                  <h2 className="font-black text-2xl text-white tracking-tight">Services & Consultation Fees</h2>
+                  <p className="text-xs text-slate-300">List the services and fees displayed on your website booking engine</p>
+                </div>
               </div>
-              <button onClick={() => setFormData(p => ({...p, services: [...p.services, { name: "", price: "", durationMins: "15" }] }))} className="text-sm font-bold text-teal-300 bg-blue-50 px-3 py-1.5 rounded-lg">Add Row</button>
+              <button 
+                onClick={() => setFormData(p => ({...p, services: [...p.services, { name: "", description: "Standard Consultation", price: "500", durationMins: "15" }] }))} 
+                className="inline-flex items-center gap-1 text-xs font-bold text-[#0a2635] bg-teal-400 hover:bg-teal-300 px-4 py-2 rounded-full transition-all shadow-md"
+              >
+                <Plus className="w-4 h-4" /> Add Service
+              </button>
             </div>
-            <div className="space-y-4">
+
+            <div className="space-y-3.5 max-h-[380px] overflow-y-auto pr-1">
               {formData.services.map((s, idx) => (
-                <div key={idx} className="flex gap-4 items-center">
-                  <input type="text" placeholder="Service Name" value={s.name} onChange={e => {
-                    const newArr = [...formData.services];
-                    newArr[idx].name = e.target.value;
-                    setFormData({...formData, services: newArr});
-                  }} className="flex-1 border border-slate-200 rounded-2xl p-3" />
-                  <input type="number" placeholder="Fee (₹)" value={s.price} onChange={e => {
-                    const newArr = [...formData.services];
-                    newArr[idx].price = e.target.value;
-                    setFormData({...formData, services: newArr});
-                  }} className="w-32 border border-slate-200 rounded-2xl p-3" />
-                  <input type="number" placeholder="Mins" value={s.durationMins} onChange={e => {
-                    const newArr = [...formData.services];
-                    newArr[idx].durationMins = e.target.value;
-                    setFormData({...formData, services: newArr});
-                  }} className="w-24 border border-slate-200 rounded-2xl p-3" />
+                <div key={idx} className="flex flex-col sm:flex-row gap-3 items-center p-3.5 rounded-2xl bg-white/5 border border-white/10">
+                  <input 
+                    type="text" 
+                    placeholder="Service Name (e.g. Dental Checkup)" 
+                    value={s.name} 
+                    onChange={e => {
+                      const newArr = [...formData.services];
+                      newArr[idx].name = e.target.value;
+                      setFormData({...formData, services: newArr});
+                    }} 
+                    className="flex-1 w-full sm:w-auto rounded-xl bg-black/20 border border-white/15 px-3.5 py-2.5 text-xs text-white placeholder:text-slate-400 font-semibold focus:outline-none focus:ring-1 focus:ring-teal-400" 
+                  />
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative w-28">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">₹</span>
+                      <input 
+                        type="number" 
+                        placeholder="Fee" 
+                        value={s.price} 
+                        onChange={e => {
+                          const newArr = [...formData.services];
+                          newArr[idx].price = e.target.value;
+                          setFormData({...formData, services: newArr});
+                        }} 
+                        className="w-full pl-7 pr-3 py-2.5 rounded-xl bg-black/20 border border-white/15 text-xs text-white font-bold focus:outline-none focus:ring-1 focus:ring-teal-400" 
+                      />
+                    </div>
+                    <div className="relative w-24">
+                      <input 
+                        type="number" 
+                        placeholder="Mins" 
+                        value={s.durationMins} 
+                        onChange={e => {
+                          const newArr = [...formData.services];
+                          newArr[idx].durationMins = e.target.value;
+                          setFormData({...formData, services: newArr});
+                        }} 
+                        className="w-full px-3 py-2.5 rounded-xl bg-black/20 border border-white/15 text-xs text-white font-bold focus:outline-none focus:ring-1 focus:ring-teal-400" 
+                      />
+                    </div>
+                    {formData.services.length > 1 && (
+                      <button 
+                        onClick={() => {
+                          const newArr = formData.services.filter((_, i) => i !== idx);
+                          setFormData({...formData, services: newArr});
+                        }}
+                        className="p-2 rounded-xl hover:bg-rose-500/20 text-rose-300 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="mt-10 flex justify-between">
-              <button onClick={handlePrev} className="text-slate-300 hover:text-white text-xs font-semibold px-4 py-2 transition-all mt-8">Back</button>
-              <button onClick={handleNext} className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-white/5 text-[#0a2635] px-8 py-3.5 text-sm font-bold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] active:scale-[0.98]">Next Step</button>
+
+            <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+              <button onClick={handlePrev} className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2">Back</button>
+              <button onClick={handleNext} className="bg-white hover:bg-slate-100 text-[#0a2635] font-black text-xs px-8 py-3.5 rounded-full shadow-lg transition-all">Next Step →</button>
             </div>
           </div>
         )}
 
-        {currentStep === 6 && (
-          <div className="w-full max-w-2xl mx-auto px-5 py-4 rounded-2xl border border-white/15 bg-white/10 backdrop-blur-xl shadow-2xl flex flex-col justify-between">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <Clock className="w-5 h-5 text-teal-300" />
-              <h2 className="font-extrabold text-xl text-white tracking-tight">OPD Timings</h2>
+        {/* STEP 5: OPD Timings / Weekly Schedule */}
+        {currentStep === 5 && (
+          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-2xl bg-white/10 text-teal-300">
+                <Clock className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="font-black text-2xl text-white tracking-tight">OPD Timings & Availability</h2>
+                <p className="text-xs text-slate-300">Configure your active consultation days and appointment slot hours</p>
+              </div>
             </div>
-            <div className="space-y-1">
+
+            <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
               {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((dayName, idx) => {
-                const day = formData.availability.find(d => d.dayOfWeek === idx);
+                const day = formData.availability.find(d => d.dayOfWeek === idx) || { dayOfWeek: idx, isOpen: false, startTime: "09:00", endTime: "17:00" };
                 return (
-                  <div key={idx} className={`flex flex-col sm:flex-row sm:items-center justify-between py-1.5 px-3.5 my-1 rounded-xl border transition-colors ${!day.isOpen ? 'bg-black/20 border-white/5' : 'bg-white/5 border-white/10 hover:border-teal-400/50'}`}>
+                  <div key={idx} className={`flex flex-col sm:flex-row sm:items-center justify-between py-2 px-4 rounded-2xl border transition-all ${!day.isOpen ? 'bg-black/20 border-white/5' : 'bg-white/5 border-white/10'}`}>
                     <div className="flex items-center gap-4 mb-2 sm:mb-0">
-                      <span className="text-sm font-semibold text-white w-24">{dayName}</span>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                            const newArr = [...formData.availability];
-                            const di = newArr.findIndex(d => d.dayOfWeek === idx);
+                      <span className="text-xs font-bold text-white w-24">{dayName}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const newArr = [...formData.availability];
+                          const di = newArr.findIndex(d => d.dayOfWeek === idx);
+                          if (di !== -1) {
                             newArr[di].isOpen = !day.isOpen;
-                            setFormData({...formData, availability: newArr});
-                          }}
-                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                            day.isOpen ? 'bg-emerald-500' : 'bg-slate-300'
-                          }`}
-                        >
-                          <span 
-                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                              day.isOpen ? 'translate-x-4' : 'translate-x-0'
-                            }`} 
-                          />
-                        </button>
-                        {day.isOpen ? (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-teal-400/20 px-2 py-0.5 text-xs font-semibold text-teal-300 border border-teal-400/30">
-                            Open
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-md bg-white/5 px-2 py-0.5 text-xs font-semibold text-slate-300">
-                            Closed
-                          </span>
-                        )}
-                      </div>
+                          } else {
+                            newArr.push({ dayOfWeek: idx, isOpen: true, startTime: "09:00", endTime: "17:00" });
+                          }
+                          setFormData({...formData, availability: newArr});
+                        }}
+                        className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                          day.isOpen ? 'bg-teal-400' : 'bg-slate-500'
+                        }`}
+                      >
+                        <span 
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${
+                            day.isOpen ? 'translate-x-5' : 'translate-x-0'
+                          }`} 
+                        />
+                      </button>
+                      <span className={`text-[11px] font-bold ${day.isOpen ? 'text-teal-300' : 'text-slate-400'}`}>
+                        {day.isOpen ? "Open" : "Closed"}
+                      </span>
                     </div>
-                    {day.isOpen ? (
+
+                    {day.isOpen && (
                       <div className="flex items-center gap-2">
-                        <div className="flex flex-col">
-                          <label className="text-[10px] font-bold text-slate-300 uppercase mb-0.5">Start Time</label>
-                          <input type="time" value={day.startTime} onChange={e => {
+                        <input 
+                          type="time" 
+                          value={day.startTime} 
+                          onChange={e => {
                             const newArr = [...formData.availability];
                             newArr.find(d => d.dayOfWeek === idx).startTime = e.target.value;
                             setFormData({...formData, availability: newArr});
-                          }} className="py-1 px-2 text-xs rounded-lg bg-black/20 border border-white/15 text-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 outline-none" />
-                        </div>
-                        <span className="text-slate-300 font-black mt-3">-</span>
-                        <div className="flex flex-col">
-                          <label className="text-[10px] font-bold text-slate-300 uppercase mb-0.5">End Time</label>
-                          <input type="time" value={day.endTime} onChange={e => {
+                          }} 
+                          className="py-1.5 px-3 text-xs rounded-xl bg-black/30 border border-white/15 text-white font-bold focus:outline-none focus:ring-1 focus:ring-teal-400" 
+                        />
+                        <span className="text-slate-400 font-bold text-xs">to</span>
+                        <input 
+                          type="time" 
+                          value={day.endTime} 
+                          onChange={e => {
                             const newArr = [...formData.availability];
                             newArr.find(d => d.dayOfWeek === idx).endTime = e.target.value;
                             setFormData({...formData, availability: newArr});
-                          }} className="py-1 px-2 text-xs rounded-lg bg-black/20 border border-white/15 text-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 outline-none" />
-                        </div>
+                          }} 
+                          className="py-1.5 px-3 text-xs rounded-xl bg-black/30 border border-white/15 text-white font-bold focus:outline-none focus:ring-1 focus:ring-teal-400" 
+                        />
                       </div>
-                    ) : (
-                      <div className="inline-flex text-xs text-slate-400 italic py-1">Clinic is closed on this day</div>
                     )}
                   </div>
-                )
+                );
               })}
             </div>
-            <div className="mt-3 flex justify-between">
-              <button onClick={handlePrev} className="text-slate-300 hover:text-white text-xs font-bold px-6 py-2.5 transition-all mt-3">Back</button>
-              <button onClick={handleNext} className="mt-3 inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-slate-100 text-[#0a2635] py-2.5 px-6 text-xs font-bold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] active:scale-[0.98]">Next Step</button>
+
+            <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+              <button onClick={handlePrev} className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2">Back</button>
+              <button onClick={handleNext} className="bg-white hover:bg-slate-100 text-[#0a2635] font-black text-xs px-8 py-3.5 rounded-full shadow-lg transition-all">Next Step →</button>
             </div>
           </div>
         )}
 
-        {currentStep === 7 && (
-          <div className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 sm:p-12 shadow-2xl shadow-black/30 text-center relative overflow-hidden">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <LayoutTemplate className="w-8 h-8 text-teal-300" />
-              <h2 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight">Choose Website Template</h2>
+        {/* STEP 6: Branding & Colors */}
+        {currentStep === 6 && (
+          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-2xl bg-white/10 text-teal-300">
+                <Palette className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="font-black text-2xl text-white tracking-tight">Branding & Color Theme</h2>
+                <p className="text-xs text-slate-300">Select accent palette and button styles for your public portal</p>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { id: 'template-1', name: 'Modern Minimal', image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=400&auto=format&fit=crop' },
-                { id: 'template-2', name: 'Premium Care', image: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=400&auto=format&fit=crop' },
-                { id: 'template-3', name: 'Family Health', image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ce2cb?q=80&w=400&auto=format&fit=crop' }
-              ].map((t) => (
-                <div key={t.id} onClick={() => updateForm('websiteConfig', 'templateId', t.id)} 
-                  className={`cursor-pointer rounded-2xl overflow-hidden border-4 transition-all ${formData.websiteConfig.templateId === t.id ? 'border-teal-400 shadow-xl shadow-teal-500/20' : 'border-transparent border-white/10 hover:border-white/20'}`}>
-                  <div className="h-48 bg-white/5 relative">
-                    <img src={t.image} alt={t.name} className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity" />
-                  </div>
-                  <div className={`p-4 text-center font-bold transition-colors ${formData.websiteConfig.templateId === t.id ? 'bg-teal-500 text-white' : 'bg-white/10 text-white'}`}>
-                    {t.name}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-10 flex justify-between">
-              <button onClick={handlePrev} className="text-slate-300 hover:text-white text-xs font-semibold px-4 py-2 transition-all mt-8">Back</button>
-              <button onClick={handleNext} className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-white/5 text-[#0a2635] px-8 py-3.5 text-sm font-bold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] active:scale-[0.98]">Next Step</button>
-            </div>
-          </div>
-        )}
 
-        {currentStep === 8 && (
-          <div className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 sm:p-12 shadow-2xl shadow-black/30 text-center relative overflow-hidden">
-            <div className="flex items-center justify-center gap-3 mb-8">
-              <Palette className="w-8 h-8 text-teal-300" />
-              <h2 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight">Customize Website</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left items-stretch">
-              {/* Controls */}
-              <div className="space-y-8 flex flex-col justify-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+              <div className="space-y-6">
                 <div>
-                  <label className="font-bold text-slate-200 block mb-4 uppercase text-xs tracking-wider">Primary Color Theme</label>
-                  <div className="flex flex-wrap gap-4">
+                  <label className="block text-slate-300 font-bold uppercase text-[10px] mb-3">Primary Theme Color</label>
+                  <div className="flex flex-wrap gap-3">
                     {[
-                      { name: 'Ocean Teal', hex: '#0f766e', accent: '#ccfbf1', text: '#115e59' },
-                      { name: 'Clinical Blue', hex: '#2563eb', accent: '#dbeafe', text: '#1e40af' },
-                      { name: 'Deep Oceanic', hex: '#0d3b4d', accent: '#e0f2fe', text: '#0369a1' },
-                      { name: 'Care Emerald', hex: '#059669', accent: '#d1fae5', text: '#065f46' },
-                      { name: 'Gentle Rose', hex: '#e11d48', accent: '#ffe4e6', text: '#9f1239' },
-                      { name: 'Royal Indigo', hex: '#4f46e5', accent: '#e0e7ff', text: '#3730a3' }
+                      { name: 'Ocean Teal', hex: '#0f766e' },
+                      { name: 'Clinical Blue', hex: '#2563eb' },
+                      { name: 'Deep Oceanic', hex: '#0d3b4d' },
+                      { name: 'Care Emerald', hex: '#059669' },
+                      { name: 'Gentle Rose', hex: '#e11d48' },
+                      { name: 'Royal Indigo', hex: '#4f46e5' }
                     ].map(color => (
-                      <button key={color.hex} onClick={() => updateForm('websiteConfig', 'primaryColor', color.hex)} style={{ backgroundColor: color.hex }} title={color.name}
-                        className={`h-9 w-9 rounded-full transition-transform cursor-pointer flex items-center justify-center ${formData.websiteConfig.primaryColor === color.hex ? 'ring-4 ring-white scale-110 shadow-lg' : 'opacity-80 hover:opacity-100 hover:scale-105 shadow-sm'}`} />
+                      <button 
+                        key={color.hex} 
+                        onClick={() => updateForm('websiteConfig', 'primaryColor', color.hex)} 
+                        style={{ backgroundColor: color.hex }} 
+                        title={color.name}
+                        className={`h-10 w-10 rounded-full transition-transform flex items-center justify-center ${formData.websiteConfig.primaryColor === color.hex ? 'ring-4 ring-white scale-110 shadow-lg' : 'opacity-80 hover:opacity-100 hover:scale-105 shadow-sm'}`} 
+                      >
+                        {formData.websiteConfig.primaryColor === color.hex && <Check className="w-4 h-4 text-white drop-shadow" />}
+                      </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-200 block mb-4 uppercase text-xs tracking-wider">Button Style</label>
-                  <div className="flex gap-4">
+                  <label className="block text-slate-300 font-bold uppercase text-[10px] mb-3">CTA Button Style</label>
+                  <div className="flex gap-3">
                     {[
-                      { id: 'rounded-xl', label: 'Soft (xl)' },
-                      { id: 'rounded-full', label: 'Pill (full)' },
-                      { id: 'rounded-none', label: 'Sharp (none)' }
+                      { id: 'rounded-full', label: 'Pill (Full)' },
+                      { id: 'rounded-xl', label: 'Soft (XL)' },
+                      { id: 'rounded-none', label: 'Sharp' }
                     ].map(style => (
-                      <button key={style.id} onClick={() => updateForm('websiteConfig', 'buttonStyle', style.id)}
-                        className={`flex-1 py-3 px-4 border-2 font-bold text-sm transition-all ${style.id} ${formData.websiteConfig.buttonStyle === style.id ? 'border-teal-400 bg-teal-400/20 text-teal-200 shadow-md' : 'border-white/10 bg-black/20 text-slate-300 hover:border-white/30 hover:bg-black/40'}`}>
+                      <button 
+                        key={style.id} 
+                        onClick={() => updateForm('websiteConfig', 'buttonStyle', style.id)}
+                        className={`flex-1 py-3 px-4 border font-bold text-xs transition-all ${style.id} ${formData.websiteConfig.buttonStyle === style.id ? 'border-teal-400 bg-teal-400/20 text-teal-200 shadow-md' : 'border-white/10 bg-black/20 text-slate-300 hover:border-white/30'}`}
+                      >
                         {style.label}
                       </button>
                     ))}
@@ -421,80 +694,332 @@ export default function OnboardingWizard() {
                 </div>
               </div>
 
-              {/* Live Mini Preview Box */}
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col items-center justify-center shadow-inner relative overflow-hidden">
-                <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 rounded-full opacity-20 blur-2xl" style={{ backgroundColor: formData.websiteConfig.primaryColor }}></div>
-                <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-32 h-32 rounded-full opacity-20 blur-2xl" style={{ backgroundColor: formData.websiteConfig.primaryColor }}></div>
-                
-                <p className="text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider relative z-10">Live Preview</p>
-                <div className="bg-white rounded-[2rem] p-8 shadow-2xl w-full max-w-sm flex flex-col items-center gap-4 border border-slate-100 relative z-10 hover:shadow-3xl transition-shadow duration-500">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center shadow-sm" style={{ backgroundColor: `${formData.websiteConfig.primaryColor}20` }}>
-                    <Stethoscope className="w-8 h-8" style={{ color: formData.websiteConfig.primaryColor }} />
+              {/* Live Preview Card */}
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Live Button & Color Preview</p>
+                <div className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-xs text-slate-900 space-y-3">
+                  <div className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-white font-black" style={{ backgroundColor: formData.websiteConfig.primaryColor }}>
+                    <Stethoscope className="w-6 h-6" />
                   </div>
-                  <div className="text-center mb-2">
-                    <h3 className="text-xl font-black text-slate-900 tracking-tight">{getDisplayDoctorName(formData.doctorProfile.fullName)}</h3>
-                    <p className="text-sm font-semibold mt-1" style={{ color: formData.websiteConfig.primaryColor }}>{formData.doctorProfile.specialization || 'Specialization'}</p>
+                  <div>
+                    <h4 className="font-black text-base">{getDisplayDoctorName(formData.doctorProfile.fullName)}</h4>
+                    <p className="text-xs font-bold text-slate-500">{formData.doctorProfile.specialization || "Medical Specialist"}</p>
                   </div>
-                  <button className={`w-full py-4 text-white font-bold text-base shadow-lg hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 ${formData.websiteConfig.buttonStyle}`} style={{ backgroundColor: formData.websiteConfig.primaryColor, boxShadow: `0 10px 15px -3px ${formData.websiteConfig.primaryColor}40` }}>
-                    Book Appointment <ArrowRight className="w-5 h-5" />
+                  <button 
+                    className={`w-full py-3 text-white font-black text-xs shadow-md transition-all ${formData.websiteConfig.buttonStyle}`} 
+                    style={{ backgroundColor: formData.websiteConfig.primaryColor }}
+                  >
+                    Book Appointment →
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="mt-10 flex justify-between">
-              <button onClick={handlePrev} className="text-slate-300 hover:text-white text-xs font-semibold px-4 py-2 transition-all mt-8">Back</button>
-              <button onClick={handleNext} className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-white/5 text-[#0a2635] px-8 py-3.5 text-sm font-bold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] active:scale-[0.98]">Next Step</button>
+            <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+              <button onClick={handlePrev} className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2">Back</button>
+              <button onClick={handleNext} className="bg-white hover:bg-slate-100 text-[#0a2635] font-black text-xs px-8 py-3.5 rounded-full shadow-lg transition-all">Next Step →</button>
             </div>
           </div>
         )}
 
+        {/* STEP 7: Website Sections Toggle */}
+        {currentStep === 7 && (
+          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-2xl bg-white/10 text-teal-300">
+                <Sliders className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="font-black text-2xl text-white tracking-tight">Website Sections Configuration</h2>
+                <p className="text-xs text-slate-300">Choose which informational modules appear on your public landing page</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                { key: 'about', label: 'Doctor About & Credentials', desc: 'Display qualifications, experience, and short biography' },
+                { key: 'services', label: 'Services & Transparent Fees', desc: 'Show clinical OPD services and procedure pricing' },
+                { key: 'timings', label: 'OPD Schedule & Hours', desc: 'Display weekly working schedule and consultation slots' },
+                { key: 'contact', label: 'Clinic Address & Location', desc: 'Show interactive address, phone, and coordinates' }
+              ].map(sec => {
+                const isEnabled = formData.websiteConfig?.showSections?.[sec.key] ?? true;
+                return (
+                  <div key={sec.key} className="p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-white text-xs">{sec.label}</h4>
+                      <p className="text-[11px] text-slate-300 font-medium">{sec.desc}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const current = formData.websiteConfig?.showSections || { about: true, services: true, timings: true, contact: true };
+                        updateForm('websiteConfig', 'showSections', { ...current, [sec.key]: !isEnabled });
+                      }}
+                      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                        isEnabled ? 'bg-teal-400' : 'bg-slate-500'
+                      }`}
+                    >
+                      <span 
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition duration-200 ${
+                          isEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`} 
+                      />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+              <button onClick={handlePrev} className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2">Back</button>
+              <button onClick={handleNext} className="bg-white hover:bg-slate-100 text-[#0a2635] font-black text-xs px-8 py-3.5 rounded-full shadow-lg transition-all">Next Step →</button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 8: Website Template Selection */}
+        {currentStep === 8 && (
+          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-2xl bg-white/10 text-teal-300">
+                <LayoutTemplate className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="font-black text-2xl text-white tracking-tight">Choose Website Template</h2>
+                <p className="text-xs text-slate-300">Pick a tailored responsive layout for your medical practice</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {[
+                { id: 'template-1', name: 'Modern Minimal', desc: 'Clean high-contrast layout for solo doctors', image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=400&auto=format&fit=crop' },
+                { id: 'template-2', name: 'Premium Care', desc: 'Rich aesthetic for specialized clinical centers', image: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=400&auto=format&fit=crop' },
+                { id: 'template-3', name: 'Family Health', desc: 'Warm, approachable design for family clinics', image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ce2cb?q=80&w=400&auto=format&fit=crop' }
+              ].map((t) => (
+                <div 
+                  key={t.id} 
+                  onClick={() => updateForm('websiteConfig', 'templateId', t.id)} 
+                  className={`cursor-pointer rounded-3xl overflow-hidden border-2 transition-all p-2 flex flex-col justify-between ${
+                    formData.websiteConfig.templateId === t.id 
+                      ? 'border-teal-400 bg-white/15 shadow-xl shadow-teal-500/20' 
+                      : 'border-white/10 bg-white/5 hover:border-white/30'
+                  }`}
+                >
+                  <div className="h-40 rounded-2xl overflow-hidden bg-black/20 relative">
+                    <img src={t.image} alt={t.name} className="w-full h-full object-cover opacity-85 hover:opacity-100 transition-opacity" />
+                    {formData.websiteConfig.templateId === t.id && (
+                      <span className="absolute top-3 right-3 bg-teal-400 text-[#081e2b] font-black text-[10px] uppercase px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Selected
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-3 text-center">
+                    <h4 className="font-black text-sm text-white">{t.name}</h4>
+                    <p className="text-[11px] text-slate-300 mt-0.5">{t.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+              <button onClick={handlePrev} className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2">Back</button>
+              <button onClick={handleNext} className="bg-white hover:bg-slate-100 text-[#0a2635] font-black text-xs px-8 py-3.5 rounded-full shadow-lg transition-all">Next Step →</button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 9: Live Preview */}
         {currentStep === 9 && (
-          <div className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 sm:p-12 shadow-2xl shadow-black/30 text-center relative overflow-hidden">
-            <div className="flex items-center justify-center gap-3 mb-6">
-              <Play className="w-8 h-8 text-teal-300" />
-              <h2 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight">Live Preview</h2>
+          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 rounded-2xl bg-white/10 text-teal-300">
+                <Play className="w-7 h-7" />
+              </div>
+              <div>
+                <h2 className="font-black text-2xl text-white tracking-tight">Review & Live Preview</h2>
+                <p className="text-xs text-slate-300">Inspect how your clinic header and booking call-to-action will appear</p>
+              </div>
             </div>
-            <div className="w-full h-[500px] bg-white/5 rounded-2xl border-4 border-slate-800 overflow-hidden relative shadow-inner">
-               <div className="absolute inset-0 flex items-center justify-center flex-col gap-4 bg-slate-900 text-white">
-                  <h3 className="text-3xl font-black" style={{ color: formData.websiteConfig.primaryColor }}>{formData.clinicDetails.name || 'My Clinic'}</h3>
-                  <p className="text-white font-medium text-sm mt-1">{getDisplayDoctorName(formData.doctorProfile.fullName)}</p>
-                  <button className={`px-6 py-2 text-white ${formData.websiteConfig.buttonStyle}`} style={{ backgroundColor: formData.websiteConfig.primaryColor }}>Book Appointment</button>
-               </div>
+
+            <div className="w-full rounded-3xl border border-white/20 overflow-hidden shadow-2xl bg-[#081e2b] text-white p-6 sm:p-10 space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase mb-2" style={{ backgroundColor: `${formData.websiteConfig.primaryColor}30`, color: '#5eead4' }}>
+                    <ShieldCheck className="w-3.5 h-3.5" /> Verified Medical Practice
+                  </div>
+                  <h3 className="text-3xl font-black text-white">{formData.clinicDetails.name || 'My Medical Clinic'}</h3>
+                  <p className="text-slate-300 text-xs mt-1 font-medium">{formData.clinicDetails.address || "Main Healthcare Street"}, {formData.clinicDetails.city || "City"}</p>
+                </div>
+                <div className="text-left md:text-right">
+                  <p className="text-sm font-black text-white">{getDisplayDoctorName(formData.doctorProfile.fullName)}</p>
+                  <p className="text-xs text-teal-300 font-bold">{formData.doctorProfile.specialization || "Specialist"} • {formData.doctorProfile.qualification || "MBBS"}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <span className="text-slate-400 font-bold uppercase text-[10px]">Consultation Fee</span>
+                  <p className="font-black text-lg text-white mt-1">₹{formData.services[0]?.price || "500"}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <span className="text-slate-400 font-bold uppercase text-[10px]">Website URL</span>
+                  <p className="font-bold text-teal-300 text-xs mt-1 truncate">/{formData.clinicDetails.slug || "clinic"}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <span className="text-slate-400 font-bold uppercase text-[10px]">Contact Helpline</span>
+                  <p className="font-bold text-white text-xs mt-1">{formData.clinicDetails.phone || "+91 9999999999"}</p>
+                </div>
+              </div>
             </div>
-            <div className="mt-10 flex justify-between">
-              <button onClick={handlePrev} className="text-slate-300 hover:text-white text-xs font-semibold px-4 py-2 transition-all mt-8">Back</button>
-              <button onClick={handleFinish} disabled={saving} className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white hover:bg-white/5 text-[#0a2635] px-8 py-3.5 text-sm font-bold shadow-lg shadow-black/20 transition-all transform hover:scale-[1.02] active:scale-[0.98]">
-                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Globe className="w-5 h-5" />} Publish Website
+
+            <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
+              <button onClick={handlePrev} className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2">Back</button>
+              <button onClick={handleNext} className="bg-teal-400 hover:bg-teal-300 text-[#081e2b] font-black text-xs px-8 py-3.5 rounded-full shadow-lg shadow-teal-500/20 transition-all flex items-center gap-2">
+                <span>Choose Plan & Finish</span>
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
+        {/* STEP 10 (FINAL STEP): Choose Your Plan */}
         {currentStep === 10 && (
-          <div className="rounded-3xl border border-white/15 bg-white/10 backdrop-blur-xl p-8 sm:p-12 shadow-2xl shadow-black/30 text-center relative overflow-hidden">
-            <div className="rounded-2xl bg-teal-400/20 border border-teal-300/30 p-4 inline-flex text-teal-300 mb-6 shadow-inner">
-              <CheckCircle2 className="w-12 h-12" />
+          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
+            <div className="text-center max-w-xl mx-auto mb-8">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black tracking-wider uppercase bg-teal-400/20 text-teal-300 border border-teal-300/30 mb-3">
+                Final Step 10 of 10
+              </div>
+              <h2 className="font-black text-3xl sm:text-4xl text-white tracking-tight">Choose Your Plan</h2>
+              <p className="text-sm text-slate-200 mt-2 font-medium">Select a subscription plan that fits your clinic&apos;s needs.</p>
+
+              {/* Monthly / Yearly Billing Toggle */}
+              <div className="inline-flex bg-black/30 p-1.5 rounded-full border border-white/15 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle("MONTHLY")}
+                  className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                    billingCycle === "MONTHLY" ? "bg-teal-400 text-[#081e2b] shadow-md" : "text-slate-300 hover:text-white"
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBillingCycle("YEARLY")}
+                  className={`px-5 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                    billingCycle === "YEARLY" ? "bg-teal-400 text-[#081e2b] shadow-md" : "text-slate-300 hover:text-white"
+                  }`}
+                >
+                  <span>Yearly</span>
+                  <span className="text-[10px] bg-emerald-500/30 text-emerald-200 px-2 py-0.5 rounded-full font-black">Save 20%</span>
+                </button>
+              </div>
             </div>
-            <h1 className="font-extrabold text-2xl sm:text-3xl text-white tracking-tight mb-4">Website Published!</h1>
-            <p className="text-sm sm:text-base text-slate-200 mt-2 max-w-lg mx-auto leading-relaxed mb-10">
-              Your clinic is now online. Patients can visit your website and book appointments immediately.
-            </p>
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl inline-block mb-10 text-lg font-bold text-slate-800 font-mono">
-              {typeof window !== "undefined" ? window.location.origin : ""}/{successSlug}
+
+            {/* 3 Dynamic Plan Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {(availablePlans.length > 0
+                ? availablePlans
+                : [
+                    { planId: "starter", name: "Starter", priceMonthly: 499, priceYearly: 399, isPopular: false, description: "For solo practitioners" },
+                    { planId: "pro", name: "Pro", priceMonthly: 1299, priceYearly: 999, isPopular: true, description: "Complete clinic automation" },
+                    { planId: "premium", name: "Premium", priceMonthly: 2999, priceYearly: 2499, isPopular: false, description: "Multi-doctor custom domains" }
+                  ]
+              ).map((p) => {
+                const planCode = p.planId.toUpperCase();
+                const isSelected = formData.plan.planId === planCode || (formData.plan.planId === "PROFESSIONAL" && planCode === "PRO");
+                const price = billingCycle === "YEARLY" ? p.priceYearly || Math.round(p.priceMonthly * 0.8) : p.priceMonthly;
+
+                return (
+                  <div
+                    key={p.planId}
+                    onClick={() => setFormData(prev => ({ ...prev, plan: { planId: planCode, price, billingCycle } }))}
+                    className={`rounded-3xl p-6 cursor-pointer transition-all flex flex-col justify-between space-y-5 relative ${
+                      isSelected
+                        ? "border-2 border-teal-400 bg-white/15 shadow-2xl shadow-teal-500/20 scale-[1.02]"
+                        : "border border-white/10 bg-white/5 hover:border-white/30"
+                    }`}
+                  >
+                    {p.isPopular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-teal-400 text-[#081e2b] font-black px-3.5 py-0.5 rounded-full text-[10px] uppercase tracking-wider shadow-md">
+                        Most Popular
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-black text-xl text-white">{p.name}</h3>
+                        {isSelected && (
+                          <span className="text-[10px] font-black text-teal-300 bg-teal-400/20 border border-teal-400/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Selected
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="text-3xl sm:text-4xl font-black text-white">₹{price}</span>
+                        <span className="text-xs font-bold text-slate-300"> / mo</span>
+                      </div>
+
+                      <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
+                        {p.description || "Clinic online presence and appointments"}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-white/10">
+                      <button
+                        type="button"
+                        className={`w-full py-2.5 rounded-full font-bold text-xs transition-all ${
+                          isSelected
+                            ? "bg-teal-400 text-[#081e2b] font-black shadow-md"
+                            : "bg-white/10 text-white hover:bg-white/20"
+                        }`}
+                      >
+                        {isSelected ? "Selected Plan" : "Choose Plan"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <a href={`/${successSlug}`} target="_blank" className="bg-teal-500 text-white font-bold px-8 py-4 rounded-full shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2">
-                <Globe className="w-5 h-5" /> Visit Website
-              </a>
-              <button onClick={() => router.push("/dashboard")} className="bg-transparent text-white border-2 border-white/20 font-bold px-8 py-4 rounded-full shadow-sm hover:bg-slate-50 transition-all">
-                Go to Dashboard
+
+            {/* Final CTA Buttons */}
+            <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <button 
+                type="button" 
+                onClick={handlePrev} 
+                className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2 order-2 sm:order-1"
+              >
+                ← Back to Preview
+              </button>
+
+              <button 
+                type="button" 
+                onClick={handleCompleteOnboarding} 
+                disabled={saving} 
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-teal-400 hover:bg-teal-300 text-[#081e2b] px-10 py-4 text-sm font-black shadow-xl shadow-teal-500/20 transition-all hover:scale-105 active:scale-95 order-1 sm:order-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Publishing Clinic Website...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Confirm & Launch Clinic Website →</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         )}
 
-      </div>
+      </main>
+
+      {/* 3. Footer */}
+      <footer className="w-full text-center py-4 text-slate-400 text-xs border-t border-white/5 bg-black/10">
+        DocPulse SaaS Engine • 100% Encrypted & HIPAA Compliant Data Infrastructure
+      </footer>
     </div>
   );
 }
