@@ -7,7 +7,7 @@ import {
   Calendar, Clock, CheckCircle2, CreditCard, RefreshCw, 
   ExternalLink, Copy, Check, Clock3, PlusCircle, 
   Settings, Loader2, Lock, MessageCircle, Link as LinkIcon, Users, Sparkles, Camera, Image as ImageIcon,
-  ArrowUpRight, Activity, ShieldCheck, HeartPulse
+  ArrowRight, HeartPulse, Stethoscope, Activity, ArrowUpRight, ShieldCheck, Globe
 } from "lucide-react";
 
 export default function DashboardOverviewPage() {
@@ -15,10 +15,35 @@ export default function DashboardOverviewPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [greeting, setGreeting] = useState("Good afternoon");
+  const [currentTime, setCurrentTime] = useState("");
   
   const [avatarUrl, setAvatarUrl] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [mediaSaving, setMediaSaving] = useState(false);
+
+  useEffect(() => {
+    const updateTimeAndGreeting = () => {
+      const now = new Date();
+      const hour = now.getHours();
+      if (hour < 12) setGreeting("Good morning");
+      else if (hour < 18) setGreeting("Good afternoon");
+      else setGreeting("Good evening");
+
+      setCurrentTime(
+        now.toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          year: "numeric"
+        }) + " • " + now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+      );
+    };
+
+    updateTimeAndGreeting();
+    const interval = setInterval(updateTimeAndGreeting, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -128,8 +153,8 @@ export default function DashboardOverviewPage() {
 
   if (loading && !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#071720]">
-        <Loader2 className="h-10 w-10 animate-spin text-[#2dd4bf]" />
+      <div className="flex min-h-[80vh] items-center justify-center bg-slate-50">
+        <Loader2 className="h-10 w-10 animate-spin text-[#0a2635]" />
       </div>
     );
   }
@@ -150,248 +175,214 @@ export default function DashboardOverviewPage() {
   const cleanDoctorName = `Dr. ${rawName.replace(/^Dr\.?\s*/i, "").trim()}`;
 
   return (
-    <div className="p-6 md:p-10 space-y-8 max-w-7xl mx-auto font-sans bg-[#071720] text-slate-100">
+    <div className="p-6 sm:p-10 space-y-8 max-w-[1600px] mx-auto animate-in fade-in-50 duration-500 font-sans bg-slate-50 text-[#0f172a]">
       
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-              Welcome, <span className="text-[#2dd4bf]">{cleanDoctorName}</span>
+      {/* 1. Full-Width Oceanic Hero Header (Exact Admin Header Match) */}
+      <div className="w-full bg-gradient-to-b from-[#0a2635] via-[#0d3b4d] to-[#124e5e] text-white rounded-[2.5rem] p-8 sm:p-12 shadow-2xl relative overflow-hidden">
+        {/* Glow backdrop circles */}
+        <div className="absolute top-0 right-0 -mr-40 -mt-40 w-[500px] h-[500px] rounded-full bg-[#164e63]/40 blur-[100px] pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-xs font-bold border border-white/20 uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Doctor Suite • {cleanDoctorName}
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+              {greeting}, {cleanDoctorName}
             </h1>
-            <span className="bg-[#3d3215] text-[#facc15] text-[10px] font-bold px-2.5 py-1 rounded border border-[#6b581e] uppercase tracking-wider">
-              {planId} PLAN
+            <p className="text-sm sm:text-base text-slate-300 font-medium max-w-2xl leading-relaxed">
+              Clinic Portal ({clinic.name}{doctor?.email ? ` • ${doctor.email}` : ""}) • Real-time patient booking telemetry, OPD availability, and clinic revenue.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 self-start md:self-auto flex-wrap">
+            <button
+              onClick={fetchDashboardData}
+              disabled={loading}
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span>Sync Telemetry</span>
+            </button>
+            <button
+              onClick={copyClinicLink}
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? "Copied!" : "Copy Link"}</span>
+            </button>
+            <Link
+              href={`/${clinic.slug}`}
+              target="_blank"
+              className="inline-flex items-center gap-2 bg-white hover:bg-slate-100 text-[#0f172a] px-6 py-3 rounded-full font-black text-xs transition-all shadow-xl hover:scale-105"
+            >
+              View Live Clinic <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. 4 Hero KPI Cards (Matches Exact Admin Style: 1 Dark + 3 White) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        {/* Card 1: Today's Active Bookings (Active Dark Card) */}
+        <div className="bg-[#0f172a] p-6 sm:p-7 rounded-3xl shadow-lg border border-[#1e293b] text-white flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-[11px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full">
+              Live
             </span>
           </div>
-          <p className="mt-1 text-sm text-[#62879a] font-medium">{clinic.name} • Executive Command Overview</p>
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <button
-            onClick={fetchDashboardData}
-            className="inline-flex items-center gap-2 bg-[#0d2a38] hover:bg-[#12394c] text-white border border-[#1c485d] font-semibold rounded-xl px-4 py-2 text-xs cursor-pointer transition-all active:scale-95"
-          >
-            <RefreshCw className="h-3.5 w-3.5 text-[#2dd4bf]" /> Refresh
-          </button>
-          <button
-            onClick={copyClinicLink}
-            className="inline-flex items-center gap-2 bg-[#0d2a38] hover:bg-[#12394c] text-white border border-[#1c485d] font-semibold rounded-xl px-4 py-2 text-xs cursor-pointer transition-all active:scale-95"
-          >
-            {copied ? <Check className="h-3.5 w-3.5 text-[#2dd4bf]" /> : <Copy className="h-3.5 w-3.5 text-[#2dd4bf]" />}
-            {copied ? "Copied!" : "Copy Link"}
-          </button>
-          <Link
-            href={`/${clinic.slug}`}
-            target="_blank"
-            className="inline-flex items-center gap-2 bg-[#00c9a7] hover:bg-[#00b596] text-[#051a24] font-black rounded-xl px-5 py-2 text-xs shadow-lg shadow-[#00c9a7]/20 cursor-pointer transition-all active:scale-95"
-          >
-            <ExternalLink className="h-3.5 w-3.5" /> View Live Site
-          </Link>
-        </div>
-      </div>
-
-      {/* Media Banner Card */}
-      <div className="rounded-3xl border border-[#133748] bg-[#0a202c] overflow-hidden shadow-xl relative">
-        <div 
-          className="h-44 md:h-52 w-full relative bg-[#071d28] flex items-center justify-center border-b border-[#133748]" 
-          style={coverImageUrl ? { backgroundImage: `url(${coverImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
-        >
-          {coverImageUrl && <div className="absolute inset-0 bg-[#071720]/60 backdrop-blur-[1px]"></div>}
-          
-          {mediaSaving && (
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-20">
-              <Loader2 className="w-8 h-8 text-[#2dd4bf] animate-spin" />
-            </div>
-          )}
-          
-          <button 
-            onClick={() => handleUpload('cover')} 
-            disabled={mediaSaving} 
-            className="absolute top-4 right-4 bg-[#051118]/80 hover:bg-[#051118] text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all border border-[#163c4e] shadow-md z-10 cursor-pointer"
-          >
-            <Camera className="w-4 h-4 text-[#2dd4bf]" /> Change Cover
-          </button>
-        </div>
-
-        <div className="px-6 md:px-10 pb-6 bg-[#0a202c]">
-          <div className="flex flex-col sm:flex-row gap-5 sm:items-end -mt-14 sm:-mt-16 mb-2 relative z-20">
-            <div className="relative inline-block group shrink-0">
-              <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full ring-4 ring-[#0a202c] shadow-2xl bg-[#06151f] overflow-hidden relative border-2 border-[#164e63]">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[#071d28] text-[#2dd4bf]">
-                    <ImageIcon className="w-10 h-10" />
-                  </div>
-                )}
-              </div>
-              <button 
-                onClick={() => handleUpload('avatar')} 
-                disabled={mediaSaving} 
-                className="absolute bottom-1 right-1 bg-[#00c9a7] text-[#051a24] p-2.5 rounded-full shadow-xl border-2 border-[#0a202c] hover:scale-110 active:scale-95 transition-all z-20 cursor-pointer"
-                title="Update Profile Photo"
-              >
-                <Camera className="w-4 h-4 font-bold" />
-              </button>
-            </div>
-
-            <div className="flex-1 pb-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">{cleanDoctorName}</h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#0d3443] px-2.5 py-0.5 text-xs font-bold text-[#2dd4bf] border border-[#164e63]">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Verified
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className="text-sm font-semibold text-[#2dd4bf]">Doctor Profile</span>
-                <span className="text-[#3b6072]">•</span>
-                <span className="text-sm font-semibold text-slate-300">{clinic.name}</span>
-                <span className="text-[#3b6072]">•</span>
-                <span className="text-xs font-mono text-[#62879a] bg-[#06151f] px-2 py-0.5 rounded-md border border-[#163c4e]">/{clinic.slug}</span>
-              </div>
-            </div>
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Today&apos;s Active Bookings</p>
+            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight mt-1">{stats.todayAppointmentsCount}</h3>
+          </div>
+          <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300 font-medium">
+            <span>Scheduled Today</span>
+            <span className="font-bold text-white">{stats.todayAppointmentsCount} slots</span>
           </div>
         </div>
+
+        {/* Card 2: Pending Approval (White Card) */}
+        <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="w-12 h-12 bg-[#f8fafc] rounded-2xl flex items-center justify-center border border-slate-100">
+              <Clock className="w-6 h-6 text-[#164e63]" />
+            </div>
+            <span className="text-[11px] font-black text-[#164e63] bg-[#164e63]/10 px-2.5 py-1 rounded-full">
+              {stats.pendingCount} Pending
+            </span>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Approval</p>
+            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">{stats.pendingCount}</h3>
+          </div>
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+            <span>Awaiting Review</span>
+            <span className="font-bold text-emerald-600">Online</span>
+          </div>
+        </div>
+
+        {/* Card 3: Total Consulted (White Card) */}
+        <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="w-12 h-12 bg-[#f8fafc] rounded-2xl flex items-center justify-center border border-slate-100">
+              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+            </div>
+            <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+              {stats.completedCount} Done
+            </span>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Consulted Today</p>
+            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">{stats.completedCount}</h3>
+          </div>
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+            <span>Consultation status</span>
+            <span className="font-bold text-slate-900">Completed</span>
+          </div>
+        </div>
+
+        {/* Card 4: Estimated Revenue (White Card) */}
+        <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="w-12 h-12 bg-[#f8fafc] rounded-2xl flex items-center justify-center border border-slate-100">
+              <CreditCard className="w-6 h-6 text-[#0f172a]" />
+            </div>
+            <span className="text-[11px] font-black text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">
+              SaaS MRR
+            </span>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Estimated Revenue</p>
+            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">₹{stats.totalRevenue}</h3>
+          </div>
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+            <span>Today&apos;s Volume</span>
+            <span className="font-bold text-slate-900">₹{stats.totalRevenue}</span>
+          </div>
+        </div>
+
       </div>
 
-      {/* 4 Stat Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      {/* 3. Bottom Grid: Recent Appointments (White Card) + Quick Shortcuts (Active Dark Card) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Stat 1 */}
-        <div className="bg-[#0a202c] border border-[#133748] rounded-2xl p-5 shadow-xl hover:border-[#2dd4bf]/40 transition-all">
+        {/* Left: Recent Appointments Table (White Card) */}
+        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#62879a] uppercase tracking-wider">Today&apos;s Active</span>
-            <div className="rounded-xl bg-[#0b3342] p-2 text-[#2dd4bf] border border-[#164e63]">
-              <Calendar className="h-4 w-4" />
-            </div>
-          </div>
-          <p className="mt-3 text-2xl font-black text-white">{stats.todayAppointmentsCount}</p>
-          <span className="inline-block mt-2 bg-[#0d3443] text-[#2dd4bf] text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-            Scheduled Today
-          </span>
-        </div>
-
-        {/* Stat 2 */}
-        <div className="bg-[#0a202c] border border-[#133748] rounded-2xl p-5 shadow-xl hover:border-amber-400/40 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#62879a] uppercase tracking-wider">Pending</span>
-            <div className="rounded-xl bg-[#3d3215] p-2 text-[#facc15] border border-[#6b581e]">
-              <Clock className="h-4 w-4" />
-            </div>
-          </div>
-          <p className="mt-3 text-2xl font-black text-white">{stats.pendingCount}</p>
-          <span className="inline-block mt-2 bg-[#3d3215] text-[#facc15] text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-            Awaiting Approval
-          </span>
-        </div>
-
-        {/* Stat 3 */}
-        <div className="bg-[#0a202c] border border-[#133748] rounded-2xl p-5 shadow-xl hover:border-emerald-400/40 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#62879a] uppercase tracking-wider">Completed</span>
-            <div className="rounded-xl bg-[#063b36] p-2 text-[#2dd4bf] border border-[#0d5952]">
-              <CheckCircle2 className="h-4 w-4" />
-            </div>
-          </div>
-          <p className="mt-3 text-2xl font-black text-white">{stats.completedCount}</p>
-          <span className="inline-block mt-2 bg-[#063b36] text-[#2dd4bf] text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-            Consulted Today
-          </span>
-        </div>
-
-        {/* Stat 4 */}
-        <div className="bg-[#0a202c] border border-[#133748] rounded-2xl p-5 shadow-xl relative overflow-hidden hover:border-[#facc15]/40 transition-all">
-          {isStarter && (
-            <div className="absolute inset-0 bg-[#071720]/80 backdrop-blur-md z-10 flex flex-col items-center justify-center p-4 text-center">
-              <Lock className="h-4 w-4 text-[#2dd4bf] mb-1" />
-              <span className="text-[10px] font-bold text-[#facc15] bg-[#3d3215] border border-[#6b581e] px-2.5 py-0.5 rounded-full">Pro Feature</span>
-            </div>
-          )}
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#62879a] uppercase tracking-wider">Today&apos;s Revenue</span>
-            <div className="rounded-xl bg-[#3d3215] p-2 text-[#facc15] border border-[#6b581e]">
-              <CreditCard className="h-4 w-4" />
-            </div>
-          </div>
-          <p className="mt-3 text-2xl font-black text-[#facc15]">₹{stats.totalRevenue}</p>
-          <span className="inline-block mt-2 bg-[#0d3443] text-[#2dd4bf] text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-            Estimated Earnings
-          </span>
-        </div>
-      </div>
-
-      {/* Content Section */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        
-        {/* Table Card */}
-        <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-6 sm:p-8 shadow-xl lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-extrabold text-white tracking-tight">Recent Appointments</h2>
-              <p className="text-xs text-[#62879a] mt-0.5">Live appointments booked via your public clinic page</p>
+              <h2 className="text-lg sm:text-xl font-black text-[#0f172a]">Recent Appointments</h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Live appointments booked via your public clinic page</p>
             </div>
-            <Link 
-              href="/dashboard/appointments" 
-              className="text-xs font-bold text-[#2dd4bf] hover:text-[#2dd4bf]/80 bg-[#0d2a38] hover:bg-[#12394c] px-3.5 py-1.5 rounded-xl border border-[#1c485d] transition-colors flex items-center gap-1"
+            <Link
+              href="/dashboard/appointments"
+              className="text-xs font-bold text-[#164e63] hover:text-[#0f172a] flex items-center gap-1 bg-slate-100 px-3.5 py-1.5 rounded-full transition-colors"
             >
               View All <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-[#133748] text-[11px] uppercase text-[#62879a] font-bold tracking-wider">
-                  <th className="pb-3 font-bold">Patient Info</th>
-                  <th className="pb-3 font-bold">Service</th>
-                  <th className="pb-3 font-bold">Time Slot</th>
-                  <th className="pb-3 font-bold">Status</th>
-                  <th className="pb-3 font-bold text-right">Actions</th>
+                <tr className="border-b border-slate-100 text-[11px] font-black uppercase text-slate-400 tracking-wider">
+                  <th className="pb-3 font-black">Patient Info</th>
+                  <th className="pb-3 font-black">Service</th>
+                  <th className="pb-3 font-black">Time Slot</th>
+                  <th className="pb-3 font-black">Status</th>
+                  <th className="pb-3 font-black text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#133748]/60">
+              <tbody className="divide-y divide-slate-100">
                 {recentAppointments.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-[#62879a]">
-                      <div className="w-12 h-12 rounded-full bg-[#06151f] flex items-center justify-center mx-auto mb-3 border border-[#163c4e]">
-                        <Calendar className="w-6 h-6 text-[#62879a]" />
-                      </div>
+                    <td colSpan={5} className="py-12 text-center text-slate-400 font-medium">
                       No appointments booked yet today.
                     </td>
                   </tr>
                 ) : (
                   recentAppointments.map((item) => (
-                    <tr key={item._id} className="hover:bg-white/5 transition-colors group">
+                    <tr key={item._id} className="hover:bg-slate-50/80 transition-colors group">
                       <td className="py-4">
-                        <p className="font-bold text-white group-hover:text-[#2dd4bf] transition-colors">{item.patientName}</p>
-                        <p className="text-xs text-[#62879a] font-mono mt-0.5">{item.patientPhone}</p>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-slate-100 text-[#0f172a] font-black flex items-center justify-center text-xs shrink-0">
+                            {item.patientName?.charAt(0).toUpperCase() || "P"}
+                          </div>
+                          <div>
+                            <p className="font-bold text-[#0f172a] text-sm group-hover:text-[#164e63] transition-colors">{item.patientName}</p>
+                            <p className="text-xs text-slate-400 font-mono">{item.patientPhone}</p>
+                          </div>
+                        </div>
                       </td>
-                      <td className="py-4 text-slate-300 font-medium">{item.serviceName}</td>
-                      <td className="py-4 font-bold text-[#2dd4bf]">
-                        <span className="bg-[#06151f] px-2.5 py-1 rounded-lg border border-[#163c4e] text-xs">
+                      <td className="py-4 text-xs font-semibold text-slate-600">{item.serviceName}</td>
+                      <td className="py-4 text-xs font-bold text-[#164e63]">
+                        <span className="bg-slate-100 px-2.5 py-1 rounded-md">
                           {item.timeSlot}
                         </span>
                       </td>
                       <td className="py-4">
-                        <span className={`inline-flex rounded-lg px-2.5 py-0.5 text-xs font-bold border ${
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
                           item.status === "COMPLETED"
-                            ? "bg-[#063b36] text-[#2dd4bf] border-[#0d5952]"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             : item.status === "CANCELLED"
-                            ? "bg-[#3b1219] text-[#f43f5e] border-[#591b26]"
-                            : "bg-[#3d3215] text-[#facc15] border-[#6b581e]"
+                            ? "bg-rose-50 text-rose-700 border border-rose-200"
+                            : "bg-amber-50 text-amber-700 border border-amber-200"
                         }`}>
                           {item.status || "PENDING"}
                         </span>
                       </td>
                       <td className="py-4 text-right">
                         {item.status === "COMPLETED" ? (
-                          <span className="text-xs text-[#2dd4bf] font-bold inline-flex items-center gap-1">
+                          <span className="text-xs text-emerald-600 font-bold inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" /> Done
                           </span>
                         ) : (
                           <button
                             onClick={() => handleStatusChange(item._id, "COMPLETED")}
-                            className="rounded-xl bg-[#00c9a7] hover:bg-[#00b596] px-3 py-1.5 text-xs font-bold text-[#051a24] shadow-md shadow-[#00c9a7]/20 active:scale-95 transition-all cursor-pointer"
+                            className="rounded-full bg-[#0f172a] hover:bg-[#1e293b] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
                           >
                             Mark Done
                           </button>
@@ -405,94 +396,89 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
 
-        {/* Quick Actions & Shortcuts */}
-        <div className="space-y-6">
-          <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-6 sm:p-8 shadow-xl">
-            <h2 className="text-xl font-extrabold text-white mb-4 tracking-tight">Quick Shortcuts</h2>
-            <div className="space-y-3">
-              <Link 
-                href="/dashboard/availability" 
-                className="flex w-full items-center justify-between rounded-2xl border border-[#163c4e] bg-[#06151f] p-4 text-sm font-bold text-slate-200 hover:bg-[#0b3342] hover:border-[#164e63] hover:text-[#2dd4bf] transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#0b3342] flex items-center justify-center text-[#2dd4bf] group-hover:scale-110 transition-transform">
-                    <Clock3 className="h-4 w-4" />
-                  </div>
-                  Manage OPD Hours
-                </div>
-                <ArrowUpRight className="w-4 h-4 text-[#62879a] group-hover:text-[#2dd4bf]" />
-              </Link>
-              
-              <Link 
-                href="/dashboard/services" 
-                className="flex w-full items-center justify-between rounded-2xl border border-[#163c4e] bg-[#06151f] p-4 text-sm font-bold text-slate-200 hover:bg-[#0b3342] hover:border-[#164e63] hover:text-[#2dd4bf] transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#0b3342] flex items-center justify-center text-[#2dd4bf] group-hover:scale-110 transition-transform">
-                    <PlusCircle className="h-4 w-4" />
-                  </div>
-                  Manage Services
-                </div>
-                <ArrowUpRight className="w-4 h-4 text-[#62879a] group-hover:text-[#2dd4bf]" />
-              </Link>
-
-              <Link 
-                href="/dashboard/settings" 
-                className="flex w-full items-center justify-between rounded-2xl border border-[#163c4e] bg-[#06151f] p-4 text-sm font-bold text-slate-200 hover:bg-[#0b3342] hover:border-[#164e63] hover:text-[#2dd4bf] transition-all group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#0b3342] flex items-center justify-center text-[#2dd4bf] group-hover:scale-110 transition-transform">
-                    <Settings className="h-4 w-4" />
-                  </div>
-                  Clinic Settings
-                </div>
-                <ArrowUpRight className="w-4 h-4 text-[#62879a] group-hover:text-[#2dd4bf]" />
-              </Link>
-
-              {/* Gated Features */}
-              {!isStarter ? (
-                <>
-                  <div className="flex w-full items-center justify-between rounded-2xl border border-[#0d5952] bg-[#063b36]/30 p-4 text-sm font-bold text-[#2dd4bf]">
-                    <div className="flex items-center gap-3">
-                      <MessageCircle className="h-5 w-5 text-[#2dd4bf]" /> WhatsApp Alerts
-                    </div>
-                    <span className="text-[10px] uppercase font-extrabold bg-[#063b36] text-[#2dd4bf] px-2 py-0.5 rounded-full border border-[#0d5952]">Active</span>
-                  </div>
-                  <div className="flex w-full items-center justify-between rounded-2xl border border-[#164e63] bg-[#0b3342]/30 p-4 text-sm font-bold text-[#2dd4bf]">
-                    <div className="flex items-center gap-3">
-                      <LinkIcon className="h-5 w-5 text-[#2dd4bf]" /> Custom Domain
-                    </div>
-                    <span className="text-[10px] uppercase font-extrabold bg-[#0b3342] text-[#2dd4bf] px-2 py-0.5 rounded-full border border-[#164e63]">Active</span>
-                  </div>
-                </>
-              ) : (
-                <Link href="/dashboard/billing" className="flex w-full items-center justify-between rounded-2xl border border-[#163c4e] bg-[#06151f] p-4 text-sm font-bold text-[#62879a] hover:bg-[#081e2b] hover:text-slate-300 transition-all">
-                  <div className="flex items-center gap-3">
-                    <MessageCircle className="h-4 w-4" /> WhatsApp Alerts
-                  </div>
-                  <Lock className="h-4 w-4 text-[#62879a]" />
-                </Link>
-              )}
+        {/* Right: Quick Actions & Live Clinic Shortcuts (Active Dark Card) */}
+        <div className="bg-[#0f172a] p-6 sm:p-8 rounded-3xl shadow-lg border border-[#1e293b] text-white space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-emerald-400" />
+              <h2 className="text-lg font-black text-white">Clinic Feed</h2>
             </div>
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
           </div>
+          <p className="text-xs text-slate-400 font-medium -mt-3">Real-time clinic shortcuts & actions</p>
 
-          {/* Support Card */}
-          <div className="rounded-3xl bg-[#0a202c] border border-[#133748] p-6 text-white shadow-xl relative overflow-hidden">
-            <div className="flex items-center gap-2 mb-2">
-              <HeartPulse className="w-5 h-5 text-[#2dd4bf]" />
-              <h3 className="font-extrabold text-base text-white">Need Setup Help?</h3>
-            </div>
-            <p className="text-xs text-[#62879a] leading-relaxed">
-              Our clinical solutions team is available 24/7 to help you configure domains, schedule slots, and customize your site.
-            </p>
-            <a 
-              href={`https://wa.me/?text=${encodeURIComponent(`Hi DocPulse Support, I need assistance with my clinic dashboard.`)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 w-full inline-flex items-center justify-center rounded-xl bg-[#0d2a38] hover:bg-[#12394c] border border-[#1c485d] py-2.5 text-xs font-bold text-white transition-all active:scale-[0.98]"
+          <div className="space-y-3">
+            <Link
+              href="/dashboard/availability"
+              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-between group"
             >
-              Contact Support
-            </a>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">OPD Timings</p>
+                  <p className="text-[11px] text-slate-400">Manage daily doctor hours</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full group-hover:bg-white group-hover:text-[#0f172a] transition-colors">
+                Config
+              </span>
+            </Link>
+
+            <Link
+              href="/dashboard/services"
+              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                  <Stethoscope className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Clinic Services</p>
+                  <p className="text-[11px] text-slate-400">Configure fees & duration</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full group-hover:bg-white group-hover:text-[#0f172a] transition-colors">
+                Config
+              </span>
+            </Link>
+
+            <Link
+              href="/dashboard/website"
+              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Website Builder</p>
+                  <p className="text-[11px] text-slate-400">Customize clinic theme</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full group-hover:bg-white group-hover:text-[#0f172a] transition-colors">
+                Theme
+              </span>
+            </Link>
+
+            <Link
+              href="/dashboard/settings"
+              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-between group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                  <Settings className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Clinic Settings</p>
+                  <p className="text-[11px] text-slate-400">Phone, address, & credentials</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full group-hover:bg-white group-hover:text-[#0f172a] transition-colors">
+                Edit
+              </span>
+            </Link>
           </div>
         </div>
 

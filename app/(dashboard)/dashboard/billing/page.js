@@ -46,8 +46,8 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center bg-[#071720]">
-        <Loader2 className="h-10 w-10 animate-spin text-[#2dd4bf]" />
+      <div className="flex h-[80vh] items-center justify-center bg-slate-50">
+        <Loader2 className="h-10 w-10 animate-spin text-[#0a2635]" />
       </div>
     );
   }
@@ -61,53 +61,53 @@ export default function BillingPage() {
   };
 
   return (
-    <div className="p-6 md:p-10 space-y-10 max-w-6xl mx-auto font-sans bg-[#071720] text-slate-100">
+    <div className="p-6 sm:p-10 space-y-10 max-w-6xl mx-auto font-sans bg-slate-50 text-[#0f172a] min-h-screen">
       <div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white flex items-center gap-3 tracking-tight">
-          <CreditCard className="w-8 h-8 text-[#2dd4bf]" />
-          Billing & Subscription Plan
+        <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] flex items-center gap-3 tracking-tight">
+          <CreditCard className="w-7 h-7 text-[#164e63]" />
+          Subscription & Billing Plan
         </h1>
-        <p className="mt-1 text-sm text-[#62879a] font-medium">
+        <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
           Review your active clinic plan, view real-time SaaS rates, or upgrade your practice features.
         </p>
       </div>
 
-      {/* Active Subscription Luxury Card */}
+      {/* Active Subscription Luxury Card (Oceanic Header Banner) */}
       {sub ? (
-        <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-6 md:p-10 shadow-xl relative overflow-hidden">
+        <div className="bg-gradient-to-b from-[#0a2635] via-[#0d3b4d] to-[#124e5e] text-white rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-3 flex-wrap">
-                <span className="bg-[#063b36] text-[#2dd4bf] border border-[#0d5952] px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase flex items-center gap-1">
+                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5" /> Active Plan
                 </span>
-                <span className="text-xs font-bold text-[#facc15] uppercase tracking-widest bg-[#3d3215] border border-[#6b581e] px-3 py-1 rounded-full">
+                <span className="text-xs font-bold text-amber-300 uppercase tracking-widest bg-white/10 border border-white/20 px-3 py-1 rounded-full">
                   {sub.billingCycle || "MONTHLY"} Billing
                 </span>
               </div>
-              <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
-                {sub.planId} <span className="text-2xl text-[#2dd4bf] font-medium">Edition</span>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
+                {sub.planId} <span className="text-2xl text-slate-300 font-medium">Edition</span>
               </h2>
               {sub.endDate && (
-                <p className="text-[#62879a] mt-2 text-sm font-medium">
+                <p className="text-slate-300 mt-2 text-xs sm:text-sm font-medium">
                   Next renewal: <span className="text-white font-bold">{new Date(sub.endDate).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}</span>
                 </p>
               )}
             </div>
 
-            <div className="text-left md:text-right bg-[#06151f] border border-[#163c4e] p-5 rounded-2xl">
-              <div className="text-4xl font-black text-[#facc15] mb-1">₹{sub.price}</div>
-              <div className="text-xs text-[#62879a] font-medium">
+            <div className="text-left md:text-right bg-white/10 border border-white/20 p-5 rounded-2xl">
+              <div className="text-3xl sm:text-4xl font-black text-white mb-1">₹{sub.price}</div>
+              <div className="text-xs text-slate-300 font-medium">
                 billed every {sub.billingCycle === "YEARLY" ? "year" : "month"}
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="p-8 rounded-3xl bg-[#0a202c] border border-[#133748] text-center space-y-3">
-          <AlertCircle className="w-10 h-10 text-[#facc15] mx-auto" />
-          <h3 className="text-xl font-bold text-white">No active subscription found</h3>
-          <p className="text-xs text-[#62879a]">Select an edition below to activate your clinic website and online booking slots.</p>
+        <div className="p-8 rounded-3xl bg-white border border-slate-200 text-center space-y-3 shadow-sm">
+          <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+          <h3 className="text-lg font-bold text-[#0f172a]">No active subscription found</h3>
+          <p className="text-xs text-slate-500">Select an edition below to activate your clinic website and online booking slots.</p>
         </div>
       )}
 
@@ -115,30 +115,30 @@ export default function BillingPage() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#2dd4bf]" />
+            <h2 className="text-xl font-black text-[#0f172a] tracking-tight flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-[#164e63]" />
               Available Plan Tiers
             </h2>
-            <p className="text-xs text-[#62879a] font-medium">Synchronized in real-time with platform rates</p>
+            <p className="text-xs text-slate-500 font-medium">Synchronized in real-time with platform rates</p>
           </div>
 
           {/* Monthly / Yearly cycle toggle */}
-          <div className="inline-flex bg-[#06151f] p-1 rounded-2xl border border-[#163c4e] self-start sm:self-auto">
+          <div className="inline-flex bg-slate-100 p-1 rounded-full border border-slate-200 self-start sm:self-auto">
             <button
               onClick={() => setSelectedCycle("MONTHLY")}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                selectedCycle === "MONTHLY" ? "bg-[#00c9a7] text-[#051a24]" : "text-[#62879a] hover:text-white"
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                selectedCycle === "MONTHLY" ? "bg-[#0f172a] text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Monthly
             </button>
             <button
               onClick={() => setSelectedCycle("YEARLY")}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                selectedCycle === "YEARLY" ? "bg-[#00c9a7] text-[#051a24]" : "text-[#62879a] hover:text-white"
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                selectedCycle === "YEARLY" ? "bg-[#0f172a] text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              Yearly <span className="text-[10px] text-emerald-300 ml-1">Save 20%</span>
+              Yearly <span className="text-[10px] text-emerald-600 font-black ml-1">Save 20%</span>
             </button>
           </div>
         </div>
@@ -163,60 +163,60 @@ export default function BillingPage() {
                 key={plan.planId}
                 className={`rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all relative ${
                   plan.isPopular
-                    ? "bg-[#0a202c] border-2 border-[#2dd4bf] shadow-xl shadow-[#00c9a7]/10"
-                    : "bg-[#0a202c] border border-[#133748]"
+                    ? "bg-white border-2 border-[#0f172a] shadow-xl"
+                    : "bg-white border border-slate-200 shadow-sm"
                 }`}
               >
                 {plan.isPopular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#00c9a7] text-[#051a24] font-black px-4 py-1 rounded-full text-[10px] uppercase tracking-wider shadow-lg">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#0f172a] text-white font-black px-4 py-1 rounded-full text-[10px] uppercase tracking-wider shadow-md">
                     Recommended
                   </div>
                 )}
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-2xl font-black text-white">{plan.name}</h3>
+                    <h3 className="text-xl font-black text-[#0f172a]">{plan.name}</h3>
                     {isCurrent && (
-                      <span className="text-[10px] font-black uppercase text-[#2dd4bf] bg-[#063b36] border border-[#0d5952] px-2.5 py-1 rounded-full">
+                      <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
                         Current
                       </span>
                     )}
                   </div>
 
                   <div>
-                    <span className="text-4xl font-black text-white">₹{price}</span>
-                    <span className="text-[#62879a] text-xs font-bold"> / month</span>
+                    <span className="text-3xl sm:text-4xl font-black text-[#0f172a]">₹{price}</span>
+                    <span className="text-slate-400 text-xs font-bold"> / month</span>
                   </div>
 
-                  <p className="text-xs text-[#62879a] leading-relaxed font-medium">
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
                     {plan.description || (plan.planId === "starter" ? "For solo practitioners" : plan.planId === "pro" ? "For established growing clinics" : "For multi-doctor centers")}
                   </p>
 
-                  <ul className="space-y-3 pt-3 border-t border-[#133748]">
+                  <ul className="space-y-3 pt-3 border-t border-slate-100">
                     {features.map((f, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs font-medium text-slate-300">
-                        <CheckCircle2 className="w-4 h-4 text-[#2dd4bf] shrink-0 mt-0.5" />
+                      <li key={i} className="flex items-start gap-2 text-xs font-medium text-slate-700">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                         <span>{f}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="pt-4 border-t border-[#133748]">
+                <div className="pt-4 border-t border-slate-100">
                   {isCurrent ? (
                     <button
                       disabled
-                      className="w-full py-3 rounded-xl bg-[#06151f] border border-[#163c4e] text-[#62879a] font-bold text-xs cursor-default"
+                      className="w-full py-2.5 rounded-full bg-slate-100 text-slate-400 font-bold text-xs cursor-default"
                     >
                       Active Tier
                     </button>
                   ) : (
                     <a
                       href={`mailto:support@docpulse.internal?subject=Upgrade%20to%20${plan.name}%20Plan`}
-                      className={`block w-full py-3 text-center rounded-xl font-black text-xs transition-all cursor-pointer ${
+                      className={`block w-full py-2.5 text-center rounded-full font-bold text-xs transition-all cursor-pointer ${
                         plan.isPopular
-                          ? "bg-[#00c9a7] hover:bg-[#00b596] text-[#051a24] shadow-lg shadow-[#00c9a7]/20"
-                          : "bg-[#0d2a38] hover:bg-[#12394c] text-white border border-[#1c485d]"
+                          ? "bg-[#0f172a] hover:bg-[#1e293b] text-white shadow-md"
+                          : "bg-slate-100 hover:bg-slate-200 text-[#0f172a]"
                       }`}
                     >
                       Switch to {plan.name}

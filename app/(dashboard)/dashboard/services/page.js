@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { PlusCircle, Trash2, Loader2, Stethoscope, AlertCircle, Sparkles, Clock } from "lucide-react";
+import { PlusCircle, Trash2, Loader2, Stethoscope, AlertCircle, Sparkles, Clock, CheckCircle2 } from "lucide-react";
 
 export default function ServicesPage() {
   const [services, setServices] = useState([]);
@@ -61,66 +61,66 @@ export default function ServicesPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center bg-[#071720]">
-        <Loader2 className="h-10 w-10 animate-spin text-[#2dd4bf]" />
+      <div className="flex h-[80vh] items-center justify-center bg-slate-50">
+        <Loader2 className="h-10 w-10 animate-spin text-[#0a2635]" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 md:p-10 space-y-8 max-w-5xl mx-auto font-sans bg-[#071720] text-slate-100">
+    <div className="p-6 sm:p-10 space-y-8 max-w-5xl mx-auto font-sans bg-slate-50 text-[#0f172a] min-h-screen">
       <div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white flex items-center gap-3 tracking-tight">
-          <Stethoscope className="w-8 h-8 text-[#2dd4bf]" />
-          Manage Services
+        <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] flex items-center gap-3 tracking-tight">
+          <Stethoscope className="w-7 h-7 text-[#164e63]" />
+          Clinic Consultation Services
         </h1>
-        <p className="mt-1 text-sm text-[#62879a] font-medium">Add, configure, or remove consultation offerings. Changes reflect live on your public booking page.</p>
+        <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">Add, configure, or remove consultation offerings. Changes reflect live on your public booking page.</p>
       </div>
 
-      {/* Add New Service Card */}
-      <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-6 md:p-8 shadow-xl">
-        <h2 className="text-xl font-extrabold text-white mb-6 flex items-center gap-2 tracking-tight">
-          <Sparkles className="w-5 h-5 text-[#2dd4bf]" /> Add New Offering
+      {/* Add New Service Card (White Card) */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <h2 className="text-lg font-black text-[#0f172a] mb-6 flex items-center gap-2 tracking-tight">
+          <Sparkles className="w-5 h-5 text-[#164e63]" /> Add New Offering
         </h2>
         <form onSubmit={addService} className="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
           <div className="flex-1">
-            <label className="block text-xs font-bold text-[#62879a] uppercase tracking-wider mb-2">Service Title</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Service Title</label>
             <input 
               required 
               type="text" 
               placeholder="e.g. Comprehensive Consultation" 
               value={newService.name} 
               onChange={e => setNewService({...newService, name: e.target.value})} 
-              className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2dd4bf] font-medium transition-all" 
+              className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 text-xs focus:bg-white focus:border-[#164e63] font-medium transition-all" 
             />
           </div>
           <div className="w-full md:w-36">
-            <label className="block text-xs font-bold text-[#62879a] uppercase tracking-wider mb-2">Fee (₹)</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Fee (₹)</label>
             <input 
               required 
               type="number" 
               placeholder="500" 
               value={newService.price} 
               onChange={e => setNewService({...newService, price: e.target.value})} 
-              className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2dd4bf] font-medium transition-all" 
+              className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 text-xs focus:bg-white focus:border-[#164e63] font-medium transition-all" 
             />
           </div>
           <div className="w-full md:w-36">
-            <label className="block text-xs font-bold text-[#62879a] uppercase tracking-wider mb-2">Duration (Mins)</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Duration (Mins)</label>
             <input 
               required 
               type="number" 
               placeholder="15" 
               value={newService.durationMins} 
               onChange={e => setNewService({...newService, durationMins: e.target.value})} 
-              className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#2dd4bf] font-medium transition-all" 
+              className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 text-xs focus:bg-white focus:border-[#164e63] font-medium transition-all" 
             />
           </div>
           <div>
             <button 
               type="submit" 
               disabled={isAdding} 
-              className="w-full md:w-auto h-[44px] bg-[#00c9a7] hover:bg-[#00b596] text-[#051a24] font-black rounded-xl px-5 py-2.5 text-xs shadow-lg shadow-[#00c9a7]/20 disabled:opacity-70 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+              className="w-full md:w-auto h-[42px] bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold rounded-full px-6 py-2 text-xs shadow-md disabled:opacity-70 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
             >
               {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />} Add Service
             </button>
@@ -128,43 +128,43 @@ export default function ServicesPage() {
         </form>
       </div>
 
-      {/* Existing Services List */}
-      <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-6 md:p-8 shadow-xl">
+      {/* Existing Services List (White Card) */}
+      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-extrabold text-white tracking-tight">Active Consultation Services</h2>
-          <span className="text-xs font-bold text-[#2dd4bf] bg-[#0d3443] border border-[#164e63] px-3 py-1 rounded-full">
+          <h2 className="text-lg font-black text-[#0f172a] tracking-tight">Active Consultation Services</h2>
+          <span className="text-xs font-black text-[#164e63] bg-[#164e63]/10 px-3 py-1 rounded-full">
             {services.length} Total Services
           </span>
         </div>
         
         {services.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 bg-[#06151f] rounded-2xl border border-[#163c4e] text-[#62879a]">
-            <AlertCircle className="w-10 h-10 mb-3 text-[#2dd4bf]" />
-            <p className="font-bold text-base text-white">No consultation services created yet.</p>
-            <p className="text-xs text-[#62879a] mt-1">Use the form above to add your first clinic service.</p>
+          <div className="flex flex-col items-center justify-center p-12 bg-slate-50 rounded-2xl border border-slate-200 text-slate-400">
+            <AlertCircle className="w-10 h-10 mb-3 text-slate-300" />
+            <p className="font-bold text-sm text-slate-700">No consultation services created yet.</p>
+            <p className="text-xs text-slate-400 mt-1">Use the form above to add your first clinic service.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {services.map(s => (
               <div 
                 key={s._id} 
-                className="flex items-center justify-between p-5 bg-[#06151f] rounded-2xl border border-[#163c4e] hover:border-[#2dd4bf]/40 hover:bg-[#0b3342]/20 transition-all group"
+                className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-200 hover:border-slate-300 hover:bg-white transition-all group shadow-sm"
               >
                 <div>
-                  <h3 className="font-bold text-white text-base group-hover:text-[#2dd4bf] transition-colors">{s.name}</h3>
-                  <div className="flex gap-2.5 mt-2 text-xs font-bold">
-                    <span className="bg-[#0d3443] border border-[#164e63] text-[#2dd4bf] px-3 py-1 rounded-lg">₹{s.price}</span>
-                    <span className="bg-[#081e2b] border border-[#133748] text-[#62879a] px-3 py-1 rounded-lg flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-[#62879a]" /> {s.durationMins} Mins
+                  <h3 className="font-bold text-[#0f172a] text-sm group-hover:text-[#164e63] transition-colors">{s.name}</h3>
+                  <div className="flex gap-2 mt-2 text-xs font-bold">
+                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-md">₹{s.price}</span>
+                    <span className="bg-slate-200/60 text-slate-600 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-500" /> {s.durationMins} Mins
                     </span>
                   </div>
                 </div>
                 <button 
                   onClick={() => deleteService(s._id)} 
-                  className="w-9 h-9 bg-[#3b1219] border border-[#591b26] rounded-xl flex items-center justify-center text-[#f43f5e] hover:bg-[#4d1822] transition-all shadow-sm active:scale-95 cursor-pointer"
+                  className="w-8 h-8 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-center text-rose-600 hover:bg-rose-100 transition-all shadow-sm active:scale-95 cursor-pointer"
                   title="Remove Service"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))}

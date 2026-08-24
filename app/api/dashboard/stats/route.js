@@ -25,8 +25,8 @@ export async function GET() {
     await connectDB();
 
     const [user, clinic] = await Promise.all([
-      User.findById(decoded.id).select("name email"),
-      Clinic.findOne({ ownerId: decoded.id })
+      User.findById(decoded.id).select("name email phone").lean(),
+      Clinic.findOne({ ownerId: decoded.id }).lean()
     ]);
 
     if (!clinic) {
@@ -39,7 +39,12 @@ export async function GET() {
     }).lean();
 
     if (!subscription) {
-      return NextResponse.json({ success: true, requiresSubscription: true, clinic: { name: clinic.name, slug: clinic.slug } }, { status: 200 });
+      return NextResponse.json({ 
+        success: true, 
+        requiresSubscription: true, 
+        doctor: { name: user?.name || "Doctor", email: user?.email || clinic?.email || "" },
+        clinic: { name: clinic.name, slug: clinic.slug } 
+      }, { status: 200 });
     }
 
     // Fetch all appointments for this clinic
@@ -70,8 +75,16 @@ export async function GET() {
       success: true,
       hasCompletedOnboarding: true,
       requiresSubscription: false,
-      doctor: { name: user?.name || "Doctor" },
-      clinic: { name: clinic.name, slug: clinic.slug },
+      doctor: { 
+        name: user?.name || "Doctor", 
+        email: user?.email || clinic?.email || "" 
+      },
+      clinic: { 
+        name: clinic.name, 
+        slug: clinic.slug,
+        email: clinic.email || "",
+        phone: clinic.phone || ""
+      },
       subscription: {
         planId: subscription.planId,
         status: subscription.status,

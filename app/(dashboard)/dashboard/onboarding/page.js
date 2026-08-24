@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   CheckCircle2, ChevronRight, ChevronLeft, Loader2, Sparkles, Building, UserCircle, 
-  Stethoscope, Clock, LayoutTemplate, Palette, Globe, Play, ArrowRight, ShieldCheck,
+  Stethoscope, Clock, Clock3, LayoutTemplate, Palette, Globe, Play, ArrowRight, ShieldCheck,
   Zap, Check, ExternalLink, Sliders, MapPin, Phone, Mail, Award, Plus, Trash2
 } from "lucide-react";
 
@@ -792,9 +792,9 @@ export default function OnboardingWizard() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {[
-                { id: 'template-1', name: 'Modern Minimal', desc: 'Clean high-contrast layout for solo doctors', image: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=400&auto=format&fit=crop' },
-                { id: 'template-2', name: 'Premium Care', desc: 'Rich aesthetic for specialized clinical centers', image: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=400&auto=format&fit=crop' },
-                { id: 'template-3', name: 'Family Health', desc: 'Warm, approachable design for family clinics', image: 'https://images.unsplash.com/photo-1532938911079-1b06ac7ce2cb?q=80&w=400&auto=format&fit=crop' }
+                { id: 'template-1', name: 'Modern Minimal', desc: 'Clean high-contrast layout for solo doctors', image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=800&auto=format&fit=crop' },
+                { id: 'template-2', name: 'Premium Care', desc: 'Rich aesthetic for specialized clinical centers', image: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=800&auto=format&fit=crop' },
+                { id: 'template-3', name: 'Family Health', desc: 'Warm, approachable design for family clinics', image: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=800&auto=format&fit=crop' }
               ].map((t) => (
                 <div 
                   key={t.id} 
@@ -830,51 +830,224 @@ export default function OnboardingWizard() {
 
         {/* STEP 9: Live Preview */}
         {currentStep === 9 && (
-          <div className="rounded-[2.5rem] border border-white/15 bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
+          <div className="rounded-[2.5rem] bg-[#0a202c] border border-[#133748] p-6 sm:p-10 shadow-2xl relative overflow-hidden animate-in fade-in duration-300">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 rounded-2xl bg-white/10 text-teal-300">
+              <div className="p-3 rounded-2xl bg-[#0b3342] border border-[#164e63] text-[#2dd4bf]">
                 <Play className="w-7 h-7" />
               </div>
               <div>
-                <h2 className="font-black text-2xl text-white tracking-tight">Review & Live Preview</h2>
-                <p className="text-xs text-slate-300">Inspect how your clinic header and booking call-to-action will appear</p>
+                <h2 className="font-extrabold text-2xl text-white tracking-tight">Review & Live Website Preview</h2>
+                <p className="text-xs text-[#62879a]">Inspect how your clinic landing page, OPD schedule, and booking call-to-action will appear to patients</p>
               </div>
             </div>
 
-            <div className="w-full rounded-3xl border border-white/20 overflow-hidden shadow-2xl bg-[#081e2b] text-white p-6 sm:p-10 space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase mb-2" style={{ backgroundColor: `${formData.websiteConfig.primaryColor}30`, color: '#5eead4' }}>
-                    <ShieldCheck className="w-3.5 h-3.5" /> Verified Medical Practice
+            {/* Interactive Mini-Browser / Webpage Mockup Canvas */}
+            <div className="w-full rounded-2xl border border-[#163c4e] bg-[#06151f] shadow-2xl overflow-hidden text-slate-100 font-sans">
+              
+              {/* Window Frame Header */}
+              <div className="flex items-center justify-between px-4 py-3 bg-[#0a202c] border-b border-[#133748] select-none">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-rose-500 shadow-sm" />
+                  <div className="w-3 h-3 rounded-full bg-amber-500 shadow-sm" />
+                  <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm" />
+                </div>
+
+                <div className="flex items-center gap-2 bg-[#06151f] border border-[#163c4e] px-4 py-1.5 rounded-full text-xs text-slate-300 font-mono shadow-inner max-w-md w-full justify-center truncate">
+                  <Globe className="w-3.5 h-3.5 text-[#2dd4bf] shrink-0" />
+                  <span className="truncate">https://docpulse.com/{formData.clinicDetails.slug || "your-clinic"}</span>
+                  <span className="text-[10px] bg-[#0d3443] text-[#2dd4bf] px-1.5 py-0.2 rounded font-sans font-bold uppercase shrink-0">Live</span>
+                </div>
+
+                <div className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Preview</span>
+                </div>
+              </div>
+
+              {/* Webpage Mockup Canvas Body */}
+              <div className="p-6 sm:p-8 space-y-8 bg-gradient-to-b from-[#0a202c]/60 to-[#06151f]">
+                
+                {/* Mockup Clinic Navbar */}
+                <div className="flex items-center justify-between pb-5 border-b border-[#133748]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold shadow-md" style={{ backgroundColor: formData.websiteConfig.primaryColor || '#0f766e' }}>
+                      <Stethoscope className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-base text-white tracking-tight">{formData.clinicDetails.name || "Clinic Name"}</h4>
+                      <p className="text-[11px] text-[#62879a]">{formData.clinicDetails.city || "City"}, India</p>
+                    </div>
                   </div>
-                  <h3 className="text-3xl font-black text-white">{formData.clinicDetails.name || 'My Medical Clinic'}</h3>
-                  <p className="text-slate-300 text-xs mt-1 font-medium">{formData.clinicDetails.address || "Main Healthcare Street"}, {formData.clinicDetails.city || "City"}</p>
-                </div>
-                <div className="text-left md:text-right">
-                  <p className="text-sm font-black text-white">{getDisplayDoctorName(formData.doctorProfile.fullName)}</p>
-                  <p className="text-xs text-teal-300 font-bold">{formData.doctorProfile.specialization || "Specialist"} • {formData.doctorProfile.qualification || "MBBS"}</p>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <span className="text-slate-400 font-bold uppercase text-[10px]">Consultation Fee</span>
-                  <p className="font-black text-lg text-white mt-1">₹{formData.services[0]?.price || "500"}</p>
+                  <button 
+                    type="button"
+                    className={`px-5 py-2 text-xs font-bold text-white shadow-md transition-all ${formData.websiteConfig.buttonStyle || 'rounded-full'}`}
+                    style={{ backgroundColor: formData.websiteConfig.primaryColor || '#0f766e' }}
+                  >
+                    Book Consultation
+                  </button>
                 </div>
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <span className="text-slate-400 font-bold uppercase text-[10px]">Website URL</span>
-                  <p className="font-bold text-teal-300 text-xs mt-1 truncate">/{formData.clinicDetails.slug || "clinic"}</p>
+
+                {/* Webpage Hero Section Preview */}
+                <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-3 flex-1">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-[#063b36] text-[#2dd4bf] border border-[#0d5952]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        <ShieldCheck className="w-3.5 h-3.5" /> Verified Medical Practice
+                      </div>
+                      
+                      <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                        {formData.clinicDetails.name || "Noori Clinic"}
+                      </h3>
+                      
+                      <p className="text-sm font-semibold text-slate-300 flex items-center gap-2 flex-wrap">
+                        <span className="text-white font-bold">{getDisplayDoctorName(formData.doctorProfile.fullName)}</span>
+                        <span className="text-[#3b6072]">•</span>
+                        <span className="text-[#2dd4bf] font-bold">{formData.doctorProfile.specialization || "Cardiologist"}</span>
+                        {formData.doctorProfile.qualification && (
+                          <>
+                            <span className="text-[#3b6072]">•</span>
+                            <span className="text-slate-400 text-xs">{formData.doctorProfile.qualification}</span>
+                          </>
+                        )}
+                      </p>
+
+                      {formData.doctorProfile.bio && (
+                        <p className="text-xs text-[#62879a] max-w-xl leading-relaxed">
+                          {formData.doctorProfile.bio}
+                        </p>
+                      )}
+
+                      {/* Quick Action Buttons Mockup */}
+                      <div className="flex items-center gap-3 pt-2 flex-wrap">
+                        <button 
+                          type="button"
+                          className={`px-6 py-3 text-xs font-black text-white shadow-lg transition-all flex items-center gap-2 ${formData.websiteConfig.buttonStyle || 'rounded-full'}`}
+                          style={{ backgroundColor: formData.websiteConfig.primaryColor || '#0f766e' }}
+                        >
+                          <span>Book Appointment</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                        
+                        <button 
+                          type="button"
+                          className="px-5 py-3 text-xs font-bold text-slate-200 bg-[#0d2a38] hover:bg-[#12394c] border border-[#1c485d] rounded-full transition-all flex items-center gap-1.5"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-[#2dd4bf]" />
+                          <span>Call Clinic</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Quick Highlights Bar */}
+                    <div className="bg-[#06151f] border border-[#163c4e] rounded-2xl p-5 space-y-4 shrink-0 min-w-[220px]">
+                      <div>
+                        <span className="text-[10px] font-bold text-[#62879a] uppercase tracking-wider block">Consultation Fee</span>
+                        <span className="text-xl font-black text-[#facc15]">
+                          ₹{formData.services?.[0]?.price || "500"}
+                        </span>
+                      </div>
+                      
+                      <div className="pt-3 border-t border-[#163c4e]">
+                        <span className="text-[10px] font-bold text-[#62879a] uppercase tracking-wider block">Clinic Location</span>
+                        <span className="text-xs font-bold text-white flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-[#2dd4bf] shrink-0" />
+                          <span className="truncate">{formData.clinicDetails.address || "Patliputra"}, {formData.clinicDetails.city || "Patna"}</span>
+                        </span>
+                      </div>
+
+                      <div className="pt-3 border-t border-[#163c4e]">
+                        <span className="text-[10px] font-bold text-[#62879a] uppercase tracking-wider block">Helpline Number</span>
+                        <span className="text-xs font-mono font-bold text-slate-200 block mt-0.5">
+                          {formData.clinicDetails.phone || "+91 9999999999"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <span className="text-slate-400 font-bold uppercase text-[10px]">Contact Helpline</span>
-                  <p className="font-bold text-white text-xs mt-1">{formData.clinicDetails.phone || "+91 9999999999"}</p>
+
+                {/* Services & Schedule Sneak-Peek (2 Column Grid) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Services Sneak-Peek */}
+                  <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-extrabold text-sm text-white flex items-center gap-2">
+                        <Stethoscope className="w-4 h-4 text-[#2dd4bf]" />
+                        Consultation Services
+                      </h4>
+                      <span className="text-[10px] font-black text-[#2dd4bf] bg-[#0d3443] px-2.5 py-0.5 rounded-full">
+                        {formData.services?.length || 1} Services
+                      </span>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      {(formData.services || []).slice(0, 3).map((s, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 rounded-2xl bg-[#06151f] border border-[#163c4e]">
+                          <div>
+                            <p className="text-xs font-bold text-white">{s.name}</p>
+                            <p className="text-[10px] text-[#62879a] flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3" /> {s.durationMins || "15"} Mins Duration
+                            </p>
+                          </div>
+                          <span className="text-xs font-black text-[#2dd4bf] bg-[#0d3443] border border-[#164e63] px-2.5 py-1 rounded-lg">
+                            ₹{s.price}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Schedule Sneak-Peek */}
+                  <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-extrabold text-sm text-white flex items-center gap-2">
+                        <Clock3 className="w-4 h-4 text-[#2dd4bf]" />
+                        OPD Consultation Hours
+                      </h4>
+                      <span className="text-[10px] font-black text-emerald-400 bg-[#063b36] px-2.5 py-0.5 rounded-full">
+                        Live Sync
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 max-h-[140px] overflow-y-auto hide-scrollbar">
+                      {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((dayName, idx) => {
+                        const dayData = formData.availability?.find(d => d.dayOfWeek === idx);
+                        const isOpen = dayData ? dayData.isOpen : idx !== 0;
+                        const times = dayData && isOpen ? `${dayData.startTime} - ${dayData.endTime}` : "09:00 - 17:00";
+                        return (
+                          <div key={dayName} className="flex items-center justify-between text-xs py-1 px-2.5 rounded-xl bg-[#06151f]/60">
+                            <span className="font-semibold text-slate-300">{dayName}</span>
+                            {isOpen ? (
+                              <span className="font-mono font-bold text-[#2dd4bf]">{times}</span>
+                            ) : (
+                              <span className="text-[11px] text-rose-400 italic">Closed</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                 </div>
+
               </div>
             </div>
 
+            {/* Step 9 Footer Navigation */}
             <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
-              <button onClick={handlePrev} className="text-xs font-bold text-slate-300 hover:text-white px-4 py-2">Back</button>
-              <button onClick={handleNext} className="bg-teal-400 hover:bg-teal-300 text-[#081e2b] font-black text-xs px-8 py-3.5 rounded-full shadow-lg shadow-teal-500/20 transition-all flex items-center gap-2">
+              <button 
+                onClick={handlePrev} 
+                className="text-xs font-bold text-slate-300 hover:text-white px-5 py-2.5 rounded-full border border-white/10 hover:bg-white/5 transition-all cursor-pointer"
+              >
+                ← Back
+              </button>
+              
+              <button 
+                onClick={handleNext} 
+                className="bg-[#00c9a7] hover:bg-[#00b596] text-[#051a24] font-black text-xs px-8 py-3.5 rounded-full shadow-lg shadow-[#00c9a7]/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+              >
                 <span>Choose Plan & Finish</span>
                 <ChevronRight className="w-4 h-4" />
               </button>

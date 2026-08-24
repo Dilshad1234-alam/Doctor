@@ -66,123 +66,123 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] items-center justify-center bg-[#071720]">
-        <Loader2 className="h-10 w-10 animate-spin text-[#2dd4bf]" />
+      <div className="flex h-[80vh] items-center justify-center bg-slate-50">
+        <Loader2 className="h-10 w-10 animate-spin text-[#0a2635]" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 md:p-10 space-y-8 max-w-5xl mx-auto font-sans bg-[#071720] text-slate-100">
+    <div className="p-6 sm:p-10 space-y-8 max-w-5xl mx-auto font-sans bg-slate-50 text-[#0f172a] min-h-screen">
       <div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white flex items-center gap-3 tracking-tight">
-          <Settings className="w-8 h-8 text-[#2dd4bf]" />
-          Clinic & Profile Settings
+        <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] flex items-center gap-3 tracking-tight">
+          <Settings className="w-7 h-7 text-[#164e63]" />
+          Clinic & Doctor Settings
         </h1>
-        <p className="mt-1 text-sm text-[#62879a] font-medium">Manage practice metadata, physical address, and doctor credentials.</p>
+        <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">Manage practice metadata, physical address, and doctor credentials.</p>
       </div>
 
       <form onSubmit={saveSettings} className="space-y-8">
         
-        {/* Clinic Info Card */}
-        <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-6 md:p-10 shadow-xl">
-          <h2 className="text-xl font-extrabold text-white mb-6 flex items-center gap-2.5 tracking-tight">
-            <Building className="w-6 h-6 text-[#2dd4bf]" /> Clinic Information
+        {/* Clinic Info Card (White Card) */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
+          <h2 className="text-lg font-black text-[#0f172a] mb-6 flex items-center gap-2.5 tracking-tight">
+            <Building className="w-5 h-5 text-[#164e63]" /> Clinic Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-bold text-[#62879a] mb-2 uppercase tracking-wider">Clinic Name</label>
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Clinic Name</label>
               <input 
                 required 
                 type="text" 
                 value={data.clinicName} 
                 onChange={(e) => updateField('clinicName', e.target.value)} 
-                className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 focus:outline-none focus:border-[#2dd4bf] font-medium text-sm transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-[#62879a] mb-2 uppercase tracking-wider">Contact Phone</label>
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Contact Phone</label>
               <input 
                 required 
                 type="text" 
                 value={data.phone} 
                 onChange={(e) => updateField('phone', e.target.value)} 
-                className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 focus:outline-none focus:border-[#2dd4bf] font-medium text-sm transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-[#62879a] mb-2 uppercase tracking-wider">Full Address</label>
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Full Address</label>
               <input 
                 required 
                 type="text" 
                 value={data.address} 
                 onChange={(e) => updateField('address', e.target.value)} 
-                className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 focus:outline-none focus:border-[#2dd4bf] font-medium text-sm transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-[#62879a] mb-2 uppercase tracking-wider">City</label>
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">City</label>
               <input 
                 required 
                 type="text" 
                 value={data.city} 
                 onChange={(e) => updateField('city', e.target.value)} 
-                className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 focus:outline-none focus:border-[#2dd4bf] font-medium text-sm transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
               />
             </div>
           </div>
         </div>
 
-        {/* Doctor Info Card */}
-        <div className="bg-[#0a202c] border border-[#133748] rounded-3xl p-6 md:p-10 shadow-xl">
-          <h2 className="text-xl font-extrabold text-white mb-6 flex items-center gap-2.5 tracking-tight">
-            <UserCircle className="w-6 h-6 text-[#2dd4bf]" /> Doctor Profile & Credentials
+        {/* Doctor Info Card (White Card) */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
+          <h2 className="text-lg font-black text-[#0f172a] mb-6 flex items-center gap-2.5 tracking-tight">
+            <UserCircle className="w-5 h-5 text-[#164e63]" /> Doctor Profile & Credentials
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-bold text-[#62879a] mb-2 uppercase tracking-wider">Doctor Full Name</label>
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Doctor Full Name</label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2dd4bf] font-bold text-sm select-none">Dr.</span>
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs select-none">Dr.</span>
                 <input 
                   required 
                   type="text" 
                   value={data.doctorName} 
                   onChange={(e) => updateField('doctorName', e.target.value)} 
-                  className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 pl-11 focus:outline-none focus:border-[#2dd4bf] font-medium text-sm transition-all" 
+                  className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 pl-10 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
                   placeholder="Doctor Name"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-[#62879a] mb-2 uppercase tracking-wider">Qualification</label>
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Qualification</label>
               <input 
                 required 
                 type="text" 
                 value={data.qualification} 
                 onChange={(e) => updateField('qualification', e.target.value)} 
-                className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 focus:outline-none focus:border-[#2dd4bf] font-medium text-sm transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
                 placeholder="e.g. MBBS, MD"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-[#62879a] mb-2 uppercase tracking-wider">Specialization</label>
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Specialization</label>
               <input 
                 required 
                 type="text" 
                 value={data.specialization} 
                 onChange={(e) => updateField('specialization', e.target.value)} 
-                className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 focus:outline-none focus:border-[#2dd4bf] font-medium text-sm transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
                 placeholder="e.g. Cardiologist"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-[#62879a] mb-2 uppercase tracking-wider">Experience (Years)</label>
+              <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Experience (Years)</label>
               <input 
                 required 
                 type="number" 
                 value={data.experienceYrs} 
                 onChange={(e) => updateField('experienceYrs', e.target.value)} 
-                className="w-full bg-[#06151f] border border-[#163c4e] text-white placeholder-[#456b7e] rounded-2xl px-4 py-2.5 focus:outline-none focus:border-[#2dd4bf] font-medium text-sm transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
                 placeholder="e.g. 10"
               />
             </div>
@@ -193,10 +193,10 @@ export default function SettingsPage() {
           <button 
             type="submit" 
             disabled={saving} 
-            className={`h-[44px] px-8 rounded-xl font-black transition-all shadow-lg text-xs flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
+            className={`h-[42px] px-8 rounded-full font-bold transition-all shadow-md text-xs flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
               savedSuccess 
-              ? 'bg-[#063b36] text-[#2dd4bf] border border-[#0d5952]' 
-              : 'bg-[#00c9a7] hover:bg-[#00b596] text-[#051a24] shadow-[#00c9a7]/20 disabled:opacity-70'
+              ? 'bg-emerald-600 text-white' 
+              : 'bg-[#0f172a] hover:bg-[#1e293b] text-white disabled:opacity-70'
             }`}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : savedSuccess ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />} 
