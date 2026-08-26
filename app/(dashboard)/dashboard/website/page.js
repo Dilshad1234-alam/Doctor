@@ -126,22 +126,22 @@ export default function WebsiteBuilderPage() {
               href={`/${slug}`} 
               target="_blank" 
               rel="noreferrer" 
-              className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-[#0f172a] px-4 py-2 rounded-full font-bold transition-all text-xs active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 bg-[#00A1AC]/10 hover:bg-[#00A1AC]/20 text-[#00A1AC] border border-[#00A1AC]/20 px-4 py-2 rounded-2xl font-bold transition-all text-xs active:scale-95 cursor-pointer"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-[#164e63]" /> /{slug}
+              <ExternalLink className="w-3.5 h-3.5 text-[#00A1AC]" /> /{slug}
             </a>
           )}
           <button 
             onClick={saveConfig} 
             disabled={saving} 
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-full font-bold transition-all shadow-md text-xs active:scale-95 cursor-pointer ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black transition-all shadow-xl shadow-[#00A1AC]/30 text-xs active:scale-95 cursor-pointer ${
               savedSuccess 
               ? 'bg-emerald-600 text-white' 
-              : 'bg-[#0f172a] hover:bg-[#1e293b] text-white disabled:opacity-70'
+              : 'bg-[#00A1AC] hover:bg-[#008790] text-white disabled:opacity-70'
             }`}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : savedSuccess ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />} 
-            {savedSuccess ? "Changes Saved Live! ✓" : "Publish & Save Theme"}
+            {savedSuccess ? "Changes Saved Live! ✓" : "Publish & Save Website"}
           </button>
         </div>
       </div>
@@ -154,19 +154,19 @@ export default function WebsiteBuilderPage() {
             <div className="flex border-b border-slate-100 bg-slate-50">
               <button 
                 onClick={() => setActiveTab('templates')} 
-                className={`flex-1 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'templates' ? 'bg-white text-[#0f172a] border-b-2 border-[#0f172a]' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'templates' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <LayoutTemplate className="w-4 h-4" /> Templates
               </button>
               <button 
                 onClick={() => setActiveTab('theme')} 
-                className={`flex-1 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'theme' ? 'bg-white text-[#0f172a] border-b-2 border-[#0f172a]' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'theme' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <Palette className="w-4 h-4" /> Theme
               </button>
               <button 
                 onClick={() => setActiveTab('sections')} 
-                className={`flex-1 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'sections' ? 'bg-white text-[#0f172a] border-b-2 border-[#0f172a]' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${activeTab === 'sections' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <LayoutGrid className="w-4 h-4" /> Sections
               </button>
@@ -179,7 +179,7 @@ export default function WebsiteBuilderPage() {
                     <div 
                       key={t.id} 
                       onClick={() => updateConfig('templateId', t.id)} 
-                      className={`relative cursor-pointer rounded-2xl overflow-hidden border-2 transition-all ${config.templateId === t.id ? 'border-[#0f172a] shadow-md ring-2 ring-[#0f172a]/20' : 'border-slate-200 hover:border-slate-300'}`}
+                      className={`relative cursor-pointer rounded-2xl overflow-hidden border-2 transition-all ${config.templateId === t.id ? 'border-[#00A1AC] shadow-lg ring-2 ring-[#00A1AC]/30' : 'border-slate-200 hover:border-slate-300'}`}
                     >
                       <div className="h-36 bg-slate-100 relative overflow-hidden">
                         <img 
@@ -190,8 +190,8 @@ export default function WebsiteBuilderPage() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                         {config.templateId === t.id && (
-                          <div className="absolute top-3 right-3 bg-[#0f172a] text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Selected
+                          <div className="absolute top-3 right-3 bg-[#00A1AC] text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1 border border-white/20">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-white" /> Selected
                           </div>
                         )}
                         <div className="absolute bottom-2 left-3 right-3 text-white pointer-events-none">
@@ -213,7 +213,7 @@ export default function WebsiteBuilderPage() {
                         <div 
                           key={color.value} 
                           onClick={() => updateConfig('primaryColor', color.value)} 
-                          className={`cursor-pointer flex items-center gap-3 p-3 rounded-2xl border transition-all ${config.primaryColor === color.value ? 'border-[#0f172a] bg-slate-50 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
+                          className={`cursor-pointer flex items-center gap-3 p-3 rounded-2xl border transition-all ${config.primaryColor === color.value ? 'border-[#00A1AC] bg-[#00A1AC]/5 shadow-sm ring-1 ring-[#00A1AC]/30' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
                         >
                           <div className="w-6 h-6 rounded-full shadow-sm shrink-0" style={{ backgroundColor: color.value }} />
                           <span className="font-bold text-xs text-[#0f172a]">{color.name}</span>
@@ -229,7 +229,7 @@ export default function WebsiteBuilderPage() {
                         <button 
                           key={style.id} 
                           onClick={() => updateConfig('buttonStyle', style.id)} 
-                          className={`py-2.5 px-3 border text-xs font-bold transition-all ${style.id} ${config.buttonStyle === style.id ? 'border-[#0f172a] bg-[#0f172a] text-white shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'}`}
+                          className={`py-2.5 px-3 border text-xs font-bold transition-all ${style.id} ${config.buttonStyle === style.id ? 'border-[#00A1AC] bg-[#00A1AC] text-white shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'}`}
                         >
                           {style.label}
                         </button>
@@ -249,7 +249,7 @@ export default function WebsiteBuilderPage() {
                         <button 
                           type="button" 
                           onClick={() => updateSection(section, !config.showSections[section])} 
-                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${config.showSections[section] ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${config.showSections[section] ? 'bg-[#00A1AC]' : 'bg-slate-300'}`}
                         >
                           <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${config.showSections[section] ? 'translate-x-5' : 'translate-x-0'}`} />
                         </button>
@@ -264,20 +264,20 @@ export default function WebsiteBuilderPage() {
 
         {/* Live Preview Mockup Window */}
         <div className="lg:col-span-7">
-          <div className="bg-[#0f172a] rounded-3xl p-3 h-[585px] flex flex-col border-[4px] border-slate-200 shadow-xl relative overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 bg-[#0a202c] rounded-t-2xl border-b border-white/10">
+          <div className="bg-[#0c2e3d] rounded-3xl p-3 h-[585px] flex flex-col border-[4px] border-slate-200 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 bg-[#08202b] rounded-t-2xl border-b border-white/10">
               <div className="flex gap-2">
                 <div className="w-3 h-3 rounded-full bg-rose-500/80"></div>
                 <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
                 <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
               </div>
-              <div className="text-xs font-mono text-slate-300 flex items-center gap-1.5"><Eye className="w-3.5 h-3.5 text-emerald-400" /> Interactive Website Preview</div>
+              <div className="text-xs font-mono text-teal-300 flex items-center gap-1.5"><Eye className="w-3.5 h-3.5 text-[#00A1AC]" /> Interactive Website Preview</div>
               <div className="w-8"></div>
             </div>
             
             <div className="flex-1 bg-slate-950 overflow-y-auto rounded-b-2xl relative text-white hide-scrollbar" style={{ fontFamily: config.fontStyle }}>
               {/* Preview Header */}
-              <div className="p-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#0a2635]/95 backdrop-blur-md z-10">
+              <div className="p-5 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#0c2e3d]/95 backdrop-blur-md z-10">
                 <div className="font-black text-lg text-white">{clinic?.name || 'Clinic Name'}</div>
                 <button 
                   className={`px-4 py-2 text-xs font-bold text-white shadow-md transition-all ${config.buttonStyle}`} 

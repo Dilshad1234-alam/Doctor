@@ -71,7 +71,7 @@ export default function ServicesPage() {
     <div className="p-6 sm:p-10 space-y-8 max-w-5xl mx-auto font-sans bg-slate-50 text-[#0f172a] min-h-screen">
       <div>
         <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] flex items-center gap-3 tracking-tight">
-          <Stethoscope className="w-7 h-7 text-[#164e63]" />
+          <Stethoscope className="w-7 h-7 text-[#00A1AC]" />
           Clinic Consultation Services
         </h1>
         <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">Add, configure, or remove consultation offerings. Changes reflect live on your public booking page.</p>
@@ -80,7 +80,7 @@ export default function ServicesPage() {
       {/* Add New Service Card (White Card) */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
         <h2 className="text-lg font-black text-[#0f172a] mb-6 flex items-center gap-2 tracking-tight">
-          <Sparkles className="w-5 h-5 text-[#164e63]" /> Add New Offering
+          <Sparkles className="w-5 h-5 text-[#00A1AC]" /> Add New Offering
         </h2>
         <form onSubmit={addService} className="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
           <div className="flex-1">
@@ -91,7 +91,7 @@ export default function ServicesPage() {
               placeholder="e.g. Comprehensive Consultation" 
               value={newService.name} 
               onChange={e => setNewService({...newService, name: e.target.value})} 
-              className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 text-xs focus:bg-white focus:border-[#164e63] font-medium transition-all" 
+              className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 text-xs focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium transition-all" 
             />
           </div>
           <div className="w-full md:w-36">
@@ -102,7 +102,7 @@ export default function ServicesPage() {
               placeholder="500" 
               value={newService.price} 
               onChange={e => setNewService({...newService, price: e.target.value})} 
-              className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 text-xs focus:bg-white focus:border-[#164e63] font-medium transition-all" 
+              className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 text-xs focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium transition-all" 
             />
           </div>
           <div className="w-full md:w-36">
@@ -113,14 +113,14 @@ export default function ServicesPage() {
               placeholder="15" 
               value={newService.durationMins} 
               onChange={e => setNewService({...newService, durationMins: e.target.value})} 
-              className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 text-xs focus:bg-white focus:border-[#164e63] font-medium transition-all" 
+              className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 text-xs focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium transition-all" 
             />
           </div>
           <div>
             <button 
               type="submit" 
               disabled={isAdding} 
-              className="w-full md:w-auto h-[42px] bg-[#0f172a] hover:bg-[#1e293b] text-white font-bold rounded-full px-6 py-2 text-xs shadow-md disabled:opacity-70 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
+              className="w-full md:w-auto h-[42px] bg-[#00A1AC] hover:bg-[#008790] text-white font-bold rounded-2xl px-6 py-2 text-xs shadow-lg shadow-[#00A1AC]/25 disabled:opacity-70 flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer"
             >
               {isAdding ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />} Add Service
             </button>
@@ -132,7 +132,7 @@ export default function ServicesPage() {
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-black text-[#0f172a] tracking-tight">Active Consultation Services</h2>
-          <span className="text-xs font-black text-[#164e63] bg-[#164e63]/10 px-3 py-1 rounded-full">
+          <span className="text-xs font-black text-[#00A1AC] bg-[#00A1AC]/10 px-3 py-1 rounded-full border border-[#00A1AC]/20">
             {services.length} Total Services
           </span>
         </div>
@@ -148,12 +148,12 @@ export default function ServicesPage() {
             {services.map(s => (
               <div 
                 key={s._id} 
-                className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-200 hover:border-slate-300 hover:bg-white transition-all group shadow-sm"
+                className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-200 hover:border-[#00A1AC]/40 hover:bg-white transition-all group shadow-sm"
               >
                 <div>
-                  <h3 className="font-bold text-[#0f172a] text-sm group-hover:text-[#164e63] transition-colors">{s.name}</h3>
+                  <h3 className="font-bold text-[#0f172a] text-sm group-hover:text-[#00A1AC] transition-colors">{s.name}</h3>
                   <div className="flex gap-2 mt-2 text-xs font-bold">
-                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-md">₹{s.price}</span>
+                    <span className="bg-[#00A1AC]/10 text-[#00A1AC] border border-[#00A1AC]/20 px-2.5 py-0.5 rounded-md font-black">₹{s.price}</span>
                     <span className="bg-slate-200/60 text-slate-600 px-2.5 py-0.5 rounded-md flex items-center gap-1">
                       <Clock className="w-3 h-3 text-slate-500" /> {s.durationMins} Mins
                     </span>

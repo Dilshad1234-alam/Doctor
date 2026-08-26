@@ -2,11 +2,13 @@
   "name": "doctor-clinic-saas",
   "version": "1.0.0",
   "description": "SaaS for doctors",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "seed:admin": "node scripts/seedAdmin.js",
     "lint": "eslint"
   },
   "dependencies": {

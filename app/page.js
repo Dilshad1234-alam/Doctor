@@ -93,7 +93,7 @@ export default function SaaSLandingPage() {
 
         <div className="hidden lg:flex items-center gap-4">
           <Link href="/login" className="text-sm font-bold text-slate-700 hover:text-[#164e63]">Login</Link>
-          <Link href="/register" className="bg-[#0f172a] hover:bg-[#1e293b] text-white px-5 py-2.5 rounded-full font-bold text-sm transition-colors shadow-md flex items-center gap-2">
+          <Link href="/get-started" className="bg-[#0f172a] hover:bg-[#1e293b] text-white px-5 py-2.5 rounded-full font-bold text-sm transition-colors shadow-md flex items-center gap-2">
             <Calendar className="w-4 h-4" /> Get Started
           </Link>
         </div>
@@ -111,7 +111,7 @@ export default function SaaSLandingPage() {
             ))}
             <div className="grid grid-cols-2 gap-4 mt-4">
               <Link href="/login" className="text-center bg-slate-100 text-slate-900 p-3 rounded-xl font-bold">Login</Link>
-              <Link href="/register" className="bg-[#0f172a] text-center text-white p-3 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2">
+              <Link href="/get-started" className="bg-[#0f172a] text-center text-white p-3 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2">
                 Get Started
               </Link>
             </div>
@@ -141,7 +141,7 @@ export default function SaaSLandingPage() {
             Build your clinic website, showcase your services, manage availability and let patients book appointments online — all from one platform.
           </p>
           
-          <Link href="/register" className="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-100 text-[#0f172a] px-10 py-5 rounded-full font-black text-lg transition-all shadow-xl hover:shadow-2xl hover:scale-105 mb-16">
+          <Link href="/get-started" className="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-100 text-[#0f172a] px-10 py-5 rounded-full font-black text-lg transition-all shadow-xl hover:shadow-2xl hover:scale-105 mb-16">
             Create Your Website Now <ArrowRight className="w-5 h-5" />
           </Link>
         </div>
@@ -268,7 +268,7 @@ export default function SaaSLandingPage() {
               <h2 className="text-4xl font-black text-[#0f172a] mb-4">Stunning Website Templates</h2>
               <p className="text-lg text-slate-600 font-medium">Choose from our collection of professionally designed templates tailored for healthcare.</p>
             </div>
-            <Link href="/register" className="bg-[#0f172a] hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold transition-colors whitespace-nowrap shadow-md flex items-center gap-2">
+            <Link href="/get-started" className="bg-[#0f172a] hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold transition-colors whitespace-nowrap shadow-md flex items-center gap-2">
               View All Templates <ArrowUpRight className="w-5 h-5" />
             </Link>
           </div>
@@ -347,7 +347,7 @@ export default function SaaSLandingPage() {
                   <span className="text-5xl font-black text-[#0f172a]">₹{isYearly ? plan.yearly : plan.monthly}</span>
                   <span className="text-slate-500 font-bold">/mo</span>
                 </div>
-                <Link href="/register" className={`block w-full py-4 text-center rounded-full font-bold mb-8 transition-colors shadow-md ${plan.popular ? 'bg-[#164e63] hover:bg-[#0f172a] text-white' : 'bg-[#f8fafc] hover:bg-slate-200 text-[#0f172a] border border-slate-200'}`}>
+                <Link href="/get-started" className={`block w-full py-4 text-center rounded-full font-bold mb-8 transition-colors shadow-md ${plan.popular ? 'bg-[#164e63] hover:bg-[#0f172a] text-white' : 'bg-[#f8fafc] hover:bg-slate-200 text-[#0f172a] border border-slate-200'}`}>
                   Get Started
                 </Link>
 
@@ -401,7 +401,7 @@ export default function SaaSLandingPage() {
           <div className="absolute inset-0 opacity-10" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\\'60\\' height=\\'60\\' viewBox=\\'0 0 60 60\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Cg fill=\\'none\\' fill-rule=\\'evenodd\\'%3E%3Cg fill=\\'%23ffffff\\' fill-opacity=\\'1\\'%3E%3Cpath d=\\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')"}}></div>
           <h2 className="text-4xl md:text-5xl font-black mb-6 leading-tight text-white relative z-10">Your Clinic Deserves a<br/>Professional Online Presence.</h2>
           <p className="text-xl text-slate-300 font-medium mb-10 max-w-2xl mx-auto relative z-10">Create your doctor website and start accepting appointments online today. Zero coding required.</p>
-          <Link href="/register" className="inline-flex relative z-10 items-center gap-2 bg-white text-[#0f172a] px-10 py-5 rounded-full font-black text-lg transition-all shadow-xl hover:shadow-2xl hover:scale-105">
+          <Link href="/get-started" className="inline-flex relative z-10 items-center gap-2 bg-white text-[#0f172a] px-10 py-5 rounded-full font-black text-lg transition-all shadow-xl hover:shadow-2xl hover:scale-105">
             Get Started Now <ArrowRight className="w-5 h-5" />
           </Link>
         </div>

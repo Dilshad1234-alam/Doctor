@@ -76,7 +76,7 @@ export default function SettingsPage() {
     <div className="p-6 sm:p-10 space-y-8 max-w-5xl mx-auto font-sans bg-slate-50 text-[#0f172a] min-h-screen">
       <div>
         <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] flex items-center gap-3 tracking-tight">
-          <Settings className="w-7 h-7 text-[#164e63]" />
+          <Settings className="w-7 h-7 text-[#00A1AC]" />
           Clinic & Doctor Settings
         </h1>
         <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">Manage practice metadata, physical address, and doctor credentials.</p>
@@ -87,7 +87,7 @@ export default function SettingsPage() {
         {/* Clinic Info Card (White Card) */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
           <h2 className="text-lg font-black text-[#0f172a] mb-6 flex items-center gap-2.5 tracking-tight">
-            <Building className="w-5 h-5 text-[#164e63]" /> Clinic Information
+            <Building className="w-5 h-5 text-[#00A1AC]" /> Clinic Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -97,7 +97,7 @@ export default function SettingsPage() {
                 type="text" 
                 value={data.clinicName} 
                 onChange={(e) => updateField('clinicName', e.target.value)} 
-                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium text-xs transition-all" 
               />
             </div>
             <div>
@@ -107,7 +107,7 @@ export default function SettingsPage() {
                 type="text" 
                 value={data.phone} 
                 onChange={(e) => updateField('phone', e.target.value)} 
-                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium text-xs transition-all" 
               />
             </div>
             <div className="md:col-span-2">
@@ -117,7 +117,7 @@ export default function SettingsPage() {
                 type="text" 
                 value={data.address} 
                 onChange={(e) => updateField('address', e.target.value)} 
-                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium text-xs transition-all" 
               />
             </div>
             <div className="md:col-span-2">
@@ -127,7 +127,7 @@ export default function SettingsPage() {
                 type="text" 
                 value={data.city} 
                 onChange={(e) => updateField('city', e.target.value)} 
-                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium text-xs transition-all" 
               />
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function SettingsPage() {
         {/* Doctor Info Card (White Card) */}
         <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
           <h2 className="text-lg font-black text-[#0f172a] mb-6 flex items-center gap-2.5 tracking-tight">
-            <UserCircle className="w-5 h-5 text-[#164e63]" /> Doctor Profile & Credentials
+            <UserCircle className="w-5 h-5 text-[#00A1AC]" /> Doctor Profile & Credentials
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
@@ -148,7 +148,7 @@ export default function SettingsPage() {
                   type="text" 
                   value={data.doctorName} 
                   onChange={(e) => updateField('doctorName', e.target.value)} 
-                  className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 pl-10 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
+                  className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 pl-10 focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium text-xs transition-all" 
                   placeholder="Doctor Name"
                 />
               </div>
@@ -160,7 +160,7 @@ export default function SettingsPage() {
                 type="text" 
                 value={data.qualification} 
                 onChange={(e) => updateField('qualification', e.target.value)} 
-                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium text-xs transition-all" 
                 placeholder="e.g. MBBS, MD"
               />
             </div>
@@ -171,7 +171,7 @@ export default function SettingsPage() {
                 type="text" 
                 value={data.specialization} 
                 onChange={(e) => updateField('specialization', e.target.value)} 
-                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium text-xs transition-all" 
                 placeholder="e.g. Cardiologist"
               />
             </div>
@@ -182,7 +182,7 @@ export default function SettingsPage() {
                 type="number" 
                 value={data.experienceYrs} 
                 onChange={(e) => updateField('experienceYrs', e.target.value)} 
-                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#164e63] font-medium text-xs transition-all" 
+                className="w-full bg-slate-50 border border-slate-200 text-[#0f172a] placeholder-slate-400 rounded-2xl px-4 py-2.5 focus:bg-white focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 font-medium text-xs transition-all" 
                 placeholder="e.g. 10"
               />
             </div>
@@ -193,10 +193,10 @@ export default function SettingsPage() {
           <button 
             type="submit" 
             disabled={saving} 
-            className={`h-[42px] px-8 rounded-full font-bold transition-all shadow-md text-xs flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
+            className={`h-[42px] px-8 rounded-2xl font-bold transition-all shadow-lg shadow-[#00A1AC]/25 text-xs flex items-center justify-center gap-2 active:scale-95 cursor-pointer ${
               savedSuccess 
               ? 'bg-emerald-600 text-white' 
-              : 'bg-[#0f172a] hover:bg-[#1e293b] text-white disabled:opacity-70'
+              : 'bg-[#00A1AC] hover:bg-[#008790] text-white disabled:opacity-70'
             }`}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : savedSuccess ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />} 

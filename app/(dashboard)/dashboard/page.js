@@ -177,20 +177,20 @@ export default function DashboardOverviewPage() {
   return (
     <div className="p-6 sm:p-10 space-y-8 max-w-[1600px] mx-auto animate-in fade-in-50 duration-500 font-sans bg-slate-50 text-[#0f172a]">
       
-      {/* 1. Full-Width Oceanic Hero Header (Exact Admin Header Match) */}
-      <div className="w-full bg-gradient-to-b from-[#0a2635] via-[#0d3b4d] to-[#124e5e] text-white rounded-[2.5rem] p-8 sm:p-12 shadow-2xl relative overflow-hidden">
+      {/* 1. Full-Width Medical Hero Header */}
+      <div className="w-full bg-gradient-to-r from-[#00A1AC] via-[#008f99] to-[#0c2e3d] text-white rounded-3xl p-7 sm:p-10 shadow-2xl relative overflow-hidden">
         {/* Glow backdrop circles */}
-        <div className="absolute top-0 right-0 -mr-40 -mt-40 w-[500px] h-[500px] rounded-full bg-[#164e63]/40 blur-[100px] pointer-events-none"></div>
+        <div className="absolute top-0 right-0 -mr-40 -mt-40 w-[500px] h-[500px] rounded-full bg-white/10 blur-[100px] pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-xs font-bold border border-white/20 uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Doctor Suite • {cleanDoctorName}
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-xs font-bold border border-white/30 uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-white" /> Doctor Suite • {cleanDoctorName}
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
               {greeting}, {cleanDoctorName}
             </h1>
-            <p className="text-sm sm:text-base text-slate-300 font-medium max-w-2xl leading-relaxed">
+            <p className="text-sm sm:text-base text-slate-100 font-medium max-w-2xl leading-relaxed">
               Clinic Portal ({clinic.name}{doctor?.email ? ` • ${doctor.email}` : ""}) • Real-time patient booking telemetry, OPD availability, and clinic revenue.
             </p>
           </div>
@@ -199,59 +199,59 @@ export default function DashboardOverviewPage() {
             <button
               onClick={fetchDashboardData}
               disabled={loading}
-              className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/20 hover:bg-white/30 text-white border border-white/30 text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               <span>Sync Telemetry</span>
             </button>
             <button
               onClick={copyClinicLink}
-              className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/20 hover:bg-white/30 text-white border border-white/30 text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copied ? "Copied!" : "Copy Link"}</span>
             </button>
             <Link
               href={`/${clinic.slug}`}
               target="_blank"
-              className="inline-flex items-center gap-2 bg-white hover:bg-slate-100 text-[#0f172a] px-6 py-3 rounded-full font-black text-xs transition-all shadow-xl hover:scale-105"
+              className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-[#00A1AC] px-6 py-3 rounded-2xl font-black text-xs transition-all shadow-xl hover:scale-105"
             >
-              View Live Clinic <ArrowRight className="w-4 h-4" />
+              View Live Clinic <ArrowRight className="w-4 h-4 text-[#00A1AC]" />
             </Link>
           </div>
         </div>
       </div>
 
-      {/* 2. 4 Hero KPI Cards (Matches Exact Admin Style: 1 Dark + 3 White) */}
+      {/* 2. 4 Hero KPI Cards (Consistently themed with #00A1AC) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         
-        {/* Card 1: Today's Active Bookings (Active Dark Card) */}
-        <div className="bg-[#0f172a] p-6 sm:p-7 rounded-3xl shadow-lg border border-[#1e293b] text-white flex flex-col justify-between space-y-4">
+        {/* Card 1: Today's Active Bookings (Teal Primary Card) */}
+        <div className="bg-[#00A1AC] p-6 rounded-3xl shadow-xl shadow-[#00A1AC]/30 text-white flex flex-col justify-between space-y-4 border border-[#00A1AC]">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20">
               <Calendar className="w-6 h-6 text-white" />
             </div>
-            <span className="text-[11px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full">
+            <span className="text-[11px] font-black text-white bg-white/20 px-2.5 py-1 rounded-full border border-white/20">
               Live
             </span>
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Today&apos;s Active Bookings</p>
+            <p className="text-xs font-bold text-teal-100 uppercase tracking-wider">Today&apos;s Active Bookings</p>
             <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight mt-1">{stats.todayAppointmentsCount}</h3>
           </div>
-          <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-300 font-medium">
+          <div className="pt-3 border-t border-white/20 flex items-center justify-between text-xs text-teal-100 font-medium">
             <span>Scheduled Today</span>
             <span className="font-bold text-white">{stats.todayAppointmentsCount} slots</span>
           </div>
         </div>
 
-        {/* Card 2: Pending Approval (White Card) */}
-        <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
+        {/* Card 2: Pending Approval (White Card with #00A1AC) */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-[#f8fafc] rounded-2xl flex items-center justify-center border border-slate-100">
-              <Clock className="w-6 h-6 text-[#164e63]" />
+            <div className="w-12 h-12 bg-[#00A1AC]/10 rounded-2xl flex items-center justify-center border border-[#00A1AC]/20">
+              <Clock className="w-6 h-6 text-[#00A1AC]" />
             </div>
-            <span className="text-[11px] font-black text-[#164e63] bg-[#164e63]/10 px-2.5 py-1 rounded-full">
+            <span className="text-[11px] font-black text-[#00A1AC] bg-[#00A1AC]/10 px-2.5 py-1 rounded-full border border-[#00A1AC]/20">
               {stats.pendingCount} Pending
             </span>
           </div>
@@ -261,17 +261,17 @@ export default function DashboardOverviewPage() {
           </div>
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
             <span>Awaiting Review</span>
-            <span className="font-bold text-emerald-600">Online</span>
+            <span className="font-bold text-[#00A1AC]">Online</span>
           </div>
         </div>
 
-        {/* Card 3: Total Consulted (White Card) */}
-        <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
+        {/* Card 3: Total Consulted (White Card with #00A1AC) */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-[#f8fafc] rounded-2xl flex items-center justify-center border border-slate-100">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+            <div className="w-12 h-12 bg-[#00A1AC]/10 rounded-2xl flex items-center justify-center border border-[#00A1AC]/20">
+              <CheckCircle2 className="w-6 h-6 text-[#00A1AC]" />
             </div>
-            <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+            <span className="text-[11px] font-black text-[#00A1AC] bg-[#00A1AC]/10 px-2.5 py-1 rounded-full border border-[#00A1AC]/20">
               {stats.completedCount} Done
             </span>
           </div>
@@ -281,17 +281,17 @@ export default function DashboardOverviewPage() {
           </div>
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
             <span>Consultation status</span>
-            <span className="font-bold text-slate-900">Completed</span>
+            <span className="font-bold text-[#00A1AC]">Completed</span>
           </div>
         </div>
 
-        {/* Card 4: Estimated Revenue (White Card) */}
-        <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
+        {/* Card 4: Estimated Revenue (White Card with #00A1AC) */}
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-[#f8fafc] rounded-2xl flex items-center justify-center border border-slate-100">
-              <CreditCard className="w-6 h-6 text-[#0f172a]" />
+            <div className="w-12 h-12 bg-[#00A1AC]/10 rounded-2xl flex items-center justify-center border border-[#00A1AC]/20">
+              <CreditCard className="w-6 h-6 text-[#00A1AC]" />
             </div>
-            <span className="text-[11px] font-black text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full">
+            <span className="text-[11px] font-black text-[#00A1AC] bg-[#00A1AC]/10 px-2.5 py-1 rounded-full border border-[#00A1AC]/20">
               SaaS MRR
             </span>
           </div>
@@ -301,13 +301,13 @@ export default function DashboardOverviewPage() {
           </div>
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
             <span>Today&apos;s Volume</span>
-            <span className="font-bold text-slate-900">₹{stats.totalRevenue}</span>
+            <span className="font-bold text-[#00A1AC]">₹{stats.totalRevenue}</span>
           </div>
         </div>
 
       </div>
 
-      {/* 3. Bottom Grid: Recent Appointments (White Card) + Quick Shortcuts (Active Dark Card) */}
+      {/* 3. Bottom Grid: Recent Appointments (White Card) + Quick Shortcuts (Medical Navy Box) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left: Recent Appointments Table (White Card) */}
@@ -319,7 +319,7 @@ export default function DashboardOverviewPage() {
             </div>
             <Link
               href="/dashboard/appointments"
-              className="text-xs font-bold text-[#164e63] hover:text-[#0f172a] flex items-center gap-1 bg-slate-100 px-3.5 py-1.5 rounded-full transition-colors"
+              className="text-xs font-bold text-white bg-[#00A1AC] hover:bg-[#008790] flex items-center gap-1 px-4 py-2 rounded-2xl transition-all shadow-md shadow-[#00A1AC]/20 active:scale-95"
             >
               View All <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
@@ -348,25 +348,25 @@ export default function DashboardOverviewPage() {
                     <tr key={item._id} className="hover:bg-slate-50/80 transition-colors group">
                       <td className="py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-slate-100 text-[#0f172a] font-black flex items-center justify-center text-xs shrink-0">
+                          <div className="w-9 h-9 rounded-xl bg-[#00A1AC]/10 text-[#00A1AC] font-black flex items-center justify-center text-xs shrink-0 border border-[#00A1AC]/20">
                             {item.patientName?.charAt(0).toUpperCase() || "P"}
                           </div>
                           <div>
-                            <p className="font-bold text-[#0f172a] text-sm group-hover:text-[#164e63] transition-colors">{item.patientName}</p>
+                            <p className="font-bold text-[#0f172a] text-sm group-hover:text-[#00A1AC] transition-colors">{item.patientName}</p>
                             <p className="text-xs text-slate-400 font-mono">{item.patientPhone}</p>
                           </div>
                         </div>
                       </td>
                       <td className="py-4 text-xs font-semibold text-slate-600">{item.serviceName}</td>
-                      <td className="py-4 text-xs font-bold text-[#164e63]">
-                        <span className="bg-slate-100 px-2.5 py-1 rounded-md">
+                      <td className="py-4 text-xs font-bold text-[#00A1AC]">
+                        <span className="bg-[#00A1AC]/10 px-2.5 py-1 rounded-md">
                           {item.timeSlot}
                         </span>
                       </td>
                       <td className="py-4">
                         <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
                           item.status === "COMPLETED"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            ? "bg-[#00A1AC]/10 text-[#00A1AC] border border-[#00A1AC]/30"
                             : item.status === "CANCELLED"
                             ? "bg-rose-50 text-rose-700 border border-rose-200"
                             : "bg-amber-50 text-amber-700 border border-amber-200"
@@ -376,13 +376,13 @@ export default function DashboardOverviewPage() {
                       </td>
                       <td className="py-4 text-right">
                         {item.status === "COMPLETED" ? (
-                          <span className="text-xs text-emerald-600 font-bold inline-flex items-center gap-1">
+                          <span className="text-xs text-[#00A1AC] font-bold inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" /> Done
                           </span>
                         ) : (
                           <button
                             onClick={() => handleStatusChange(item._id, "COMPLETED")}
-                            className="rounded-full bg-[#0f172a] hover:bg-[#1e293b] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer"
+                            className="rounded-full bg-[#00A1AC] hover:bg-[#008790] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all cursor-pointer active:scale-95"
                           >
                             Mark Done
                           </button>
@@ -396,86 +396,86 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
 
-        {/* Right: Quick Actions & Live Clinic Shortcuts (Active Dark Card) */}
-        <div className="bg-[#0f172a] p-6 sm:p-8 rounded-3xl shadow-lg border border-[#1e293b] text-white space-y-6">
+        {/* Right: Quick Actions & Live Clinic Shortcuts (Medical Navy Box) */}
+        <div className="bg-[#0c2e3d] p-6 sm:p-8 rounded-3xl shadow-xl border border-[#15465c] text-white space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-emerald-400" />
+              <Activity className="w-5 h-5 text-[#00A1AC]" />
               <h2 className="text-lg font-black text-white">Clinic Feed</h2>
             </div>
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#00A1AC] animate-pulse"></span>
           </div>
-          <p className="text-xs text-slate-400 font-medium -mt-3">Real-time clinic shortcuts & actions</p>
+          <p className="text-xs text-slate-300 font-medium -mt-3">Real-time clinic shortcuts & actions</p>
 
           <div className="space-y-3">
             <Link
               href="/dashboard/availability"
-              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-between group"
+              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-[#00A1AC] hover:bg-[#134255]/70 transition-all flex items-center justify-between group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                <div className="w-8 h-8 rounded-xl bg-[#00A1AC] text-white flex items-center justify-center shadow-md">
                   <Clock className="w-4 h-4" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-white">OPD Timings</p>
-                  <p className="text-[11px] text-slate-400">Manage daily doctor hours</p>
+                  <p className="text-[11px] text-slate-300">Manage daily doctor hours</p>
                 </div>
               </div>
-              <span className="text-[10px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full group-hover:bg-white group-hover:text-[#0f172a] transition-colors">
+              <span className="text-[10px] font-black bg-[#00A1AC] text-white shadow-md shadow-[#00A1AC]/30 px-3 py-1 rounded-full hover:bg-[#008790] transition-colors">
                 Config
               </span>
             </Link>
 
             <Link
               href="/dashboard/services"
-              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-between group"
+              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-[#00A1AC] hover:bg-[#134255]/70 transition-all flex items-center justify-between group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                <div className="w-8 h-8 rounded-xl bg-[#00A1AC] text-white flex items-center justify-center shadow-md">
                   <Stethoscope className="w-4 h-4" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-white">Clinic Services</p>
-                  <p className="text-[11px] text-slate-400">Configure fees & duration</p>
+                  <p className="text-[11px] text-slate-300">Configure fees & duration</p>
                 </div>
               </div>
-              <span className="text-[10px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full group-hover:bg-white group-hover:text-[#0f172a] transition-colors">
+              <span className="text-[10px] font-black bg-[#00A1AC] text-white shadow-md shadow-[#00A1AC]/30 px-3 py-1 rounded-full hover:bg-[#008790] transition-colors">
                 Config
               </span>
             </Link>
 
             <Link
               href="/dashboard/website"
-              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-between group"
+              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-[#00A1AC] hover:bg-[#134255]/70 transition-all flex items-center justify-between group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                <div className="w-8 h-8 rounded-xl bg-[#00A1AC] text-white flex items-center justify-center shadow-md">
                   <Globe className="w-4 h-4" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-white">Website Builder</p>
-                  <p className="text-[11px] text-slate-400">Customize clinic theme</p>
+                  <p className="text-[11px] text-slate-300">Customize clinic theme</p>
                 </div>
               </div>
-              <span className="text-[10px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full group-hover:bg-white group-hover:text-[#0f172a] transition-colors">
+              <span className="text-[10px] font-black bg-[#00A1AC] text-white shadow-md shadow-[#00A1AC]/30 px-3 py-1 rounded-full hover:bg-[#008790] transition-colors">
                 Theme
               </span>
             </Link>
 
             <Link
               href="/dashboard/settings"
-              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors flex items-center justify-between group"
+              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-[#00A1AC] hover:bg-[#134255]/70 transition-all flex items-center justify-between group"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                <div className="w-8 h-8 rounded-xl bg-[#00A1AC] text-white flex items-center justify-center shadow-md">
                   <Settings className="w-4 h-4" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-white">Clinic Settings</p>
-                  <p className="text-[11px] text-slate-400">Phone, address, & credentials</p>
+                  <p className="text-[11px] text-slate-300">Phone, address, & credentials</p>
                 </div>
               </div>
-              <span className="text-[10px] font-black text-white bg-white/10 px-2.5 py-1 rounded-full group-hover:bg-white group-hover:text-[#0f172a] transition-colors">
+              <span className="text-[10px] font-black bg-[#00A1AC] text-white shadow-md shadow-[#00A1AC]/30 px-3 py-1 rounded-full hover:bg-[#008790] transition-colors">
                 Edit
               </span>
             </Link>

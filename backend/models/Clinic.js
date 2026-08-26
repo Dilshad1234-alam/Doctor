@@ -35,6 +35,20 @@ const ClinicSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  role: {
+    type: String,
+    enum: ["INDIVIDUAL_CLINIC", "MULTI_DOCTOR_CLINIC", "HOSPITAL"],
+    default: "INDIVIDUAL_CLINIC",
+  },
+  entityType: {
+    type: String,
+    enum: ["INDIVIDUAL_DOCTOR", "MULTI_DOCTOR_CLINIC", "HOSPITAL"],
+    default: "INDIVIDUAL_DOCTOR",
+  },
+  category: {
+    type: String,
+    default: "Single Doctor Clinic",
+  },
 }, { timestamps: true });
 
 export default mongoose.models.Clinic || mongoose.model("Clinic", ClinicSchema);

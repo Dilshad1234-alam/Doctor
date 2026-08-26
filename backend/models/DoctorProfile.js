@@ -1,36 +1,61 @@
 import mongoose from "mongoose";
 
-const DoctorProfileSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
+const DoctorProfileSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    clinicId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Clinic",
+      required: true,
+    },
+    fullName: {
+      type: String,
+      default: "Dr. Specialist",
+    },
+    qualification: {
+      type: String,
+      default: "MBBS",
+    },
+    specialization: {
+      type: String,
+      default: "General Physician",
+    },
+    experienceYrs: {
+      type: Number,
+      default: 5,
+    },
+    regNumber: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
+    avatarUrl: {
+      type: String,
+      default: "",
+    },
+    role: {
+      type: String,
+      enum: ["INDIVIDUAL_DOCTOR", "CLINIC_DOCTOR", "HOSPITAL_DOCTOR"],
+      default: "INDIVIDUAL_DOCTOR",
+    },
+    entityType: {
+      type: String,
+      enum: ["INDIVIDUAL_DOCTOR", "MULTI_DOCTOR_CLINIC", "HOSPITAL"],
+      default: "INDIVIDUAL_DOCTOR",
+    },
+    category: {
+      type: String,
+      default: "Solo Practitioner",
+    },
   },
-  clinicId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Clinic",
-    required: true,
-  },
-  fullName: {
-    type: String,
-    required: true,
-  },
-  qualification: {
-    type: String,
-    required: true,
-  },
-  specialization: {
-    type: String,
-    required: true,
-  },
-  experienceYrs: {
-    type: Number,
-    required: true,
-  },
-  avatarUrl: {
-    type: String,
-    default: "",
-  },
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 export default mongoose.models.DoctorProfile || mongoose.model("DoctorProfile", DoctorProfileSchema);

@@ -6,18 +6,27 @@ const SubscriptionSchema = new mongoose.Schema(
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     planId: { 
       type: String, 
-      enum: ["STARTER", "PROFESSIONAL", "ENTERPRISE"], 
-      required: true 
+      trim: true,
+      uppercase: true,
+      enum: [
+        "starter", "basic", "pro", "advanced", "premium", "enterprise", "professional",
+        "STARTER", "BASIC", "PRO", "ADVANCED", "PREMIUM", "ENTERPRISE", "PROFESSIONAL"
+      ], 
+      default: "STARTER" 
     },
     billingCycle: { 
       type: String, 
-      enum: ["MONTHLY", "YEARLY"], 
-      required: true 
+      trim: true,
+      uppercase: true,
+      enum: ["MONTHLY", "YEARLY", "monthly", "yearly"], 
+      default: "MONTHLY" 
     },
     price: { type: Number, required: true },
     status: { 
       type: String, 
-      enum: ["TRIAL", "ACTIVE", "EXPIRED", "CANCELLED"], 
+      trim: true,
+      uppercase: true,
+      enum: ["TRIAL", "ACTIVE", "EXPIRED", "CANCELLED", "trial", "active", "expired", "cancelled", "pending", "PENDING"], 
       default: "TRIAL" 
     },
     startDate: { type: Date, required: true, default: Date.now },

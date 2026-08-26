@@ -105,7 +105,7 @@ export default function AvailabilityPage() {
       <div className="flex items-center justify-between mb-2 shrink-0">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-[#0f172a] flex items-center gap-2 tracking-tight">
-            <Clock className="w-6 h-6 text-[#164e63]" />
+            <Clock className="w-6 h-6 text-[#00A1AC]" />
             OPD Consultation Timings
           </h1>
           <p className="text-xs text-slate-500 font-medium">Configure weekly consultation timings. Real-time slots are synchronized with patient bookings.</p>
@@ -122,7 +122,7 @@ export default function AvailabilityPage() {
               className={`flex items-center justify-between py-2 px-4 rounded-2xl border transition-all ${
                 !day.isOpen 
                 ? 'bg-slate-50/50 border-slate-100 opacity-60' 
-                : 'bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-white'
+                : 'bg-slate-50 border-slate-200 hover:border-[#00A1AC]/40 hover:bg-white'
               }`}
             >
               <div className="flex items-center gap-3">
@@ -132,7 +132,7 @@ export default function AvailabilityPage() {
                     type="button" 
                     onClick={() => handleChange(idx, 'isOpen', !day.isOpen)}
                     className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                      day.isOpen ? 'bg-emerald-500 shadow-sm' : 'bg-slate-300'
+                      day.isOpen ? 'bg-[#00A1AC] shadow-sm' : 'bg-slate-300'
                     }`}
                   >
                     <span 
@@ -143,7 +143,7 @@ export default function AvailabilityPage() {
                   </button>
                   <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-md border ${
                     day.isOpen 
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                    ? 'bg-teal-50 text-[#00A1AC] border-[#00A1AC]/30' 
                     : 'bg-slate-100 text-slate-500 border-slate-200'
                   }`}>
                     {day.isOpen ? 'Open' : 'Closed'}
@@ -159,7 +159,7 @@ export default function AvailabilityPage() {
                       type="time" 
                       value={day.startTime} 
                       onChange={(e) => handleChange(idx, 'startTime', e.target.value)} 
-                      className="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#0f172a] focus:border-[#164e63] outline-none shadow-sm" 
+                      className="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#0f172a] focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 outline-none shadow-sm" 
                     />
                   </div>
                   <span className="text-slate-400 font-bold text-xs">-</span>
@@ -169,7 +169,7 @@ export default function AvailabilityPage() {
                       type="time" 
                       value={day.endTime} 
                       onChange={(e) => handleChange(idx, 'endTime', e.target.value)} 
-                      className="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#0f172a] focus:border-[#164e63] outline-none shadow-sm" 
+                      className="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#0f172a] focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 outline-none shadow-sm" 
                     />
                   </div>
                 </div>
@@ -187,10 +187,10 @@ export default function AvailabilityPage() {
             type="button"
             onClick={saveSchedule}
             disabled={saving}
-            className={`inline-flex items-center justify-center gap-2 rounded-full px-6 py-2 text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer ${
+            className={`inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-2.5 text-xs font-bold shadow-lg shadow-[#00A1AC]/25 transition-all active:scale-95 cursor-pointer ${
               savedSuccess
                 ? "bg-emerald-600 text-white"
-                : "bg-[#0f172a] hover:bg-[#1e293b] text-white disabled:opacity-60"
+                : "bg-[#00A1AC] hover:bg-[#008790] text-white disabled:opacity-60"
             }`}
           >
             {saving ? (

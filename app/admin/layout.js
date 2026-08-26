@@ -36,10 +36,10 @@ export default function AdminLayout({ children }) {
       badge: null
     },
     {
-      name: "Global Appointments",
-      href: "/admin/appointments",
-      icon: CalendarDays,
-      badge: null
+      name: "Clinic Manager & Support",
+      href: "/admin/clinics-manager",
+      icon: HeartPulse,
+      badge: "Fix Hub"
     },
     {
       name: "Subscriptions & Revenue",

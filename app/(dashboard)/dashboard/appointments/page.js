@@ -190,14 +190,14 @@ export default function AppointmentsPage() {
     const st = status || 'PENDING';
     const styles = {
       PENDING: "bg-amber-50 text-amber-700 border-amber-200",
-      CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      CONFIRMED: "bg-teal-50 text-[#00A1AC] border-[#00A1AC]/30",
       COMPLETED: "bg-emerald-50 text-emerald-700 border-emerald-200",
       CANCELLED: "bg-rose-50 text-rose-700 border-rose-200"
     };
     return (
       <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full border ${styles[st] || styles.PENDING}`}>
         {st === 'PENDING' && <Clock className="w-3 h-3 text-amber-600" />}
-        {st === 'CONFIRMED' && <CheckCircle2 className="w-3 h-3 text-emerald-600" />}
+        {st === 'CONFIRMED' && <CheckCircle2 className="w-3 h-3 text-[#00A1AC]" />}
         {st === 'COMPLETED' && <Check className="w-3 h-3 text-emerald-600" />}
         {st === 'CANCELLED' && <X className="w-3 h-3 text-rose-600" />}
         <span>{st}</span>
@@ -212,8 +212,8 @@ export default function AppointmentsPage() {
       
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-4 border ${toast.type === 'success' ? 'bg-[#0f172a] text-white border-[#1e293b]' : 'bg-rose-900 text-white border-rose-700'}`}>
-          {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-400" /> : <AlertCircle className="w-5 h-5 text-rose-400" />}
+        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-4 border ${toast.type === 'success' ? 'bg-[#0c2e3d] text-white border-[#15465c]' : 'bg-rose-900 text-white border-rose-700'}`}>
+          {toast.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-teal-300" /> : <AlertCircle className="w-5 h-5 text-rose-400" />}
           <span className="text-sm font-bold">{toast.message}</span>
         </div>
       )}
@@ -222,7 +222,7 @@ export default function AppointmentsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] tracking-tight flex items-center gap-3">
-            <CalendarIcon className="w-7 h-7 text-[#164e63]" />
+            <CalendarIcon className="w-7 h-7 text-[#00A1AC]" />
             Appointments Queue
           </h1>
           <p className="text-slate-500 mt-1 text-xs sm:text-sm font-medium">Review patient booking requests, approve consultations, and manage daily capacity.</p>
@@ -255,7 +255,7 @@ export default function AppointmentsPage() {
             onClick={() => fetchAppointments(false)}
             className="inline-flex items-center gap-2 bg-white hover:bg-slate-100 text-[#0f172a] border border-slate-200 font-bold rounded-full px-4 py-2 text-xs cursor-pointer shadow-sm transition-all active:scale-95"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-[#164e63]" /> Refresh Queue
+            <RefreshCw className="w-3.5 h-3.5 text-[#00A1AC]" /> Refresh Queue
           </button>
         </div>
       </div>
@@ -271,7 +271,7 @@ export default function AppointmentsPage() {
             placeholder="Search patient name or phone..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#164e63] focus:bg-white focus:outline-none text-xs text-[#0f172a] placeholder-slate-400 transition-all font-medium"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 focus:bg-white focus:outline-none text-xs text-[#0f172a] placeholder-slate-400 transition-all font-medium"
           />
         </div>
         
@@ -281,7 +281,7 @@ export default function AppointmentsPage() {
             type="date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="min-w-[130px] bg-slate-50 border border-slate-200 text-[#0f172a] rounded-2xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#164e63] transition-all font-medium"
+            className="min-w-[130px] bg-slate-50 border border-slate-200 text-[#0f172a] rounded-2xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 transition-all font-medium"
           />
           {dateFilter && (
             <button 
@@ -294,7 +294,7 @@ export default function AppointmentsPage() {
           )}
         </div>
 
-        {/* Status Filter Tabs (Instant Client-Side Filtering) */}
+        {/* Status Filter Tabs (Instant Client-Side Filtering with #00A1AC) */}
         <div className="flex items-center gap-1.5 overflow-x-hidden flex-wrap shrink-0">
           {[
             { id: 'ALL', label: 'All Queue' },
@@ -312,7 +312,7 @@ export default function AppointmentsPage() {
                 onClick={() => setActiveFilter(tab.id)}
                 className={`transition-all duration-200 cursor-pointer flex items-center gap-1.5 rounded-full px-4 py-2 text-xs ${
                   isSelected 
-                  ? 'bg-[#0f172a] text-white font-black shadow-md' 
+                  ? 'bg-[#00A1AC] text-white font-black shadow-md shadow-[#00A1AC]/25' 
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold'
                 }`}
               >
@@ -320,7 +320,7 @@ export default function AppointmentsPage() {
                 {count > 0 && (
                   <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black transition-colors ${
                     isSelected 
-                      ? 'bg-white text-[#0f172a]' 
+                      ? 'bg-white text-[#00A1AC]' 
                       : 'bg-slate-200 text-slate-700'
                   }`}>
                     {count}
@@ -338,7 +338,7 @@ export default function AppointmentsPage() {
         
         {loading && appointments.length === 0 && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
-            <Loader2 className="w-8 h-8 text-[#164e63] animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#00A1AC] animate-spin" />
             <p className="mt-2 text-sm font-bold text-slate-700">Loading appointments queue...</p>
           </div>
         )}
@@ -381,7 +381,7 @@ export default function AppointmentsPage() {
                           <button 
                             type="button"
                             onClick={() => { setActiveFilter("ALL"); setDateFilter(""); setSearchQuery(""); }} 
-                            className="mt-4 text-xs text-[#164e63] font-bold hover:underline cursor-pointer"
+                            className="mt-4 text-xs text-[#00A1AC] font-bold hover:underline cursor-pointer"
                           >
                             Clear all filters
                           </button>
@@ -394,11 +394,11 @@ export default function AppointmentsPage() {
                     <tr key={apt._id} className="hover:bg-slate-50/80 transition-colors group">
                       <td className="py-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-slate-100 text-[#0f172a] font-black flex items-center justify-center text-xs shrink-0 shadow-sm">
+                          <div className="w-10 h-10 rounded-2xl bg-[#00A1AC]/10 text-[#00A1AC] border border-[#00A1AC]/20 font-black flex items-center justify-center text-xs shrink-0 shadow-sm">
                             {apt.patientName?.charAt(0).toUpperCase() || "P"}
                           </div>
                           <div>
-                            <div className="text-sm font-bold text-[#0f172a] group-hover:text-[#164e63] transition-colors">{apt.patientName}</div>
+                            <div className="text-sm font-bold text-[#0f172a] group-hover:text-[#00A1AC] transition-colors">{apt.patientName}</div>
                             <div className="text-xs text-slate-400 font-mono mt-0.5">{apt.patientPhone}</div>
                             <div className="text-[11px] text-slate-400 mt-0.5">{apt.patientAge} Yrs • {apt.patientGender}</div>
                           </div>
@@ -409,8 +409,8 @@ export default function AppointmentsPage() {
                           <CalendarIcon className="w-3.5 h-3.5 text-slate-400" />
                           {new Date(apt.appointmentDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </div>
-                        <div className="text-xs font-black text-[#164e63] flex items-center gap-1.5 mt-1">
-                          <Clock className="w-3.5 h-3.5 text-[#164e63]" />
+                        <div className="text-xs font-black text-[#00A1AC] flex items-center gap-1.5 mt-1">
+                          <Clock className="w-3.5 h-3.5 text-[#00A1AC]" />
                           {apt.timeSlot}
                         </div>
                       </td>
@@ -430,7 +430,7 @@ export default function AppointmentsPage() {
                               <button 
                                 onClick={() => updateStatus(apt._id, 'CONFIRMED')}
                                 disabled={actionLoadingId === apt._id}
-                                className="inline-flex items-center gap-1 px-4 py-1.5 text-xs font-black text-white bg-[#0f172a] hover:bg-[#1e293b] rounded-full transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+                                className="inline-flex items-center gap-1 px-4 py-1.5 text-xs font-black text-white bg-[#00A1AC] hover:bg-[#008790] rounded-full transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
                                 title="Approve / Confirm Appointment"
                               >
                                 {actionLoadingId === apt._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
