@@ -90,7 +90,7 @@ export default function OnboardingWizard() {
 
   const [formData, setFormData] = useState({
     plan: { planId: "BASIC", billingCycle: "MONTHLY", price: 499, isTrial: true },
-    doctorProfile: { fullName: "", qualification: "", specialization: "", experienceYrs: "", regNumber: "", bio: "" },
+    doctorProfile: { fullName: "", qualification: "", specialization: "", experienceYrs: "", regNumber: "", bio: "", profilePhoto: "" },
     clinicDetails: { name: "", phone: "", email: "", address: "", city: "", state: "", pincode: "", slug: "" },
     services: [
       { name: "General Consultation", description: "Standard clinical examination and prescription", price: "500", durationMins: "15" },
@@ -143,6 +143,7 @@ export default function OnboardingWizard() {
               experienceYrs: doctorProfile?.experienceYrs !== undefined && doctorProfile?.experienceYrs !== null ? String(doctorProfile.experienceYrs) : prev.doctorProfile.experienceYrs || "",
               regNumber: doctorProfile?.regNumber || prev.doctorProfile.regNumber || "",
               bio: doctorProfile?.bio || prev.doctorProfile.bio || "",
+              profilePhoto: doctorProfile?.profilePhoto || doctorProfile?.avatarUrl || prev.doctorProfile.profilePhoto || "",
             },
             clinicDetails: {
               name: clinic?.name || user?.practiceName || user?.name || user?.clinicName || user?.hospitalName || prev.clinicDetails.name || "",
@@ -393,6 +394,26 @@ export default function OnboardingWizard() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
+              <div className="sm:col-span-2 bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-slate-200 bg-white shadow-sm flex items-center justify-center shrink-0">
+                  {formData.doctorProfile.profilePhoto ? (
+                    <img src={formData.doctorProfile.profilePhoto} alt="Doctor" className="w-full h-full object-cover object-top" />
+                  ) : (
+                    <UserCircle className="w-10 h-10 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1 w-full space-y-1">
+                  <label className="block text-slate-700 font-bold uppercase text-[11px]">Doctor Profile Photo URL (Optional)</label>
+                  <input 
+                    type="text" 
+                    placeholder="https://example.com/doctor-photo.jpg" 
+                    value={formData.doctorProfile.profilePhoto || ""} 
+                    onChange={e => updateForm('doctorProfile', 'profilePhoto', e.target.value)} 
+                    className="w-full rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-slate-900 placeholder:text-slate-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all text-xs" 
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-slate-700 font-bold uppercase text-[11px] mb-1.5">Doctor Full Name</label>
                 <input 
@@ -1003,13 +1024,23 @@ export default function OnboardingWizard() {
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
                     {/* Left Column */}
                     <div className="space-y-2 flex-1">
-                      <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold py-1 px-3 mb-2 rounded-full uppercase bg-[#00A1AC]/10 text-[#006e76] border border-[#00A1AC]/20">
-                        <ShieldCheck className="w-3.5 h-3.5 text-[#00A1AC]" /> Verified Practice
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#00A1AC]/30 bg-[#00A1AC]/10 flex items-center justify-center shrink-0">
+                          {formData.doctorProfile.profilePhoto ? (
+                            <img src={formData.doctorProfile.profilePhoto} alt="Doctor" className="w-full h-full object-cover object-top" />
+                          ) : (
+                            <UserCircle className="w-8 h-8 text-[#00A1AC]" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold py-0.5 px-2.5 rounded-full uppercase bg-[#00A1AC]/10 text-[#006e76] border border-[#00A1AC]/20">
+                            <ShieldCheck className="w-3.5 h-3.5 text-[#00A1AC]" /> Verified Practice
+                          </div>
+                          <h3 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
+                            {formData.clinicDetails.name || "Noori Clinic"}
+                          </h3>
+                        </div>
                       </div>
-                      
-                      <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-                        {formData.clinicDetails.name || "Noori Clinic"}
-                      </h3>
                       
                       <p className="text-sm font-medium text-slate-600 flex items-center gap-2 flex-wrap">
                         <span className="text-slate-900 font-bold">{getDisplayDoctorName(formData.doctorProfile.fullName)}</span>

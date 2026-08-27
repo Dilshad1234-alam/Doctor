@@ -8,10 +8,26 @@ const WebsiteConfigSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    doctorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     templateId: {
       type: String,
       enum: ["template-1", "template-2", "template-3"],
       default: "template-1",
+    },
+    doctorPhoto: {
+      type: String,
+      default: "",
+    },
+    clinicLogo: {
+      type: String,
+      default: "",
+    },
+    themeColor: {
+      type: String,
+      default: "",
     },
     primaryColor: {
       type: String,

@@ -13,9 +13,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function generateMetadata(props) {
   const params = await props.params;
-  const slug = params?.slug;
+  const slug = params?.slug || params?.clinicSlug;
   
   await connectDB();
   const clinic = await Clinic.findOne({ slug: new RegExp(`^${slug}$`, 'i') }).lean();
@@ -39,10 +42,15 @@ async function getClinicData(slug) {
   const clinic = await Clinic.findOne({ slug: new RegExp(`^${slug}$`, 'i') }).lean();
   if (!clinic) return null;
 
-  const doctor = await DoctorProfile.findOne({ clinicId: clinic._id }).lean();
+  let doctor = await DoctorProfile.findOne({ clinicId: clinic._id }).lean();
+  if (!doctor && clinic.ownerId) {
+    doctor = await DoctorProfile.findOne({ userId: clinic.ownerId }).lean();
+  }
   const services = await Service.find({ clinicId: clinic._id, isActive: true }).lean();
   const availability = await Availability.find({ clinicId: clinic._id }).lean();
-  const websiteConfig = await WebsiteConfig.findOne({ clinicId: clinic._id }).lean();
+  let websiteConfig = await WebsiteConfig.findOne({ 
+    $or: [{ clinicId: clinic._id }, ...(clinic.ownerId ? [{ doctorId: clinic.ownerId }] : [])] 
+  }).lean();
   
   return { clinic, doctor, services, availability, websiteConfig };
 }
@@ -56,7 +64,7 @@ function isClinicOpenToday(availability, currentDay) {
 
 export default async function ClinicPage(props) {
   const params = await props.params;
-  const slug = params?.slug;
+  const slug = params?.slug || params?.clinicSlug;
   
   const data = await getClinicData(slug);
   
@@ -136,8 +144,22 @@ export default async function ClinicPage(props) {
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-2 rounded-3xl shadow-2xl">
               <div className="bg-slate-900 rounded-2xl p-8 text-center relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-32 opacity-20" style={{ background: `linear-gradient(to bottom, ${primaryColor}, transparent)` }}></div>
-                <div className="w-32 h-32 mx-auto rounded-full border-4 border-slate-800 flex items-center justify-center relative z-10 shadow-xl mb-6 overflow-hidden" style={{ backgroundColor: `${primaryColor}30` }}>
-                  {doctorData?.avatarUrl ? <img src={doctorData.avatarUrl} alt={cleanDoctorName} className="w-full h-full object-cover" /> : <User className="w-16 h-16 text-white" />}
+                {/* Doctor Photo Frame */}
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl mx-auto mb-6 flex items-center justify-center bg-[#0D3648] relative z-10">
+                  {(doctorData?.profilePhoto || websiteConfigData?.doctorPhoto || doctorData?.image || doctorData?.avatarUrl) ? (
+                    <img 
+                      src={doctorData?.profilePhoto || websiteConfigData?.doctorPhoto || doctorData?.image || doctorData?.avatarUrl} 
+                      alt={doctorData?.name || cleanDoctorName || "Doctor"} 
+                      className="w-full h-full object-cover object-top"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-[#092734] text-white">
+                      {/* Fallback Icon */}
+                      <svg className="w-12 h-12 text-teal-400 fill-none stroke-current" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 <h3 className="text-2xl font-bold text-white relative z-10">{cleanDoctorName}</h3>
                 <p className="font-medium mt-1 relative z-10" style={{ color: primaryColor }}>{doctorData?.specialization}</p>
@@ -405,21 +427,25 @@ export default async function ClinicPage(props) {
         </div>
       </section>
 
-      {/* Full-Width Footer */}
-      <footer className="w-full bg-slate-900 text-white py-12 px-6 sm:px-12 lg:px-20 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800 text-xs text-slate-400">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-bold text-white">
-            {clinicData.name.charAt(0)}
+      {/* Platform Branding Footer */}
+      <footer className="w-full py-8 border-t border-slate-200 bg-white text-center">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            {websiteConfigData?.clinicLogo || clinicData?.logo ? (
+              <img 
+                src={websiteConfigData?.clinicLogo || clinicData?.logo} 
+                alt={clinicData?.name || "Logo"} 
+                className="w-6 h-6 rounded-md object-contain" 
+              />
+            ) : null}
+            <span className="font-bold text-slate-800 text-sm">{clinicData?.name}</span>
           </div>
-          <span className="font-bold text-white text-sm">{clinicData.name}</span>
-          <span>•</span>
-          <p>© {new Date().getFullYear()} All rights reserved.</p>
-        </div>
-        <div className="flex items-center gap-2 font-semibold">
-          <span>Powered by</span>
-          <span className="text-white font-bold flex items-center gap-1">
-            <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" /> DocPulse
-          </span>
+          <p className="text-xs text-slate-500 font-medium">
+            © {new Date().getFullYear()} {doctorData?.clinicName || clinicData?.name || 'Clinic'}. All rights reserved.
+          </p>
+          <p className="text-xs text-slate-400 mt-1.5">
+            Powered by <span className="font-bold text-[#00A1AC]">DocPulse CRM</span>
+          </p>
         </div>
       </footer>
 

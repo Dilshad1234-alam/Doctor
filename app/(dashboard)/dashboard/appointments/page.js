@@ -4,8 +4,10 @@ import React, { useState, useEffect, useMemo } from "react";
 import { 
   Search, Calendar as CalendarIcon, CheckCircle2, 
   XCircle, Clock, Filter, Loader2, AlertCircle, RefreshCw, Sparkles, User,
-  Check, X, Ban, ShieldCheck, Power, ArrowRight
+  Check, X, Ban, ShieldCheck, Power, ArrowRight, Download, Lock, FileSpreadsheet,
+  ArrowUpRight, FileText
 } from "lucide-react";
+import Link from "next/link";
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
@@ -22,6 +24,8 @@ export default function AppointmentsPage() {
   const [toast, setToast] = useState(null);
   const [todaySchedule, setTodaySchedule] = useState(null);
   const [isTogglingToday, setIsTogglingToday] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState("");
 
   const todayDayOfWeek = new Date().getDay(); // 0 = Sunday, 1 = Monday ...
 
@@ -51,7 +55,6 @@ export default function AppointmentsPage() {
       const incoming = data.appointments || [];
       
       setAppointments(prev => {
-        // Detect newly booked appointments in real-time
         if (prev.length > 0 && incoming.length > prev.length) {
           const newApts = incoming.filter(item => !prev.some(p => p._id === item._id));
           if (newApts.length > 0) {
@@ -80,7 +83,7 @@ export default function AppointmentsPage() {
     };
   }, []);
 
-  // Instant In-Memory Filter (0ms delay & no page reload)
+  // Instant In-Memory Filter
   const filteredAppointments = useMemo(() => {
     return appointments.filter((item) => {
       const matchesFilter =
@@ -115,7 +118,6 @@ export default function AppointmentsPage() {
     return res;
   }, [appointments]);
 
-  // Toggle Today's Slots as Full / Closed
   const toggleTodayCapacity = async () => {
     if (isTogglingToday) return;
     setIsTogglingToday(true);
@@ -136,7 +138,7 @@ export default function AppointmentsPage() {
       const resPut = await fetch("/api/clinic/availability", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ schedule: payload || schedule })
+        body: JSON.stringify({ schedule })
       });
       const dataPut = await resPut.json();
 
@@ -159,7 +161,6 @@ export default function AppointmentsPage() {
   const updateStatus = async (appointmentId, newStatus) => {
     setActionLoadingId(appointmentId);
     try {
-      // Optimistic instant update
       setAppointments(prev => prev.map(apt => apt._id === appointmentId ? { ...apt, status: newStatus } : apt));
 
       const res = await fetch(`/api/appointments/${appointmentId}`, {
@@ -184,6 +185,11 @@ export default function AppointmentsPage() {
   const showToast = (message, type) => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleProFeatureClick = (featureName) => {
+    setUpgradeFeature(featureName);
+    setShowUpgradeModal(true);
   };
 
   const getStatusBadge = (status) => {
@@ -218,17 +224,34 @@ export default function AppointmentsPage() {
         </div>
       )}
 
-      {/* Header with Quick Capacity Switch */}
+      {/* Header with Quick Capacity Switch & Pro Export Button */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] tracking-tight flex items-center gap-3">
-            <CalendarIcon className="w-7 h-7 text-[#00A1AC]" />
-            Appointments Queue
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#0f172a] tracking-tight flex items-center gap-3">
+              <CalendarIcon className="w-7 h-7 text-[#00A1AC]" />
+              Appointments Queue
+            </h1>
+            <span className="text-[11px] font-black text-[#00A1AC] bg-[#00A1AC]/10 border border-[#00A1AC]/20 px-3 py-0.5 rounded-full">
+              Basic Patient List
+            </span>
+          </div>
           <p className="text-slate-500 mt-1 text-xs sm:text-sm font-medium">Review patient booking requests, approve consultations, and manage daily capacity.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {/* Locked CSV Export (Pro Feature) */}
+          <button 
+            type="button"
+            onClick={() => handleProFeatureClick("CSV & Excel Patient Export")}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+            title="Export patient records to CSV (Advanced Plan)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500" />
+            <span>Export CSV</span>
+            <Lock className="w-3 h-3 text-amber-600" />
+          </button>
+
           {/* Quick Switch: Mark Today's Slots as Full / Closed */}
           <button
             type="button"
@@ -276,7 +299,7 @@ export default function AppointmentsPage() {
         </div>
         
         {/* Date Filter Input */}
-        <div className="relative shrink-0">
+        <div className="relative shrink-0 flex items-center gap-2">
           <input 
             type="date"
             value={dateFilter}
@@ -286,15 +309,23 @@ export default function AppointmentsPage() {
           {dateFilter && (
             <button 
               onClick={() => setDateFilter("")} 
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+              className="text-slate-400 hover:text-slate-700"
               title="Clear date"
             >
-              <XCircle className="w-3.5 h-3.5" />
+              <XCircle className="w-4 h-4" />
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => handleProFeatureClick("Advanced Date Range & Multi-Month Filter")}
+            className="text-[11px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-2xl flex items-center gap-1 border border-slate-200 transition-all"
+            title="Multi-range date filters available on Pro tier"
+          >
+            Range <Lock className="w-3 h-3 text-amber-600" />
+          </button>
         </div>
 
-        {/* Status Filter Tabs (Instant Client-Side Filtering with #00A1AC) */}
+        {/* Status Filter Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-hidden flex-wrap shrink-0">
           {[
             { id: 'ALL', label: 'All Queue' },
@@ -400,7 +431,7 @@ export default function AppointmentsPage() {
                           <div>
                             <div className="text-sm font-bold text-[#0f172a] group-hover:text-[#00A1AC] transition-colors">{apt.patientName}</div>
                             <div className="text-xs text-slate-400 font-mono mt-0.5">{apt.patientPhone}</div>
-                            <div className="text-[11px] text-slate-400 mt-0.5">{apt.patientAge} Yrs • {apt.patientGender}</div>
+                            <div className="text-[11px] text-slate-400 mt-0.5">{apt.patientAge ? `${apt.patientAge} Yrs` : ''} {apt.patientGender ? `• ${apt.patientGender}` : ''}</div>
                           </div>
                         </div>
                       </td>
@@ -415,8 +446,8 @@ export default function AppointmentsPage() {
                         </div>
                       </td>
                       <td className="py-4 whitespace-nowrap">
-                        <div className="text-xs font-bold text-slate-700">{apt.serviceName}</div>
-                        <div className="text-xs font-black text-slate-900 mt-0.5">₹{apt.price}</div>
+                        <div className="text-xs font-bold text-slate-700">{apt.serviceName || "Consultation"}</div>
+                        <div className="text-xs font-black text-slate-900 mt-0.5">₹{apt.price || 500}</div>
                       </td>
                       <td className="py-4 whitespace-nowrap">
                         {getStatusBadge(apt.status)}
@@ -490,6 +521,35 @@ export default function AppointmentsPage() {
           </div>
         )}
       </div>
+
+      {/* Upgrade Modal for Pro Features */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center animate-in zoom-in-95">
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-7 h-7" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 mb-2">Pro Feature Locked</h3>
+            <p className="text-xs text-slate-600 leading-relaxed mb-6 font-medium">
+              <strong>{upgradeFeature}</strong> is available on Advanced (₹999/mo) and Premium tiers. Basic plan includes real-time patient queue, contact records, and instant confirmation workflows.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button 
+                onClick={() => setShowUpgradeModal(false)}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition-all cursor-pointer"
+              >
+                Close
+              </button>
+              <Link 
+                href="/dashboard/subscription"
+                className="px-6 py-2.5 rounded-xl bg-[#00A1AC] hover:bg-[#008790] text-white font-black text-xs shadow-lg shadow-[#00A1AC]/25 transition-all flex items-center gap-1.5"
+              >
+                Upgrade to Pro (₹999/mo) <ArrowUpRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

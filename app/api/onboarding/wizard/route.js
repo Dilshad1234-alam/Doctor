@@ -183,6 +183,7 @@ export async function POST(req) {
       user.specialization ||
       "General Practice";
 
+    const photoUrl = doctorProfile?.profilePhoto || doctorProfile?.avatarUrl || "";
     const cleanDoctorProfile = {
       fullName: normalizedDoctorName,
       qualification: doctorProfile?.qualification?.trim() || "MBBS",
@@ -190,7 +191,8 @@ export async function POST(req) {
       experienceYrs: Number(doctorProfile?.experienceYrs) || 5,
       regNumber: doctorProfile?.regNumber?.trim() || "",
       bio: doctorProfile?.bio?.trim() || "",
-      avatarUrl: doctorProfile?.avatarUrl || "",
+      avatarUrl: photoUrl,
+      profilePhoto: photoUrl,
       role: doctorRole,
       entityType: entityType,
       category: doctorCategory,
@@ -261,7 +263,12 @@ export async function POST(req) {
 
     // 6. Upsert WebsiteConfig & publish instantly
     if (websiteConfig) {
-      const cleanWebsiteConfig = { ...websiteConfig, buttonStyle: sanitizedStyle };
+      const cleanWebsiteConfig = { 
+        ...websiteConfig, 
+        doctorPhoto: websiteConfig?.doctorPhoto || photoUrl || "",
+        clinicLogo: websiteConfig?.clinicLogo || clinicDetails?.logo || "",
+        buttonStyle: sanitizedStyle 
+      };
       let webConfig = await WebsiteConfig.findOne({ clinicId: clinic._id });
       if (!webConfig) {
         webConfig = new WebsiteConfig({

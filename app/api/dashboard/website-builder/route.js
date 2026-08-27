@@ -99,7 +99,7 @@ async function handleSaveWebsiteBuilder(req) {
       doctor: updatedDoctor 
     });
   } catch (error) {
-    console.error("Website API save error:", error);
+    console.error("Website Builder save error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

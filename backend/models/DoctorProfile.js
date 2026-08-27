@@ -40,6 +40,14 @@ const DoctorProfileSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    profilePhoto: {
+      type: String,
+      default: "",
+    },
+    image: {
+      type: String,
+      default: "",
+    },
     role: {
       type: String,
       enum: ["INDIVIDUAL_DOCTOR", "CLINIC_DOCTOR", "HOSPITAL_DOCTOR"],

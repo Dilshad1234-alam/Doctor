@@ -3,7 +3,9 @@ import { cookies } from "next/headers";
 import connectDB from "../../../../backend/config/db.js";
 import Clinic from "../../../../backend/models/Clinic.js";
 import Service from "../../../../backend/models/Service.js";
+import Subscription from "../../../../backend/models/Subscription.js";
 import { verifyToken } from "../../../../backend/utils/jwt.js";
+import { PLAN_CONFIG, getPlanConfig } from "../../../../lib/planLimits.js";
 
 // Helper to authenticate and get clinic
 async function authenticateAndGetClinic() {
@@ -18,14 +20,27 @@ async function authenticateAndGetClinic() {
   const clinic = await Clinic.findOne({ ownerId: decoded.id }).lean();
   if (!clinic) throw new Error("Clinic not found");
   
-  return clinic;
+  return { clinic, userId: decoded.id };
 }
 
 export async function GET() {
   try {
-    const clinic = await authenticateAndGetClinic();
+    const { clinic, userId } = await authenticateAndGetClinic();
     const services = await Service.find({ clinicId: clinic._id }).lean();
-    return NextResponse.json({ success: true, services }, { status: 200 });
+    const subscription = await Subscription.findOne({ clinicId: clinic._id }).lean() || 
+                         await Subscription.findOne({ userId }).lean();
+    const planId = subscription?.planId || 'BASIC';
+    const planLimits = getPlanConfig(planId);
+
+    return NextResponse.json({ 
+      success: true, 
+      services, 
+      plan: {
+        planId,
+        maxServices: planLimits.maxServices,
+        name: planLimits.name
+      }
+    }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: error.message === 'Unauthorized' ? 401 : 500 });
   }
@@ -33,12 +48,25 @@ export async function GET() {
 
 export async function POST(req) {
   try {
-    const clinic = await authenticateAndGetClinic();
+    const { clinic, userId } = await authenticateAndGetClinic();
     const body = await req.json();
     const { name, price, durationMins } = body;
     
     if (!name || !price || !durationMins) {
       return NextResponse.json({ success: false, error: "Missing fields" }, { status: 400 });
+    }
+
+    const subscription = await Subscription.findOne({ clinicId: clinic._id }).lean() || 
+                         await Subscription.findOne({ userId }).lean();
+    const planId = subscription?.planId || 'BASIC';
+    const planLimits = getPlanConfig(planId);
+
+    const currentServicesCount = await Service.countDocuments({ clinicId: clinic._id });
+    if (currentServicesCount >= planLimits.maxServices) {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Basic Plan limit reached (${planLimits.maxServices}/${planLimits.maxServices} services). Upgrade to Advanced for unlimited services.` 
+      }, { status: 403 });
     }
     
     const service = await Service.create({
@@ -57,7 +85,7 @@ export async function POST(req) {
 
 export async function DELETE(req) {
   try {
-    const clinic = await authenticateAndGetClinic();
+    const { clinic } = await authenticateAndGetClinic();
     const { searchParams } = new URL(req.url);
     const serviceId = searchParams.get("serviceId");
     

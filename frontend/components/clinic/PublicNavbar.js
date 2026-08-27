@@ -20,11 +20,19 @@ export default function PublicNavbar({ clinic, websiteConfig }) {
   return (
     <nav className="sticky top-0 left-0 right-0 z-50 w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-6 sm:px-12 lg:px-20 py-3.5 flex items-center justify-between shadow-sm transition-all">
       <Link href={`/${slug}`} className="flex items-center gap-3">
-        <div className={`w-10 h-10 ${buttonStyle} flex items-center justify-center text-white font-bold text-xl shadow-inner`} style={{ backgroundColor: primaryColor }}>
-          {clinic.name.charAt(0)}
-        </div>
+        {websiteConfig?.clinicLogo || clinic?.logo ? (
+          <img 
+            src={websiteConfig?.clinicLogo || clinic?.logo} 
+            alt={clinic?.name || "Clinic Logo"} 
+            className={`w-10 h-10 ${buttonStyle} object-contain p-1 border border-slate-200 bg-white shadow-sm`} 
+          />
+        ) : (
+          <div className={`w-10 h-10 ${buttonStyle} flex items-center justify-center text-white font-bold text-xl shadow-inner`} style={{ backgroundColor: primaryColor }}>
+            {clinic?.name?.charAt(0) || "C"}
+          </div>
+        )}
         <div>
-          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight leading-tight">{clinic.name}</h1>
+          <h1 className="text-lg font-extrabold text-slate-900 tracking-tight leading-tight">{clinic?.name}</h1>
         </div>
       </Link>
 

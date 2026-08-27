@@ -35,6 +35,10 @@ const ClinicSchema = new mongoose.Schema({
     type: String,
     default: "",
   },
+  logo: {
+    type: String,
+    default: "",
+  },
   role: {
     type: String,
     enum: ["INDIVIDUAL_CLINIC", "MULTI_DOCTOR_CLINIC", "HOSPITAL"],

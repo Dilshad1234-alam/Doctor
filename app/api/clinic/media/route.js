@@ -49,13 +49,14 @@ export async function PUT(req) {
     let updatedAvatar = undefined;
     let updatedCover = undefined;
 
-    if (avatarUrl !== undefined) {
+    const photo = body.profilePhoto !== undefined ? body.profilePhoto : avatarUrl;
+    if (photo !== undefined) {
       await DoctorProfile.findOneAndUpdate(
         { clinicId: clinic._id },
-        { avatarUrl },
+        { avatarUrl: photo, profilePhoto: photo },
         { new: true }
       );
-      updatedAvatar = avatarUrl;
+      updatedAvatar = photo;
     }
     
     if (coverImageUrl !== undefined) {
