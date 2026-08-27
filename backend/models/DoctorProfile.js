@@ -24,6 +24,10 @@ const DoctorProfileSchema = new mongoose.Schema(
       type: String,
       default: "General Physician",
     },
+    specialty: {
+      type: String,
+      default: "general_opd",
+    },
     experienceYrs: {
       type: Number,
       default: 5,

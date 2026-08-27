@@ -11,6 +11,7 @@ import AdvancedDoctorTemplate from '../../components/templates/AdvancedDoctorTem
 import ModernDoctorTemplate from '../../components/templates/ModernDoctorTemplate.js';
 import { COLOR_PALETTES, resolveColor, THEME_COLOR_MAP, BUTTON_SHAPE_MAP, getThemeConfig, getButtonShapeClass } from '../../lib/themeColors.js';
 import { getPlanTier } from '../../lib/planLimits.js';
+import { SPECIALTY_PRESETS, getSpecialtyPreset, detectSpecialtyFromText, SPECIALTY_LABELS } from '../../lib/specialtyPresets.js';
 import { AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -95,8 +96,19 @@ export default async function ClinicPage(props) {
   const planId = (subscription?.planId || "BASIC").toUpperCase();
   const tierConfig = getPlanTier(planId);
 
+  // Detect Clinic Specialty Preset & Resolved Specialty Label
+  const detectedSpecialtyId = doctorData.specialty || detectSpecialtyFromText(`${doctorData.specialization || ''} ${clinicData.name || ''} ${clinicData.about || ''}`);
+  const specialtyPreset = getSpecialtyPreset(detectedSpecialtyId);
+  const displaySpecialty = SPECIALTY_LABELS[detectedSpecialtyId] || doctorData.specialty || doctorData.specialization || specialtyPreset.defaultSpecialization;
+  
+  doctorData.specialty = detectedSpecialtyId;
+  doctorData.displaySpecialty = displaySpecialty;
+  if (!doctorData.specialization || doctorData.specialization.toLowerCase() === 'general practice' || doctorData.specialization.toLowerCase() === 'general physician') {
+    doctorData.specialization = displaySpecialty;
+  }
+
   // 1. Strict Tier Color Gating
-  const requestedColor = websiteConfigData?.themeColor || websiteConfigData?.primaryColor || 'teal';
+  const requestedColor = websiteConfigData?.themeColor || websiteConfigData?.primaryColor || specialtyPreset.color || 'teal';
   const mappedTheme = getThemeConfig(requestedColor);
   let effectiveColor = requestedColor;
   if (!tierConfig.allowedColors.includes(mappedTheme.id.toLowerCase())) {
@@ -136,6 +148,8 @@ export default async function ClinicPage(props) {
         slug={slug}
         isAdvanced={isAdvanced}
         isPremium={isPremium}
+        specialtyPreset={specialtyPreset}
+        displaySpecialty={displaySpecialty}
       />
     );
   }
@@ -151,6 +165,8 @@ export default async function ClinicPage(props) {
         slug={slug}
         isAdvanced={isAdvanced}
         isPremium={isPremium}
+        specialtyPreset={specialtyPreset}
+        displaySpecialty={displaySpecialty}
       />
     );
   }
@@ -166,6 +182,8 @@ export default async function ClinicPage(props) {
       slug={slug}
       isAdvanced={isAdvanced}
       isPremium={isPremium}
+      specialtyPreset={specialtyPreset}
+      displaySpecialty={displaySpecialty}
     />
   );
 }

@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { PLAN_CONFIG, getPlanConfig, getPlanTier } from "../../../../lib/planLimits.js";
 import { THEME_COLOR_MAP, BUTTON_SHAPE_MAP, getThemeConfig, getButtonShapeClass } from "../../../../lib/themeColors.js";
+import { SPECIALTY_PRESETS, getSpecialtyPreset } from "../../../../lib/specialtyPresets.js";
 
 export default function WebsiteBuilderPage() {
   const [config, setConfig] = useState({
@@ -38,6 +39,8 @@ export default function WebsiteBuilderPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState("");
   const [copiedDns, setCopiedDns] = useState(false);
+  const [applyingPreset, setApplyingPreset] = useState(false);
+  const [selectedSpecialty, setSelectedSpecialty] = useState("general_opd");
 
   const syncConfigFromServer = async () => {
     try {
@@ -145,6 +148,38 @@ export default function WebsiteBuilderPage() {
 
   const saveConfig = async () => {
     await savePayload({ ...config, customDomain });
+  };
+
+  const handleApplyPreset = async (presetId) => {
+    setApplyingPreset(true);
+    try {
+      const res = await fetch("/api/dashboard/specialty-preset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ presetId, seedServices: false })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setSelectedSpecialty(presetId);
+        if (json.doctor) setDoctor(json.doctor);
+        if (json.websiteConfig) {
+          setConfig(prev => ({
+            ...prev,
+            ...json.websiteConfig,
+            themeColor: json.websiteConfig.themeColor || json.preset?.color || 'teal',
+            primaryColor: json.websiteConfig.primaryColor || '#00A1AC'
+          }));
+        }
+        setSavedSuccess(true);
+        setTimeout(() => setSavedSuccess(false), 3000);
+      } else {
+        alert(json.error || "Could not apply preset.");
+      }
+    } catch (err) {
+      console.error("Error applying preset:", err);
+    } finally {
+      setApplyingPreset(false);
+    }
   };
 
   const updateConfig = (field, value) => {
@@ -329,6 +364,39 @@ export default function WebsiteBuilderPage() {
         
         {/* Left Controls (White Card) */}
         <div className="lg:col-span-5 space-y-6">
+
+          {/* 1-Click Specialty Presets Quick Setup Card */}
+          <div className="bg-white border border-slate-200 p-5 rounded-3xl shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#00A1AC]" />
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">Specialty Clinic Presets</h3>
+              </div>
+              <span className="text-[10px] font-bold text-slate-400">1-Click Auto Setup</span>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
+              {Object.values(SPECIALTY_PRESETS).map(preset => {
+                const isSelected = selectedSpecialty === preset.id || (doctor?.specialty || '').toLowerCase() === preset.id.toLowerCase();
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    disabled={applyingPreset}
+                    onClick={() => handleApplyPreset(preset.id)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold shrink-0 transition-all border cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#00A1AC] text-white border-[#00A1AC] shadow-md shadow-[#00A1AC]/20'
+                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>{preset.shortName}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
             <div className="flex border-b border-slate-100 bg-slate-50 overflow-x-auto">
               <button 

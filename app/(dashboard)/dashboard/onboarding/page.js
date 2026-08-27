@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import { 
   CheckCircle2, ChevronRight, ChevronLeft, Loader2, Sparkles, Building, UserCircle, 
   Stethoscope, Clock, Clock3, LayoutTemplate, Palette, Globe, Play, ArrowRight, ShieldCheck,
-  Zap, Check, ExternalLink, Sliders, MapPin, Phone, Mail, Award, Plus, Trash2, HelpCircle
+  Zap, Check, ExternalLink, Sliders, MapPin, Phone, Mail, Award, Plus, Trash2, HelpCircle,
+  Smile, Activity, Heart, Leaf, Eye, Lock, Crown
 } from "lucide-react";
+import { SPECIALTY_PRESETS, getSpecialtyPreset } from "../../../../lib/specialtyPresets.js";
+import { getThemeConfig } from "../../../../lib/themeColors.js";
 
 const getDisplayDoctorName = (name) => {
   if (!name) return "Dr. Doctor";
@@ -90,7 +93,7 @@ export default function OnboardingWizard() {
 
   const [formData, setFormData] = useState({
     plan: { planId: "BASIC", billingCycle: "MONTHLY", price: 499, isTrial: true },
-    doctorProfile: { fullName: "", qualification: "", specialization: "", experienceYrs: "", regNumber: "", bio: "", profilePhoto: "" },
+    doctorProfile: { fullName: "", qualification: "MBBS, MD", specialization: "General Physician & Family Medicine", specialty: "general_opd", experienceYrs: "5", regNumber: "", bio: "Committed to comprehensive family healthcare, preventative medicine, and routine outpatient management.", profilePhoto: "" },
     clinicDetails: { name: "", phone: "", email: "", address: "", city: "", state: "", pincode: "", slug: "" },
     services: [
       { name: "General Consultation", description: "Standard clinical examination and prescription", price: "500", durationMins: "15" },
@@ -108,11 +111,68 @@ export default function OnboardingWizard() {
     websiteConfig: {
       templateId: "template-1",
       primaryColor: "#00A1AC",
+      themeColor: "teal",
       fontStyle: "Plus Jakarta Sans",
       buttonStyle: "rounded-full",
       showSections: { about: true, services: true, timings: true, contact: true }
     }
   });
+
+  const handleSpecialtySelect = (presetKey) => {
+    const preset = getSpecialtyPreset(presetKey);
+    setFormData(prev => {
+      // Auto-generate suggested qualification based on specialty
+      let suggestedQual = prev.doctorProfile.qualification;
+      if (!suggestedQual || suggestedQual === "MBBS" || suggestedQual === "MBBS, MD" || suggestedQual === "BDS, MDS" || suggestedQual === "BPT, MPT" || suggestedQual.includes("BAMS") || suggestedQual.includes("DCH")) {
+        if (presetKey === 'dental') suggestedQual = 'BDS, MDS';
+        else if (presetKey === 'dermatology') suggestedQual = 'MBBS, MD (Dermatology)';
+        else if (presetKey === 'general_opd') suggestedQual = 'MBBS, MD';
+        else if (presetKey === 'physiotherapy') suggestedQual = 'BPT, MPT';
+        else if (presetKey === 'pediatric') suggestedQual = 'MBBS, DCH, MD (Pediatrics)';
+        else if (presetKey === 'ayurveda_homeopathy') suggestedQual = 'BAMS, MD (Ayurveda)';
+        else if (presetKey === 'eye_ent') suggestedQual = 'MBBS, MS (Ophthalmology / ENT)';
+      }
+
+      // Auto-suggest clinical bio
+      let suggestedBio = prev.doctorProfile.bio;
+      if (!suggestedBio || suggestedBio.length < 25 || suggestedBio.includes("healthcare") || suggestedBio.includes("Dedicated") || suggestedBio.includes("Specializing") || suggestedBio.includes("Focused") || suggestedBio.includes("Providing")) {
+        if (presetKey === 'dental') suggestedBio = 'Dedicated to providing gentle, painless dental care and complete oral health rehabilitation.';
+        else if (presetKey === 'dermatology') suggestedBio = 'Specializing in evidence-based clinical dermatology, aesthetic skincare, and hair treatments.';
+        else if (presetKey === 'general_opd') suggestedBio = 'Committed to comprehensive family healthcare, preventative medicine, and routine outpatient management.';
+        else if (presetKey === 'physiotherapy') suggestedBio = 'Focused on posture correction, mobility restoration, and post-injury musculoskeletal rehabilitation.';
+        else if (presetKey === 'pediatric') suggestedBio = 'Providing compassionate child healthcare, routine infant immunization, and developmental monitoring.';
+        else if (presetKey === 'ayurveda_homeopathy') suggestedBio = 'Dedicated to holistic wellness, pulse diagnosis (Nadi Pariksha), and natural root-cause healing.';
+        else if (presetKey === 'eye_ent') suggestedBio = 'Specializing in advanced vision diagnostics, ENT care, and comprehensive outpatient treatment.';
+      }
+
+      // Pre-populate Step 4 Services with specialty starter treatments
+      const presetServices = (preset.services || []).map(s => ({
+        name: s.name,
+        description: s.description || "Comprehensive clinical consultation and diagnostic care",
+        price: String(s.price || 500),
+        durationMins: String(s.durationMins || 15)
+      }));
+
+      const themeConfig = getThemeConfig(preset.color);
+
+      return {
+        ...prev,
+        doctorProfile: {
+          ...prev.doctorProfile,
+          specialty: presetKey,
+          specialization: preset.defaultSpecialization,
+          qualification: suggestedQual,
+          bio: suggestedBio
+        },
+        websiteConfig: {
+          ...prev.websiteConfig,
+          themeColor: preset.color,
+          primaryColor: themeConfig.primary
+        },
+        services: presetServices.length > 0 ? presetServices : prev.services
+      };
+    });
+  };
 
   useEffect(() => {
     const initOnboarding = async () => {
@@ -328,7 +388,7 @@ export default function OnboardingWizard() {
   const isBasicSelected = selectedPlanCode === "BASIC" || selectedPlanCode === "STARTER";
 
   return (
-    <div className="h-screen max-h-screen overflow-hidden w-full font-sans antialiased bg-gradient-to-br from-[#00A1AC] via-[#008790] to-[#006e76] text-slate-900 relative flex flex-col justify-between selection:bg-[#00A1AC] selection:text-white">
+    <div className="min-h-screen w-full font-sans antialiased bg-gradient-to-br from-[#00A1AC] via-[#008790] to-[#006e76] text-slate-900 relative flex flex-col justify-between selection:bg-[#00A1AC] selection:text-white overflow-y-auto">
       
       {/* 1. Header Progress Bar */}
       <header className="w-full border-b border-white/10 bg-transparent shrink-0 z-50">
@@ -359,7 +419,7 @@ export default function OnboardingWizard() {
       </header>
 
       {/* 2. Main Step Content Container */}
-      <main className={`w-full mx-auto flex-1 flex flex-col items-center justify-center overflow-y-auto ${currentStep === 9 ? "max-w-6xl w-full px-4 py-2" : currentStep === 10 ? "max-w-7xl px-4 sm:px-8 py-2" : "max-w-4xl px-4 sm:px-6 py-4"}`}>
+      <main className={`w-full mx-auto flex-1 flex flex-col items-center justify-start sm:justify-center py-6 sm:py-10 ${currentStep === 9 ? "max-w-6xl w-full px-4" : currentStep === 10 ? "max-w-7xl px-4 sm:px-8" : "max-w-4xl px-4 sm:px-6"}`}>
         
         {/* STEP 1: Welcome */}
         {currentStep === 1 && (
@@ -415,7 +475,7 @@ export default function OnboardingWizard() {
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold uppercase text-[11px] mb-1.5">Doctor Full Name</label>
+                <label className="block text-slate-700 font-bold uppercase text-[11px] mb-1.5">Doctor Full Name *</label>
                 <input 
                   type="text" 
                   placeholder="e.g. Dr. Jane Smith" 
@@ -423,6 +483,58 @@ export default function OnboardingWizard() {
                   onChange={e => updateForm('doctorProfile', 'fullName', e.target.value)} 
                   className="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 font-semibold focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all shadow-sm" 
                 />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-bold uppercase text-[11px] mb-1.5">Years of Experience</label>
+                <input 
+                  type="number" 
+                  placeholder="e.g. 8" 
+                  value={formData.doctorProfile.experienceYrs || ""} 
+                  onChange={e => updateForm('doctorProfile', 'experienceYrs', e.target.value)} 
+                  className="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 font-semibold focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all shadow-sm" 
+                />
+              </div>
+
+              {/* Multi-Specialty Smart Preset Selector */}
+              <div className="sm:col-span-2 space-y-2.5 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <label className="text-slate-900 font-bold uppercase text-[11px] flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#00A1AC]" />
+                    <span>Select Practice Specialty Preset *</span>
+                  </label>
+                  <span className="text-[10px] text-[#00A1AC] font-black uppercase tracking-wider bg-[#00A1AC]/10 px-2.5 py-0.5 rounded-full">
+                    Auto-Configures Services & Bio
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {Object.values(SPECIALTY_PRESETS).map(preset => {
+                    const isSelected = (formData.doctorProfile.specialty || 'general_opd') === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => handleSpecialtySelect(preset.id)}
+                        className={`flex flex-col justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-white border-[#00A1AC] ring-2 ring-[#00A1AC]/30 shadow-md'
+                            : 'bg-white/60 hover:bg-white border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className={`text-[11px] font-black leading-tight ${isSelected ? 'text-[#00A1AC]' : 'text-slate-800'}`}>
+                            {preset.shortName}
+                          </span>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-[#00A1AC] shrink-0" />}
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-medium line-clamp-1">
+                          {preset.services.length} starter services
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>
@@ -437,23 +549,12 @@ export default function OnboardingWizard() {
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold uppercase text-[11px] mb-1.5">Specialization</label>
+                <label className="block text-slate-700 font-bold uppercase text-[11px] mb-1.5">Specialization / Clinical Title</label>
                 <input 
                   type="text" 
-                  placeholder="e.g. Cardiologist / General Physician" 
+                  placeholder="e.g. Consultant Dermatologist / General Physician" 
                   value={formData.doctorProfile.specialization || ""} 
                   onChange={e => updateForm('doctorProfile', 'specialization', e.target.value)} 
-                  className="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 font-semibold focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all shadow-sm" 
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-bold uppercase text-[11px] mb-1.5">Years of Experience</label>
-                <input 
-                  type="number" 
-                  placeholder="e.g. 8" 
-                  value={formData.doctorProfile.experienceYrs || ""} 
-                  onChange={e => updateForm('doctorProfile', 'experienceYrs', e.target.value)} 
                   className="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-slate-900 placeholder:text-slate-400 font-semibold focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all shadow-sm" 
                 />
               </div>
@@ -470,20 +571,37 @@ export default function OnboardingWizard() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-slate-700 font-bold uppercase text-[11px] mb-1.5">Short Clinical Bio</label>
+                <label className="block text-slate-700 font-bold uppercase text-[11px] mb-1.5 flex items-center justify-between">
+                  <span>Clinical Bio</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Auto-suggested based on selected specialty</span>
+                </label>
                 <textarea 
                   placeholder="Tell patients about your expertise, background, and patient care philosophy..." 
                   rows={3} 
                   value={formData.doctorProfile.bio || ""} 
                   onChange={e => updateForm('doctorProfile', 'bio', e.target.value)} 
-                  className="w-full rounded-xl bg-slate-50 border border-slate-200 p-4 text-slate-900 placeholder:text-slate-400 font-semibold focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all shadow-sm" 
+                  className="w-full rounded-xl bg-slate-50 border border-slate-200 p-4 text-slate-900 placeholder:text-slate-400 font-semibold focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all shadow-sm leading-relaxed" 
                 />
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-slate-200 flex items-center justify-between">
-              <button onClick={handlePrev} className="bg-slate-100 hover:bg-slate-200 text-[#006e76] font-bold px-6 py-2.5 rounded-xl border border-slate-200 transition-all text-xs cursor-pointer">Back</button>
-              <button onClick={handleNext} className="bg-[#00A1AC] hover:bg-[#008790] active:bg-[#006e76] text-white font-black px-8 py-3 rounded-2xl shadow-lg shadow-[#00A1AC]/30 transition-all text-xs cursor-pointer active:scale-95">Next Step →</button>
+            <div className="mt-8 pt-6 border-t border-slate-200 flex items-center justify-between gap-4">
+              <button 
+                type="button"
+                onClick={handlePrev} 
+                className="bg-slate-100 hover:bg-slate-200 text-[#006e76] font-bold px-6 py-3 rounded-xl border border-slate-200 transition-all text-xs cursor-pointer active:scale-95 flex items-center gap-1.5"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Back</span>
+              </button>
+              <button 
+                type="button"
+                onClick={handleNext} 
+                className="bg-[#00A1AC] hover:bg-[#008790] active:bg-[#006e76] text-white font-black px-8 py-3.5 rounded-2xl shadow-xl shadow-[#00A1AC]/30 transition-all text-xs cursor-pointer active:scale-95 flex items-center gap-2 hover:scale-105"
+              >
+                <span>Next Step</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         )}
@@ -903,55 +1021,179 @@ export default function OnboardingWizard() {
         )}
 
         {/* STEP 8: Website Template Selection */}
-        {currentStep === 8 && (
-          <div className="w-full rounded-3xl border border-white/50 bg-white/95 backdrop-blur-md p-6 sm:p-10 shadow-2xl relative overflow-hidden text-slate-900 animate-in fade-in duration-300">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 rounded-2xl bg-[#00A1AC]/10 text-[#00A1AC] border border-[#00A1AC]/20">
-                <LayoutTemplate className="w-7 h-7" />
-              </div>
-              <div>
-                <h2 className="font-black text-2xl sm:text-3xl text-slate-900 tracking-tight">Choose Website Template</h2>
-                <p className="text-xs sm:text-sm text-slate-600 font-medium">Pick a tailored responsive layout for your medical practice</p>
-              </div>
-            </div>
+        {currentStep === 8 && (() => {
+          const selectedSpecialtyKey = formData.doctorProfile.specialty || 'general_opd';
+          const specialtyPreset = getSpecialtyPreset(selectedSpecialtyKey);
+          const currentPlanId = (formData.plan.planId || "BASIC").toUpperCase();
+          const isAdvancedOrPro = currentPlanId === "PRO" || currentPlanId === "ADVANCED" || currentPlanId === "PREMIUM";
+          const isPremiumTier = currentPlanId === "PREMIUM" || currentPlanId === "ENTERPRISE";
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {[
-                { id: 'template-1', name: 'Modern Minimal', desc: 'Clean high-contrast layout for solo doctors', image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=800&auto=format&fit=crop' },
-                { id: 'template-2', name: 'Premium Care', desc: 'Rich aesthetic for specialized clinical centers', image: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=800&auto=format&fit=crop' },
-                { id: 'template-3', name: 'Family Health', desc: 'Warm, approachable design for family clinics', image: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=800&auto=format&fit=crop' }
-              ].map((t) => (
-                <div 
-                  key={t.id} 
-                  onClick={() => updateForm('websiteConfig', 'templateId', t.id)} 
-                  className={`cursor-pointer rounded-3xl overflow-hidden border-2 transition-all p-2 flex flex-col justify-between ${
-                    formData.websiteConfig.templateId === t.id 
-                      ? 'border-[#00A1AC] bg-[#00A1AC]/10 shadow-xl shadow-[#00A1AC]/20 ring-2 ring-[#00A1AC]' 
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
-                  }`}
-                >
-                  <div className="h-40 rounded-2xl overflow-hidden bg-slate-100 relative">
-                    <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
-                    {formData.websiteConfig.templateId === t.id && (
-                      <span className="absolute top-3 right-3 bg-[#00A1AC] text-white font-black text-[10px] uppercase px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Selected
-                      </span>
-                    )}
+          const dynamicTemplates = [
+            {
+              id: 'template-1',
+              name: 'Modern Minimal',
+              category: 'Solo & General Practice',
+              tierRequired: 'BASIC',
+              isLocked: false,
+              desc: `Clean high-contrast layout tailored for ${specialtyPreset.shortName} practice. Standard DocPulse footer.`,
+              image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=800&auto=format&fit=crop',
+              badges: ['Basic / Starter Included', 'OPD Slot Token Engine', 'Clean 1-Column Flow']
+            },
+            {
+              id: 'template-2',
+              name: `${specialtyPreset.shortName} Care Pro`,
+              category: 'Specialty Care & High Conversion',
+              tierRequired: 'ADVANCED',
+              isLocked: !isAdvancedOrPro,
+              lockMessage: 'Unlocks on Advanced (₹999/mo)',
+              desc: `Tailored ${specialtyPreset.name} layout with clinical trust badges (${specialtyPreset.badges.slice(0, 2).join(', ')}), floating WhatsApp widget, and verified reviews.`,
+              image: specialtyPreset.id === 'dental' 
+                ? 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?q=80&w=800&auto=format&fit=crop'
+                : specialtyPreset.id === 'dermatology'
+                ? 'https://images.unsplash.com/photo-1512290900672-1f4f5c9e29a9?q=80&w=800&auto=format&fit=crop'
+                : specialtyPreset.id === 'physiotherapy'
+                ? 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=800&auto=format&fit=crop'
+                : specialtyPreset.id === 'pediatric'
+                ? 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?q=80&w=800&auto=format&fit=crop'
+                : 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=800&auto=format&fit=crop',
+              badges: ['Specialty Trust Badges', 'WhatsApp Widget', 'Patient Reviews', 'FAQ Accordion']
+            },
+            {
+              id: 'template-4',
+              name: 'Executive Luxury VIP',
+              category: '100% White-Label Portal',
+              tierRequired: 'PREMIUM',
+              isLocked: !isPremiumTier,
+              lockMessage: 'Unlocks on Premium (₹1,499/mo)',
+              desc: `Ultra-luxury executive medical portal with gold metallic accents, video bio showcase, custom domain routing, and zero DocPulse branding.`,
+              image: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=800&auto=format&fit=crop',
+              badges: ['100% White-Label', 'Video Bio Embed', 'Custom Domain', 'VIP Metallic Accents']
+            }
+          ];
+
+          const handleTemplateSelect = (tmpl) => {
+            if (tmpl.isLocked) {
+              const targetPlanName = tmpl.tierRequired === 'PREMIUM' ? 'Premium Tier (₹1,499/mo)' : 'Advanced Plan (₹999/mo)';
+              const targetPlanId = tmpl.tierRequired === 'PREMIUM' ? 'PREMIUM' : 'PRO';
+              const targetPrice = tmpl.tierRequired === 'PREMIUM' ? 1499 : 999;
+              
+              if (confirm(`The "${tmpl.name}" layout is unlocked with the ${targetPlanName}.\n\nWould you like to upgrade your plan selection to unlock this template?`)) {
+                setFormData(prev => ({
+                  ...prev,
+                  plan: {
+                    ...prev.plan,
+                    planId: targetPlanId,
+                    price: targetPrice
+                  },
+                  websiteConfig: {
+                    ...prev.websiteConfig,
+                    templateId: tmpl.id
+                  }
+                }));
+              }
+              return;
+            }
+            updateForm('websiteConfig', 'templateId', tmpl.id);
+          };
+
+          return (
+            <div className="w-full rounded-3xl border border-white/50 bg-white/95 backdrop-blur-md p-6 sm:p-10 shadow-2xl relative overflow-hidden text-slate-900 animate-in fade-in duration-300">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-2xl bg-[#00A1AC]/10 text-[#00A1AC] border border-[#00A1AC]/20">
+                    <LayoutTemplate className="w-7 h-7" />
                   </div>
-                  <div className="p-3 text-center">
-                    <h4 className="font-black text-sm text-slate-900">{t.name}</h4>
-                    <p className="text-[11px] text-slate-500 mt-0.5">{t.desc}</p>
+                  <div>
+                    <h2 className="font-black text-2xl sm:text-3xl text-slate-900 tracking-tight">Choose Website Template</h2>
+                    <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                      Specialty-optimized layout for <strong className="text-slate-900">{specialtyPreset.name}</strong>
+                    </p>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            <div className="mt-8 pt-6 border-t border-slate-200 flex items-center justify-between">
-              <button onClick={handlePrev} className="bg-slate-100 hover:bg-slate-200 text-[#006e76] font-bold px-6 py-2.5 rounded-xl border border-slate-200 transition-all text-xs cursor-pointer">Back</button>
-              <button onClick={handleNext} className="bg-[#00A1AC] hover:bg-[#008790] active:bg-[#006e76] text-white font-black px-8 py-3 rounded-2xl shadow-lg shadow-[#00A1AC]/30 transition-all text-xs cursor-pointer active:scale-95">Next Step →</button>
+                <span className={`text-[11px] font-black px-3.5 py-1.5 rounded-full border self-start sm:self-auto ${
+                  isPremiumTier 
+                    ? 'text-amber-800 bg-amber-100 border-amber-300 flex items-center gap-1.5' 
+                    : isAdvancedOrPro 
+                      ? 'text-emerald-800 bg-emerald-100 border-emerald-200 flex items-center gap-1.5' 
+                      : 'text-[#00A1AC] bg-[#00A1AC]/10 border-[#00A1AC]/20'
+                }`}>
+                  {isPremiumTier ? <><Crown className="w-3.5 h-3.5 text-amber-600" /> Premium VIP Plan</> : isAdvancedOrPro ? "Advanced Plan (All Unlocked)" : "Basic Plan (₹499/mo)"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {dynamicTemplates.map((t) => {
+                  const isSelected = formData.websiteConfig.templateId === t.id;
+                  return (
+                    <div 
+                      key={t.id} 
+                      onClick={() => handleTemplateSelect(t)} 
+                      className={`cursor-pointer rounded-3xl overflow-hidden border-2 transition-all p-2 flex flex-col justify-between ${
+                        isSelected 
+                          ? 'border-[#00A1AC] bg-teal-50/20 shadow-xl shadow-[#00A1AC]/20 ring-2 ring-[#00A1AC]' 
+                          : t.isLocked
+                            ? 'border-slate-200 bg-slate-50/80 opacity-75 hover:opacity-95 hover:border-slate-300'
+                            : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+                      }`}
+                    >
+                      <div className="h-44 rounded-2xl overflow-hidden bg-slate-100 relative group">
+                        <img src={t.image} alt={t.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent pointer-events-none" />
+                        
+                        {isSelected ? (
+                          <span className="absolute top-3 right-3 bg-[#00A1AC] text-white font-black text-[10px] uppercase px-3 py-1 rounded-full shadow-lg flex items-center gap-1 border border-white/20">
+                            <Check className="w-3 h-3" /> Selected
+                          </span>
+                        ) : t.isLocked ? (
+                          <span className="absolute top-3 right-3 bg-amber-500 text-white font-black text-[10px] px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1 border border-white/20 backdrop-blur-sm">
+                            <Lock className="w-3 h-3" /> {t.lockMessage}
+                          </span>
+                        ) : null}
+
+                        <div className="absolute bottom-2.5 left-3 right-3 text-white pointer-events-none">
+                          <span className="text-[10px] uppercase font-black text-teal-200 block tracking-wider">{t.category}</span>
+                          <h4 className="font-extrabold text-sm text-white drop-shadow-md">{t.name}</h4>
+                        </div>
+                      </div>
+
+                      <div className="p-3 space-y-2.5 flex-1 flex flex-col justify-between">
+                        <p className="text-[11px] text-slate-600 font-medium leading-relaxed">{t.desc}</p>
+                        
+                        <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-100">
+                          {t.badges.map((b, bIdx) => (
+                            <span key={bIdx} className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60">
+                              {b}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-slate-200 flex items-center justify-between gap-4">
+                <button 
+                  type="button"
+                  onClick={handlePrev} 
+                  className="bg-slate-100 hover:bg-slate-200 text-[#006e76] font-bold px-6 py-3 rounded-xl border border-slate-200 transition-all text-xs cursor-pointer active:scale-95 flex items-center gap-1.5"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Back</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleNext} 
+                  className="bg-[#00A1AC] hover:bg-[#008790] active:bg-[#006e76] text-white font-black px-8 py-3.5 rounded-2xl shadow-xl shadow-[#00A1AC]/30 transition-all text-xs cursor-pointer active:scale-95 flex items-center gap-2 hover:scale-105"
+                >
+                  <span>Next Step</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* STEP 9: Live Preview (Enlarged Single Viewport Layout with Clean White Card) */}
         {currentStep === 9 && (

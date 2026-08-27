@@ -10,6 +10,7 @@ import {
 import PublicNavbar from "../../frontend/components/clinic/PublicNavbar.js";
 import BookingClientWrapper from "../../frontend/components/booking/BookingClient.js";
 import { getThemeConfig, getButtonShapeClass } from "../../lib/themeColors.js";
+import { getSpecialtyPreset, detectSpecialtyFromText, SPECIALTY_LABELS } from "../../lib/specialtyPresets.js";
 
 export default function LuxuryGoldTemplate({
   clinic = {},
@@ -19,7 +20,9 @@ export default function LuxuryGoldTemplate({
   websiteConfig = {},
   slug = "",
   isAdvanced = true,
-  isPremium = true
+  isPremium = true,
+  specialtyPreset = null,
+  displaySpecialty: customDisplaySpecialty = null
 }) {
   const [openFaq, setOpenFaq] = useState(0);
 
@@ -32,21 +35,35 @@ export default function LuxuryGoldTemplate({
   const rawPhone = clinic?.phone || doctor?.phone || "9523663754";
   const whatsappPhone = rawPhone.replace(/\D/g, "").replace(/^0+/, "");
 
+  const detectedSpecialtyKey = doctor?.specialty || detectSpecialtyFromText(`${doctor?.specialization || ''} ${clinic?.name || ''} ${clinic?.about || ''}`);
+  const activePreset = specialtyPreset || getSpecialtyPreset(detectedSpecialtyKey);
+  const displaySpecialty = customDisplaySpecialty || SPECIALTY_LABELS[detectedSpecialtyKey] || doctor?.displaySpecialty || doctor?.specialization || activePreset.defaultSpecialization;
+
+  const badgesToDisplay = (activePreset.id === 'dental' || (clinic?.name || '').toLowerCase().includes('dental')) ? [
+    '🦷 100% Autoclave Sterilized Operatory',
+    '💉 Painless Computerized Anesthesia',
+    '📷 Low-Radiation Digital RVG X-Ray',
+    '⏱️ Zero Waiting Room Token Appointments'
+  ] : activePreset.badges;
+
   const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const currentDayIndex = new Date().getDay();
   const todayAvail = availability.find(a => a.dayOfWeek === currentDayIndex);
   const isOpenToday = todayAvail ? (todayAvail.isOpen !== undefined ? Boolean(todayAvail.isOpen) : !todayAvail.isClosed) : false;
 
+  // Display services based on plan limits (BASIC capped at 5)
+  const displayServices = (!isAdvanced && !isPremium) ? services.slice(0, 5) : services;
+
   const testimonials = [
     {
       name: "Rajesh Sharma",
-      treatment: "Cardiology & General Checkup",
+      treatment: `${activePreset.shortName} Consultation`,
       date: "2 days ago",
       review: `${cleanDoctorName} is exceptionally thorough and compassionate. The online confirmed appointment meant zero waiting time at the clinic reception!`
     },
     {
       name: "Priyanka Sen",
-      treatment: "Specialist OPD Consultation",
+      treatment: `Specialist ${activePreset.shortName} Care`,
       date: "1 week ago",
       review: `Outstanding clinical care at ${clinic.name || "the clinic"}. The diagnosis was explained with clarity, and post-consultation follow-up on WhatsApp was prompt.`
     },
@@ -90,21 +107,23 @@ export default function LuxuryGoldTemplate({
       {/* Full Responsive Navbar with Complete Navigation Links */}
       <PublicNavbar clinic={clinic} doctor={doctor} websiteConfig={websiteConfig} />
 
-      {/* Floating WhatsApp Quick Consult Widget */}
-      <a 
-        href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`Hi ${cleanDoctorName}, I would like to inquire about an appointment at ${clinic.name || "the clinic"}.`)}`}
-        target="_blank" 
-        rel="noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#20bd5a] text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-2.5 font-bold transition-all hover:scale-105 active:scale-95 border-2 border-white/40 group cursor-pointer"
-      >
-        <span className="text-xl animate-bounce">💬</span>
-        <div className="text-left">
-          <span className="text-[10px] block text-emerald-100 uppercase tracking-wider font-bold">Quick Help</span>
-          <span className="text-xs sm:text-sm font-black text-white">Instant WhatsApp Chat</span>
-        </div>
-      </a>
+      {/* Floating WhatsApp Quick Consult Widget (ADVANCED & PREMIUM Only) */}
+      {(isAdvanced || isPremium) && (
+        <a 
+          href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`Hi ${cleanDoctorName}, I would like to inquire about an appointment at ${clinic.name || "the clinic"}.`)}`}
+          target="_blank" 
+          rel="noreferrer"
+          className="fixed bottom-6 right-6 z-50 bg-[#25D366] hover:bg-[#20bd5a] text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-2.5 font-bold transition-all hover:scale-105 active:scale-95 border-2 border-white/40 group cursor-pointer"
+        >
+          <span className="text-xl animate-bounce">💬</span>
+          <div className="text-left">
+            <span className="text-[10px] block text-emerald-100 uppercase tracking-wider font-bold">Quick Help</span>
+            <span className="text-xs sm:text-sm font-black text-white">Instant WhatsApp Chat</span>
+          </div>
+        </a>
+      )}
 
-      {/* Hero Section (#home) with Dynamic Theme Palette */}
+      {/* Hero Section (#home) with Dynamic Specialty Theme Palette */}
       <section id="home" className="relative overflow-hidden pt-16 pb-24 px-6 sm:px-12 lg:px-20 bg-gradient-to-b from-slate-50 via-white to-[#F8FAFC] border-b border-slate-200/80 scroll-mt-20">
         
         <div 
@@ -114,14 +133,14 @@ export default function LuxuryGoldTemplate({
 
         <div className="relative max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
-          {/* Left Column: Doctor Headline & CTAs */}
+          {/* Left Column: Doctor Headline, Badges & CTAs */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
             <div 
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm border"
               style={{ backgroundColor: activeTheme.light, color: activeTheme.text, borderColor: activeTheme.border }}
             >
               <ShieldCheck className="w-4 h-4" style={{ color: activeTheme.primary }} />
-              <span>EXCLUSIVE VIP MEDICAL PRACTICE • CONFIRMED APPOINTMENTS</span>
+              <span>{activePreset.name.toUpperCase()} • CONFIRMED APPOINTMENTS</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-tight">
@@ -133,7 +152,7 @@ export default function LuxuryGoldTemplate({
                 className="px-4 py-1.5 rounded-full text-xs font-bold shadow-sm border"
                 style={{ backgroundColor: activeTheme.light, color: activeTheme.text, borderColor: activeTheme.border }}
               >
-                {doctor?.specialization || "Senior Medical Specialist"}
+                {displaySpecialty}
               </span>
               <span className="bg-white text-slate-700 border border-slate-200 px-4 py-1.5 rounded-full text-xs font-bold shadow-sm">
                 {doctor?.qualification || "MBBS, MD"}
@@ -143,8 +162,22 @@ export default function LuxuryGoldTemplate({
               </span>
             </div>
 
+            {/* Specialty-Specific Trust Badges Row */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-1">
+              {badgesToDisplay.map((badge, bIdx) => (
+                <span 
+                  key={bIdx}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-xs"
+                  style={{ backgroundColor: activeTheme.light, color: activeTheme.text, borderColor: activeTheme.border }}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" style={{ color: activeTheme.primary }} />
+                  {badge}
+                </span>
+              ))}
+            </div>
+
             <p className="text-base sm:text-lg text-slate-600 font-medium leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              Providing premium healthcare and expert consultations at <strong>{clinic.name || "our clinic"}</strong>. Skip the waiting room by booking your confirmed OPD slot online.
+              {clinic.about || activePreset.description || `Providing premium healthcare and expert consultations at ${clinic.name || "our clinic"}. Skip the waiting room by booking your confirmed OPD slot online.`}
             </p>
 
             <div className="pt-3 flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start flex-wrap">
@@ -157,7 +190,7 @@ export default function LuxuryGoldTemplate({
                 <ArrowRight className="w-5 h-5" />
               </Link>
 
-              {websiteConfig?.videoBioUrl ? (
+              {websiteConfig?.videoBioUrl && isPremium ? (
                 <a 
                   href={websiteConfig.videoBioUrl}
                   target="_blank"
@@ -205,7 +238,7 @@ export default function LuxuryGoldTemplate({
 
               <div className="text-center space-y-1">
                 <h3 className="text-2xl font-black text-slate-900">{cleanDoctorName}</h3>
-                <p className="text-sm font-semibold" style={{ color: activeTheme.primary }}>{doctor?.specialization || "Senior Specialist"}</p>
+                <p className="text-sm font-semibold" style={{ color: activeTheme.primary }}>{displaySpecialty}</p>
                 <p className="text-xs text-slate-500 font-medium">{clinic.name}</p>
               </div>
 
@@ -259,7 +292,7 @@ export default function LuxuryGoldTemplate({
             </h2>
             <div className="space-y-4 text-slate-600 text-sm sm:text-base font-medium leading-relaxed">
               <p>
-                {cleanDoctorName} is a highly regarded medical practitioner specializing in {doctor?.specialization || "General Medicine & Healthcare"}. 
+                {cleanDoctorName} is a highly regarded medical practitioner specializing in {displaySpecialty}. 
                 With over {doctor?.experienceYrs || 15} years of active clinical practice, they have consulted and managed thousands of patient cases with proven clinical outcomes.
               </p>
               <p>
@@ -295,20 +328,30 @@ export default function LuxuryGoldTemplate({
               <Stethoscope className="w-4 h-4" style={{ color: activeTheme.primary }} />
               <span>Treatments & Services</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Specialized Clinical Services</h2>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">{activePreset.shortName} Services & Procedures</h2>
             <p className="text-slate-500 text-sm font-medium">
               Transparent, confirmed healthcare offerings with dedicated 1-on-1 doctor consultation.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((srv) => (
+            {displayServices.map((srv) => (
               <div 
                 key={srv._id?.toString() || srv.name}
-                className="bg-white border border-slate-200 rounded-3xl p-7 shadow-sm hover:shadow-xl rounded-3xl flex flex-col justify-between transition-all group"
-                style={{ borderColor: undefined }}
+                className="bg-white border border-slate-200 rounded-3xl p-7 shadow-sm hover:shadow-xl flex flex-col justify-between transition-all group relative overflow-hidden"
               >
-                <div className="space-y-4">
+                {/* Specialty-Aware Background Watermark Icon */}
+                <div className="absolute top-0 right-0 p-4 pointer-events-none transition-transform group-hover:scale-110 duration-300">
+                  {(activePreset.id === 'dental' || (clinic?.name || '').toLowerCase().includes('dental') || (srv.name || '').toLowerCase().includes('dental') || (srv.name || '').toLowerCase().includes('teeth') || (srv.name || '').toLowerCase().includes('tooth') || (srv.name || '').toLowerCase().includes('root canal') || (srv.name || '').toLowerCase().includes('aligner')) ? (
+                    <svg className="w-20 h-20 text-blue-500/10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                      <path d="M12 2C8.5 2 6 4.5 6 8c0 4 2 7 3 11 0.5 2 1.5 3 3 3s2.5-1 3-3c1-4 3-7 3-11 0-3.5-2.5-6-6-6z"/>
+                    </svg>
+                  ) : (
+                    <Stethoscope className="w-20 h-20 opacity-5" />
+                  )}
+                </div>
+
+                <div className="space-y-4 relative z-10">
                   <div className="flex items-start justify-between gap-4">
                     <h3 className="text-xl font-black text-slate-900 group-hover:opacity-80 transition-opacity">
                       {srv.name}
@@ -349,119 +392,240 @@ export default function LuxuryGoldTemplate({
       </section>
 
       {/* OPD Schedule Section (#schedule) */}
-      <section id="schedule" className="py-20 px-6 sm:px-12 lg:px-20 bg-[#F8FAFC] border-b border-slate-200/80 scroll-mt-20">
-        <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          
-          <div className="lg:col-span-5 space-y-6">
-            <div 
-              className="inline-flex items-center gap-2 font-bold uppercase tracking-wider text-xs px-3.5 py-1.5 rounded-full border"
-              style={{ backgroundColor: activeTheme.light, color: activeTheme.text, borderColor: activeTheme.border }}
-            >
-              <Clock className="w-4 h-4" style={{ color: activeTheme.primary }} />
-              <span>OPD Schedule</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Clinical Schedule & Timings</h2>
-            <p className="text-slate-600 text-sm font-medium leading-relaxed">
-              Consultations at <strong>{clinic.name}</strong> operate strictly on pre-booked confirmed time slots to eliminate waiting room queues.
-            </p>
+      {(() => {
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const currentDayName = daysOfWeek[new Date().getDay()];
 
-            <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-3 text-xs">
-              <div className="flex items-center gap-3">
-                <MapPin className="w-4 h-4" style={{ color: activeTheme.primary }} />
-                <span className="text-slate-700 font-bold">{clinic.address}, {clinic.city}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4" style={{ color: activeTheme.primary }} />
-                <span className="text-slate-700 font-bold">{clinic.phone || doctor.phone}</span>
-              </div>
-            </div>
-          </div>
+        const defaultSchedule = [
+          { day: 'Sunday', time: doctor?.opdTimings?.sunday || 'CLOSED', isClosed: !doctor?.opdTimings?.sunday || doctor?.opdTimings?.sunday === 'CLOSED' },
+          { day: 'Monday', time: doctor?.opdTimings?.monday || '09:00 - 17:00', isClosed: false },
+          { day: 'Tuesday', time: doctor?.opdTimings?.tuesday || '09:00 - 17:00', isClosed: false },
+          { day: 'Wednesday', time: doctor?.opdTimings?.wednesday || '09:00 - 17:00', isClosed: false },
+          { day: 'Thursday', time: doctor?.opdTimings?.thursday || '09:00 - 17:00', isClosed: false },
+          { day: 'Friday', time: doctor?.opdTimings?.friday || '09:00 - 17:00', isClosed: false },
+          { day: 'Saturday', time: doctor?.opdTimings?.saturday || '09:00 - 17:00', isClosed: false }
+        ];
 
-          <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-3">
-            {availability.sort((a,b) => a.dayOfWeek - b.dayOfWeek).map(day => {
-              const isToday = day.dayOfWeek === currentDayIndex;
-              const isOpen = day.isOpen !== undefined ? Boolean(day.isOpen) : !day.isClosed;
-              return (
+        const activeSchedule = availability && availability.length > 0
+          ? daysOfWeek.map((dName, dIdx) => {
+              const item = availability.find(a => a.dayOfWeek === dIdx);
+              if (item) {
+                const isOpen = item.isOpen !== undefined ? Boolean(item.isOpen) : !item.isClosed;
+                return {
+                  day: dName,
+                  time: isOpen ? `${item.startTime || "09:00"} - ${item.endTime || "17:00"}` : 'CLOSED',
+                  isClosed: !isOpen
+                };
+              }
+              const def = defaultSchedule.find(s => s.day === dName);
+              return def || { day: dName, time: '09:00 - 17:00', isClosed: false };
+            })
+          : defaultSchedule;
+
+        return (
+          <section id="schedule" className="py-20 px-6 sm:px-12 lg:px-20 bg-[#F8FAFC] border-b border-slate-200/80 scroll-mt-20">
+            <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+              
+              {/* Left Column: Clinic Contact & Schedule CTA Card */}
+              <div className="lg:col-span-5 space-y-6">
                 <div 
-                  key={day.dayOfWeek}
-                  className={`flex items-center justify-between p-3.5 ${activeShape} border transition-all ${
-                    isToday 
-                      ? 'shadow-sm' 
-                      : 'bg-slate-50 border-slate-100 text-slate-700'
-                  }`}
-                  style={isToday ? { backgroundColor: activeTheme.light, borderColor: activeTheme.border } : {}}
+                  className="inline-flex items-center gap-2 font-bold uppercase tracking-wider text-xs px-3.5 py-1.5 rounded-full border shadow-xs"
+                  style={{ backgroundColor: activeTheme.light, color: activeTheme.text, borderColor: activeTheme.border }}
                 >
-                  <span className={`text-sm font-bold ${isToday ? "font-black" : "text-slate-700"}`} style={isToday ? { color: activeTheme.text } : {}}>
-                    {days[day.dayOfWeek]} {isToday && <span className="text-[11px] font-black ml-1.5" style={{ color: activeTheme.primary }}>(Today)</span>}
-                  </span>
+                  <Clock className="w-4 h-4" style={{ color: activeTheme.primary }} />
+                  <span>🕒 OPD SCHEDULE</span>
+                </div>
+                
+                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                  Clinical Schedule & Timings
+                </h2>
+                
+                <p className="text-slate-600 text-sm sm:text-base font-medium leading-relaxed">
+                  Consultations at <strong>{clinic.name || "our clinic"}</strong> operate strictly on pre-booked confirmed time slots to eliminate waiting room queues.
+                </p>
 
-                  {!isOpen ? (
-                    <span className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
-                      Closed
-                    </span>
-                  ) : (
-                    <span className="text-xs sm:text-sm font-black text-slate-900">
-                      {day.startTime || "09:00"} - {day.endTime || "17:00"}
-                    </span>
+                {/* Clinic Address & Phone Details Box */}
+                <div className="p-5 sm:p-6 bg-white border border-slate-200 rounded-3xl shadow-sm space-y-4 text-xs sm:text-sm">
+                  <div className="flex items-start gap-3">
+                    <div 
+                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: activeTheme.light, color: activeTheme.primary }}
+                    >
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 block uppercase">Clinic Address</span>
+                      <span className="text-slate-800 font-bold leading-snug block">{clinic.address ? `${clinic.address}, ${clinic.city}` : "Main Clinic Center, City Medical Zone"}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
+                    <div 
+                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: activeTheme.light, color: activeTheme.primary }}
+                    >
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 block uppercase">Helpdesk Phone</span>
+                      <a href={`tel:${clinic.phone || doctor.phone || "9523663754"}`} className="text-slate-900 font-bold hover:underline">
+                        {clinic.phone || doctor.phone || "+91 9523663754"}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action CTA Buttons */}
+                <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                  <Link
+                    href={`/${clinicSlug}/book`}
+                    className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 text-white font-black text-sm py-4 px-8 ${activeShape} shadow-xl transition-all hover:scale-105 active:scale-95`}
+                    style={{ backgroundColor: activeTheme.primary }}
+                  >
+                    <span>Book Confirmed Slot</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+
+                  {rawPhone && (
+                    <a 
+                      href={`tel:${rawPhone}`}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-sm py-4 px-6 rounded-2xl shadow-sm transition-all hover:scale-105"
+                    >
+                      <span>📞 Call Direct</span>
+                    </a>
                   )}
                 </div>
-              );
-            })}
-          </div>
-
-        </div>
-      </section>
-
-      {/* Patient Reviews Section (#reviews) */}
-      <section id="reviews" className="py-20 px-6 sm:px-12 lg:px-20 bg-white border-b border-slate-200/80 scroll-mt-20">
-        <div className="max-w-[1400px] mx-auto space-y-12">
-          
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-            <div>
-              <div 
-                className="inline-flex items-center gap-2 font-bold uppercase tracking-wider text-xs px-3.5 py-1.5 rounded-full border mb-3"
-                style={{ backgroundColor: activeTheme.light, color: activeTheme.text, borderColor: activeTheme.border }}
-              >
-                <Star className="w-4 h-4" style={{ color: activeTheme.primary, fill: activeTheme.primary }} />
-                <span>Patient Experiences</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Verified Patient Reviews</h2>
-            </div>
 
-            <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-5 py-2.5 rounded-2xl shadow-sm">
-              <div className="text-2xl font-black text-slate-900">4.9 / 5.0</div>
-              <div className="text-[11px] font-bold" style={{ color: activeTheme.primary }}>★★★★★ (350+ Google Reviews)</div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
-              <div key={i} className="p-7 bg-[#F8FAFC] border border-slate-200 rounded-3xl shadow-sm flex flex-col justify-between space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-black tracking-widest text-base" style={{ color: activeTheme.primary }}>★★★★★</span>
-                    <span className="text-slate-400 font-medium">{t.date}</span>
+              {/* Right Column: Day-by-Day OPD Timings Card with Live Day Highlight */}
+              <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 space-y-3">
+                <div className="flex items-center justify-between pb-5 border-b border-slate-100 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      style={{ backgroundColor: activeTheme.light, color: activeTheme.primary }}
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg border border-slate-200/50"
+                    >
+                      📅
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-base sm:text-lg">Weekly OPD Schedule</h3>
+                      <p className="text-xs text-slate-500 font-medium">Daily confirmed consultation timings</p>
+                    </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed italic">
-                    &ldquo;{t.review}&rdquo;
-                  </p>
-                </div>
-
-                <div className="pt-4 border-t border-slate-200/80 flex items-center justify-between">
-                  <div>
-                    <span className="text-sm font-bold text-slate-900 block">{t.name}</span>
-                    <span className="text-[11px] text-slate-400">{t.treatment}</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Verified
+                  <span className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold ${
+                    isOpenToday ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-amber-50 text-amber-600 border border-amber-200"
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${isOpenToday ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`}></span>
+                    {isOpenToday ? "Open Today" : "Prior Slot Only"}
                   </span>
                 </div>
-              </div>
-            ))}
-          </div>
 
-        </div>
-      </section>
+                {/* Day-by-Day Schedule List */}
+                <div className="space-y-2.5">
+                  {activeSchedule.map((item, idx) => {
+                    const isToday = item.day.toLowerCase() === currentDayName.toLowerCase();
+                    return (
+                      <div 
+                        key={idx}
+                        className={`flex items-center justify-between p-3.5 sm:p-4 ${activeShape} border transition-all ${
+                          isToday 
+                            ? 'shadow-md ring-2' 
+                            : 'bg-slate-50/70 border-slate-100 text-slate-700 hover:bg-slate-50'
+                        }`}
+                        style={isToday ? { 
+                          backgroundColor: activeTheme.light, 
+                          borderColor: activeTheme.border, 
+                          ringColor: activeTheme.border 
+                        } : {}}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm sm:text-base font-bold ${isToday ? "font-black" : "text-slate-800"}`} style={isToday ? { color: activeTheme.text } : {}}>
+                            {item.day}
+                          </span>
+                          {isToday && (
+                            <span 
+                              className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-white shadow-xs border"
+                              style={{ color: activeTheme.primary, borderColor: activeTheme.border }}
+                            >
+                              (Today)
+                            </span>
+                          )}
+                        </div>
+
+                        <div>
+                          {item.isClosed ? (
+                            <span className="text-[11px] font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 uppercase tracking-wider">
+                              Closed
+                            </span>
+                          ) : (
+                            <span className="text-xs sm:text-sm font-black text-slate-900">
+                              {item.time}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* Patient Reviews Section (#reviews) - ADVANCED & PREMIUM Tiers */}
+      {(isAdvanced || isPremium) && (
+        <section id="reviews" className="py-20 px-6 sm:px-12 lg:px-20 bg-white border-b border-slate-200/80 scroll-mt-20">
+          <div className="max-w-[1400px] mx-auto space-y-12">
+            
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+              <div>
+                <div 
+                  className="inline-flex items-center gap-2 font-bold uppercase tracking-wider text-xs px-3.5 py-1.5 rounded-full border mb-3"
+                  style={{ backgroundColor: activeTheme.light, color: activeTheme.text, borderColor: activeTheme.border }}
+                >
+                  <Star className="w-4 h-4" style={{ color: activeTheme.primary, fill: activeTheme.primary }} />
+                  <span>Patient Experiences</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Verified Patient Reviews</h2>
+              </div>
+
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-5 py-2.5 rounded-2xl shadow-sm">
+                <div className="text-2xl font-black text-slate-900">4.9 / 5.0</div>
+                <div className="text-[11px] font-bold" style={{ color: activeTheme.primary }}>★★★★★ (350+ Google Reviews)</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {testimonials.map((t, i) => (
+                <div key={i} className="p-7 bg-[#F8FAFC] border border-slate-200 rounded-3xl shadow-sm flex flex-col justify-between space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-black tracking-widest text-base" style={{ color: activeTheme.primary }}>★★★★★</span>
+                      <span className="text-slate-400 font-medium">{t.date}</span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed italic">
+                      &ldquo;{t.review}&rdquo;
+                    </p>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-200/80 flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-bold text-slate-900 block">{t.name}</span>
+                      <span className="text-[11px] text-slate-400">{t.treatment}</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <Check className="w-3 h-3" /> Verified
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </section>
+      )}
 
       {/* Inline Confirmed Booking Wizard Section (#book) */}
       <section id="book" className="py-20 px-6 sm:px-12 lg:px-20 bg-[#0c2e3d] text-white border-b border-[#15465c] scroll-mt-20">
@@ -493,43 +657,45 @@ export default function LuxuryGoldTemplate({
         </div>
       </section>
 
-      {/* Frequently Asked Questions Accordion */}
-      <section className="py-20 px-6 sm:px-12 lg:px-20 bg-white border-b border-slate-200/80">
-        <div className="max-w-4xl mx-auto space-y-10">
-          
-          <div className="text-center space-y-3">
-            <div 
-              className="inline-flex items-center gap-2 font-bold uppercase tracking-wider text-xs px-3.5 py-1.5 rounded-full border"
-              style={{ backgroundColor: activeTheme.light, color: activeTheme.text, borderColor: activeTheme.border }}
-            >
-              <HelpCircle className="w-4 h-4" style={{ color: activeTheme.primary }} />
-              <span>Got Questions?</span>
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Frequently Asked Questions</h2>
-          </div>
-
-          <div className="space-y-4">
-            {faqs.map((faq, idx) => (
+      {/* Frequently Asked Questions Accordion - ADVANCED & PREMIUM Tiers */}
+      {(isAdvanced || isPremium) && (
+        <section className="py-20 px-6 sm:px-12 lg:px-20 bg-white border-b border-slate-200/80">
+          <div className="max-w-4xl mx-auto space-y-10">
+            
+            <div className="text-center space-y-3">
               <div 
-                key={idx}
-                className={`bg-[#F8FAFC] border border-slate-200 ${activeShape} p-5 cursor-pointer transition-all`}
-                onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)}
+                className="inline-flex items-center gap-2 font-bold uppercase tracking-wider text-xs px-3.5 py-1.5 rounded-full border"
+                style={{ backgroundColor: activeTheme.light, color: activeTheme.text, borderColor: activeTheme.border }}
               >
-                <div className="flex items-center justify-between gap-4">
-                  <span className="font-bold text-sm sm:text-base text-slate-900">{faq.q}</span>
-                  <ChevronDown className="w-4 h-4 transition-transform" style={{ color: activeTheme.primary, transform: openFaq === idx ? 'rotate(180deg)' : 'none' }} />
-                </div>
-                {openFaq === idx && (
-                  <p className="mt-3 text-xs sm:text-sm text-slate-600 font-medium leading-relaxed border-t border-slate-200/60 pt-3">
-                    {faq.a}
-                  </p>
-                )}
+                <HelpCircle className="w-4 h-4" style={{ color: activeTheme.primary }} />
+                <span>Got Questions?</span>
               </div>
-            ))}
-          </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Frequently Asked Questions</h2>
+            </div>
 
-        </div>
-      </section>
+            <div className="space-y-4">
+              {faqs.map((faq, idx) => (
+                <div 
+                  key={idx}
+                  className={`bg-[#F8FAFC] border border-slate-200 ${activeShape} p-5 cursor-pointer transition-all`}
+                  onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="font-bold text-sm sm:text-base text-slate-900">{faq.q}</span>
+                    <ChevronDown className="w-4 h-4 transition-transform" style={{ color: activeTheme.primary, transform: openFaq === idx ? 'rotate(180deg)' : 'none' }} />
+                  </div>
+                  {openFaq === idx && (
+                    <p className="mt-3 text-xs sm:text-sm text-slate-600 font-medium leading-relaxed border-t border-slate-200/60 pt-3">
+                      {faq.a}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </section>
+      )}
 
       {/* Contact & Location Section (#contact) */}
       <section id="contact" className="py-20 px-6 sm:px-12 lg:px-20 bg-[#F8FAFC] border-b border-slate-200/80 scroll-mt-20">
@@ -583,14 +749,21 @@ export default function LuxuryGoldTemplate({
         </div>
       </section>
 
-      {/* 100% White-Label Luxury Light Footer */}
+      {/* Tier-Gated Footer: 100% White-Label on Premium, Powered on Basic/Advanced */}
       <footer className="py-8 px-6 text-center border-t border-slate-200 bg-white text-xs text-slate-500 font-medium">
         <div className="max-w-4xl mx-auto space-y-2">
           <div className="flex items-center justify-center gap-2 text-slate-800 font-bold">
             <ShieldCheck className="w-4 h-4" style={{ color: activeTheme.primary }} />
-            <span>{clinic.name || "Dilshad Clinic"}</span>
+            <span>{clinic.name || "Clinic"}</span>
           </div>
-          <p>© {new Date().getFullYear()} {doctor.clinicName || clinic.name || "Dilshad Clinic"}. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {doctor.clinicName || clinic.name || "Clinic"}. All rights reserved.</p>
+          
+          {/* Platform Branding: Hidden on Premium White-Label */}
+          {!(isPremium && websiteConfig?.hideBranding) && (
+            <p className="text-[11px] text-slate-400 pt-1">
+              Powered by <span className="font-bold text-slate-600">DocPulse Healthcare OS</span>
+            </p>
+          )}
         </div>
       </footer>
 

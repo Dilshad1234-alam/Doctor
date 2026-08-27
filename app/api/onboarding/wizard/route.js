@@ -188,6 +188,7 @@ export async function POST(req) {
       fullName: normalizedDoctorName,
       qualification: doctorProfile?.qualification?.trim() || "MBBS",
       specialization: doctorProfile?.specialization?.trim() || user.specialization || "General Physician",
+      specialty: doctorProfile?.specialty || "general_opd",
       experienceYrs: Number(doctorProfile?.experienceYrs) || 5,
       regNumber: doctorProfile?.regNumber?.trim() || "",
       bio: doctorProfile?.bio?.trim() || "",

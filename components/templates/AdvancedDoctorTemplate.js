@@ -8,6 +8,7 @@ import {
   Star, MessageCircle, FileText, Activity, Award, HelpCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
 import PublicNavbar from '../../frontend/components/clinic/PublicNavbar.js';
+import { SPECIALTY_LABELS, getSpecialtyPreset, detectSpecialtyFromText } from '../../lib/specialtyPresets.js';
 
 export default function AdvancedDoctorTemplate({
   clinic,
@@ -15,7 +16,9 @@ export default function AdvancedDoctorTemplate({
   services = [],
   availability = [],
   websiteConfig = {},
-  slug = ""
+  slug = "",
+  specialtyPreset = null,
+  displaySpecialty: customDisplaySpecialty = null
 }) {
   const [openFaq, setOpenFaq] = useState(0);
 
@@ -30,6 +33,10 @@ export default function AdvancedDoctorTemplate({
     indigo: '#4F46E5',
     gold: '#D97706'
   };
+
+  const detectedSpecialtyKey = doctor?.specialty || detectSpecialtyFromText(`${doctor?.specialization || ''} ${clinic?.name || ''} ${clinic?.about || ''}`);
+  const activePreset = specialtyPreset || getSpecialtyPreset(detectedSpecialtyKey);
+  const resolvedSpecialty = customDisplaySpecialty || SPECIALTY_LABELS[detectedSpecialtyKey] || doctor?.displaySpecialty || doctor?.specialization || activePreset.defaultSpecialization;
 
   const rawColor = websiteConfig?.primaryColor || websiteConfig?.themeColor || clinic?.websiteConfig?.primaryColor || '#00A1AC';
   const primaryColor = COLOR_MAP[rawColor?.toLowerCase()] || rawColor;
@@ -137,7 +144,7 @@ export default function AdvancedDoctorTemplate({
               {cleanDoctorName}
             </h2>
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
-              <span className="text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-sm" style={{ backgroundColor: primaryColor }}>{doctor?.specialization || "Specialist"}</span>
+              <span className="text-white text-sm font-bold px-4 py-1.5 rounded-full shadow-sm" style={{ backgroundColor: primaryColor }}>{resolvedSpecialty}</span>
               <span className="bg-slate-800 text-slate-300 text-sm font-bold px-4 py-1.5 rounded-full border border-slate-700">{doctor?.qualification || "MBBS"}</span>
               <span className="bg-slate-800 text-slate-300 text-sm font-bold px-4 py-1.5 rounded-full border border-slate-700">{doctor?.experienceYrs || 8}+ Yrs Clinical Practice</span>
             </div>
@@ -178,7 +185,7 @@ export default function AdvancedDoctorTemplate({
                 </div>
 
                 <h3 className="text-2xl font-bold text-white relative z-10">{cleanDoctorName}</h3>
-                <p className="font-medium mt-1 relative z-10" style={{ color: primaryColor }}>{doctor?.specialization || "Specialist"}</p>
+                <p className="font-medium mt-1 relative z-10" style={{ color: primaryColor }}>{resolvedSpecialty}</p>
                 
                 <div className="mt-8 grid grid-cols-2 gap-4 border-t border-slate-800 pt-6 relative z-10">
                   <div>
@@ -223,7 +230,7 @@ export default function AdvancedDoctorTemplate({
             <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-6">Dedicated to providing world-class healthcare.</h2>
             <div className="space-y-4 text-base sm:text-lg text-slate-600 leading-relaxed font-medium">
               <p>
-                {cleanDoctorName} is a highly experienced medical professional specializing in {doctor?.specialization || "General Medicine"}. 
+                {cleanDoctorName} is a highly experienced medical professional specializing in {resolvedSpecialty}. 
                 With over {doctor?.experienceYrs || 8} years of clinical practice, they have treated thousands of patients across {clinic?.city || "the region"}.
               </p>
               <p>
@@ -258,6 +265,15 @@ export default function AdvancedDoctorTemplate({
         <div className="w-full max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {services.map(service => (
             <div key={service._id?.toString() || service.name} className="bg-white rounded-3xl p-8 border border-slate-200/90 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col justify-between h-full relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 pointer-events-none transition-transform group-hover:scale-110 duration-300">
+                {(activePreset.id === 'dental' || (clinic?.name || '').toLowerCase().includes('dental') || (service.name || '').toLowerCase().includes('dental') || (service.name || '').toLowerCase().includes('teeth') || (service.name || '').toLowerCase().includes('tooth') || (service.name || '').toLowerCase().includes('root canal') || (service.name || '').toLowerCase().includes('aligner')) ? (
+                  <svg className="w-20 h-20 text-blue-500/10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                    <path d="M12 2C8.5 2 6 4.5 6 8c0 4 2 7 3 11 0.5 2 1.5 3 3 3s2.5-1 3-3c1-4 3-7 3-11 0-3.5-2.5-6-6-6z"/>
+                  </svg>
+                ) : (
+                  <Stethoscope className="w-20 h-20 opacity-5" />
+                )}
+              </div>
               <div className="relative z-10">
                 <h4 className="font-bold text-slate-900 text-2xl leading-tight mb-3">{service.name}</h4>
                 <div className="flex gap-2 mb-8">
@@ -273,6 +289,187 @@ export default function AdvancedDoctorTemplate({
           ))}
         </div>
       </section>
+
+      {/* OPD Schedule & Clinic Working Hours */}
+      {(() => {
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const currentDayName = daysOfWeek[new Date().getDay()];
+
+        const defaultSchedule = [
+          { day: 'Sunday', time: doctor?.opdTimings?.sunday || 'CLOSED', isClosed: !doctor?.opdTimings?.sunday || doctor?.opdTimings?.sunday === 'CLOSED' },
+          { day: 'Monday', time: doctor?.opdTimings?.monday || '09:00 - 17:00', isClosed: false },
+          { day: 'Tuesday', time: doctor?.opdTimings?.tuesday || '09:00 - 17:00', isClosed: false },
+          { day: 'Wednesday', time: doctor?.opdTimings?.wednesday || '09:00 - 17:00', isClosed: false },
+          { day: 'Thursday', time: doctor?.opdTimings?.thursday || '09:00 - 17:00', isClosed: false },
+          { day: 'Friday', time: doctor?.opdTimings?.friday || '09:00 - 17:00', isClosed: false },
+          { day: 'Saturday', time: doctor?.opdTimings?.saturday || '09:00 - 17:00', isClosed: false }
+        ];
+
+        const activeSchedule = availability && availability.length > 0
+          ? daysOfWeek.map((dName, dIdx) => {
+              const item = availability.find(a => a.dayOfWeek === dIdx);
+              if (item) {
+                const isOpen = item.isOpen !== undefined ? Boolean(item.isOpen) : !item.isClosed;
+                return {
+                  day: dName,
+                  time: isOpen ? `${item.startTime || "09:00"} - ${item.endTime || "17:00"}` : 'CLOSED',
+                  isClosed: !isOpen
+                };
+              }
+              const def = defaultSchedule.find(s => s.day === dName);
+              return def || { day: dName, time: '09:00 - 17:00', isClosed: false };
+            })
+          : defaultSchedule;
+
+        return (
+          <section id="schedule" className="py-20 px-6 sm:px-12 lg:px-20 bg-slate-50 border-b border-slate-200/80 scroll-mt-24">
+            <div className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+              
+              {/* Left Column: Clinic Contact & Schedule CTA Card */}
+              <div className="lg:col-span-5 space-y-6">
+                <div 
+                  className="inline-flex items-center gap-2 font-bold uppercase tracking-wider text-xs px-3.5 py-1.5 rounded-full border shadow-xs"
+                  style={{ backgroundColor: `${primaryColor}15`, color: primaryColor, borderColor: `${primaryColor}30` }}
+                >
+                  <Clock className="w-4 h-4" style={{ color: primaryColor }} />
+                  <span>🕒 OPD SCHEDULE</span>
+                </div>
+                
+                <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                  Clinical Schedule & Timings
+                </h2>
+                
+                <p className="text-slate-600 text-sm sm:text-base font-medium leading-relaxed">
+                  Consultations at <strong>{clinic?.name || "our clinic"}</strong> operate strictly on pre-booked confirmed time slots to eliminate waiting room queues.
+                </p>
+
+                {/* Clinic Address & Phone Details Box */}
+                <div className="p-5 sm:p-6 bg-white border border-slate-200 rounded-3xl shadow-sm space-y-4 text-xs sm:text-sm">
+                  <div className="flex items-start gap-3">
+                    <div 
+                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
+                    >
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 block uppercase">Clinic Address</span>
+                      <span className="text-slate-800 font-bold leading-snug block">{clinic?.address ? `${clinic.address}, ${clinic.city}` : "Main Clinic Center, City Medical Zone"}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-3 border-t border-slate-100">
+                    <div 
+                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
+                    >
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 block uppercase">Helpdesk Phone</span>
+                      <a href={`tel:${clinic?.phone || doctor?.phone || "9523663754"}`} className="text-slate-900 font-bold hover:underline">
+                        {clinic?.phone || doctor?.phone || "+91 9523663754"}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action CTA Buttons */}
+                <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                  <Link
+                    href={`/${slug}/book`}
+                    className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 text-white font-black text-sm py-4 px-8 ${buttonStyle} shadow-xl transition-all hover:scale-105 active:scale-95`}
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    <span>Book Confirmed Slot</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+
+                  {rawPhone && (
+                    <a 
+                      href={`tel:${rawPhone}`}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-sm py-4 px-6 rounded-2xl shadow-sm transition-all hover:scale-105"
+                    >
+                      <span>📞 Call Direct</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Day-by-Day OPD Timings Card with Live Day Highlight */}
+              <div className="lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 space-y-3">
+                <div className="flex items-center justify-between pb-5 border-b border-slate-100 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}
+                      className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg border border-slate-200/50"
+                    >
+                      📅
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-base sm:text-lg">Weekly OPD Schedule</h3>
+                      <p className="text-xs text-slate-500 font-medium">Daily confirmed consultation timings</p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Open Today
+                  </span>
+                </div>
+
+                {/* Day-by-Day Schedule List */}
+                <div className="space-y-2.5">
+                  {activeSchedule.map((item, idx) => {
+                    const isToday = item.day.toLowerCase() === currentDayName.toLowerCase();
+                    return (
+                      <div 
+                        key={idx}
+                        className={`flex items-center justify-between p-3.5 sm:p-4 ${buttonStyle} border transition-all ${
+                          isToday 
+                            ? 'shadow-md ring-2' 
+                            : 'bg-slate-50/70 border-slate-100 text-slate-700 hover:bg-slate-50'
+                        }`}
+                        style={isToday ? { 
+                          backgroundColor: `${primaryColor}15`, 
+                          borderColor: `${primaryColor}40`, 
+                          ringColor: primaryColor 
+                        } : {}}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm sm:text-base font-bold ${isToday ? "font-black" : "text-slate-800"}`} style={isToday ? { color: primaryColor } : {}}>
+                            {item.day}
+                          </span>
+                          {isToday && (
+                            <span 
+                              className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-white shadow-xs border"
+                              style={{ color: primaryColor, borderColor: `${primaryColor}40` }}
+                            >
+                              (Today)
+                            </span>
+                          )}
+                        </div>
+
+                        <div>
+                          {item.isClosed ? (
+                            <span className="text-[11px] font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200 uppercase tracking-wider">
+                              Closed
+                            </span>
+                          ) : (
+                            <span className="text-xs sm:text-sm font-black text-slate-900">
+                              {item.time}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Section 5: Patient Trust & Google Review Badges */}
       <section id="reviews" className="w-full py-20 px-6 sm:px-12 lg:px-20 bg-slate-50 scroll-mt-24 border-b border-slate-200">
