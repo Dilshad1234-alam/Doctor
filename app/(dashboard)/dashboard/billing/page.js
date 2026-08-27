@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { 
   CreditCard, CheckCircle2, AlertCircle, Loader2, Sparkles, 
-  ShieldCheck, Zap, ArrowUpRight, Check, Lock, ChevronRight, X
+  ShieldCheck, Zap, ArrowUpRight, Check, Lock, ChevronRight, X,
+  Crown, Video, BarChart3, Download, Shield
 } from "lucide-react";
 import Link from "next/link";
 import { PLAN_CONFIG } from "../../../../lib/planLimits.js";
@@ -12,7 +13,6 @@ export default function BillingPage() {
   const [sub, setSub] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedCycle, setSelectedCycle] = useState("MONTHLY");
-  const [upgradingPlan, setUpgradingPlan] = useState(null);
   const [checkoutModal, setCheckoutModal] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
@@ -74,7 +74,8 @@ export default function BillingPage() {
   }
 
   const currentPlanId = (sub?.planId || "BASIC").toUpperCase();
-  const isAdvancedOrHigher = currentPlanId === "ADVANCED" || currentPlanId === "PRO" || currentPlanId === "PREMIUM";
+  const isPremium = currentPlanId === "PREMIUM" || currentPlanId === "ENTERPRISE";
+  const isAdvancedOrHigher = currentPlanId === "ADVANCED" || currentPlanId === "PRO" || isPremium;
 
   const plans = [
     {
@@ -115,18 +116,21 @@ export default function BillingPage() {
     },
     {
       id: "PREMIUM",
-      name: "Hospital & Enterprise",
+      name: "Premium Tier",
       priceMonthly: 1499,
       priceYearly: 1199,
-      badge: "Multi-Doctor",
-      description: "Full white-label solution for medical centers & hospital OPDs.",
+      badge: "VIP Exclusive",
+      isVIP: true,
+      description: "100% White-Label, Luxury Executive Templates, Video Bio & Advanced Telemetry.",
       features: [
         "Everything in Advanced Plan",
-        "Up to 5 Multi-Doctor Seats",
-        "Staff & Receptionist Accounts",
-        "Zero Platform Branding (100% White-label)",
-        "Custom CSS & Script Integrations",
-        "Dedicated VIP Account Manager"
+        "100% White-Label (Remove DocPulse Branding)",
+        "All Luxury & Executive Clinic Templates",
+        "Interactive Analytics & Telemetry Graphs",
+        "Financial & Revenue PDF / CSV Export",
+        "Video Bio & Intro Hero Embed Support",
+        "Direct CNAME DNS Verification Indicator",
+        "VIP Priority Support + Onboarding Assist"
       ]
     }
   ];
@@ -144,7 +148,11 @@ export default function BillingPage() {
       </div>
 
       {/* Active Subscription Luxury Card */}
-      <div className="bg-gradient-to-r from-[#0c2e3d] via-[#103e52] to-[#00A1AC] text-white rounded-3xl p-7 sm:p-10 shadow-xl relative overflow-hidden">
+      <div className={`text-white rounded-3xl p-7 sm:p-10 shadow-xl relative overflow-hidden ${
+        isPremium 
+          ? "bg-gradient-to-r from-[#071d28] via-[#0b3345] to-[#f59e0b]" 
+          : "bg-gradient-to-r from-[#0c2e3d] via-[#103e52] to-[#00A1AC]"
+      }`}>
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-3 flex-wrap">
@@ -154,14 +162,18 @@ export default function BillingPage() {
               <span className="text-xs font-bold text-white uppercase tracking-widest bg-white/10 border border-white/20 px-3 py-1 rounded-full">
                 {sub?.billingCycle || "MONTHLY"} Billing
               </span>
-              {isAdvancedOrHigher && (
+              {isPremium ? (
+                <span className="text-xs font-black text-amber-200 bg-amber-500/30 border border-amber-300/40 px-3 py-1 rounded-full flex items-center gap-1">
+                  <Crown className="w-3.5 h-3.5 text-amber-300" /> VIP Premium Tier Unlocked
+                </span>
+              ) : isAdvancedOrHigher ? (
                 <span className="text-xs font-black text-amber-300 bg-amber-400/20 border border-amber-300/30 px-3 py-1 rounded-full flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5" /> All Pro Features Unlocked
                 </span>
-              )}
+              ) : null}
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
-              {currentPlanId === "ADVANCED" || currentPlanId === "PRO" ? "Advanced Plan" : currentPlanId === "PREMIUM" ? "Premium Hospital" : "Basic Plan"} <span className="text-2xl text-teal-100 font-medium">Edition</span>
+              {isPremium ? "Premium Tier" : (currentPlanId === "ADVANCED" || currentPlanId === "PRO") ? "Advanced Plan" : "Basic Plan"} <span className="text-2xl text-teal-100 font-medium">Edition</span>
             </h2>
             {sub?.endDate && (
               <p className="text-slate-200 mt-2 text-xs sm:text-sm font-medium">
@@ -171,7 +183,7 @@ export default function BillingPage() {
           </div>
 
           <div className="text-left md:text-right bg-white/15 border border-white/20 p-5 rounded-2xl">
-            <div className="text-3xl sm:text-4xl font-black text-white mb-1">₹{sub?.price || (isAdvancedOrHigher ? 999 : 499)}</div>
+            <div className="text-3xl sm:text-4xl font-black text-white mb-1">₹{sub?.price || (isPremium ? 1499 : isAdvancedOrHigher ? 999 : 499)}</div>
             <div className="text-xs text-teal-100 font-medium">
               billed every {sub?.billingCycle === "YEARLY" ? "year" : "month"}
             </div>
@@ -213,23 +225,32 @@ export default function BillingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {plans.map((plan) => {
-            const isCurrent = currentPlanId === plan.id || (currentPlanId === "PRO" && plan.id === "ADVANCED") || (currentPlanId === "STARTER" && plan.id === "BASIC");
+            const isCurrent = currentPlanId === plan.id || 
+              (currentPlanId === "PRO" && plan.id === "ADVANCED") || 
+              (currentPlanId === "STARTER" && plan.id === "BASIC") ||
+              (currentPlanId === "ENTERPRISE" && plan.id === "PREMIUM");
             const price = selectedCycle === "YEARLY" ? plan.priceYearly : plan.priceMonthly;
 
             return (
               <div
                 key={plan.id}
                 className={`rounded-3xl p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all relative ${
-                  plan.isPopular
-                    ? "bg-white border-2 border-[#00A1AC] shadow-xl ring-2 ring-[#00A1AC]/20"
-                    : "bg-white border border-slate-200 shadow-sm"
+                  plan.isVIP
+                    ? "bg-white border-2 border-amber-400 shadow-xl ring-2 ring-amber-400/20"
+                    : plan.isPopular
+                      ? "bg-white border-2 border-[#00A1AC] shadow-xl ring-2 ring-[#00A1AC]/20"
+                      : "bg-white border border-slate-200 shadow-sm"
                 }`}
               >
-                {plan.isPopular && (
+                {plan.isVIP ? (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black px-4 py-1 rounded-full text-[10px] uppercase tracking-wider shadow-md flex items-center gap-1">
+                    <Crown className="w-3 h-3" /> VIP Exclusive
+                  </div>
+                ) : plan.isPopular ? (
                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#00A1AC] text-white font-black px-4 py-1 rounded-full text-[10px] uppercase tracking-wider shadow-md">
                     {plan.badge}
                   </div>
-                )}
+                ) : null}
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
@@ -239,7 +260,9 @@ export default function BillingPage() {
                         Current
                       </span>
                     ) : (
-                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        plan.isVIP ? "text-amber-700 bg-amber-50 border border-amber-200" : "text-slate-400 bg-slate-100"
+                      }`}>
                         {plan.badge}
                       </span>
                     )}
@@ -257,7 +280,7 @@ export default function BillingPage() {
                   <ul className="space-y-3 pt-3 border-t border-slate-100">
                     {plan.features.map((f, i) => (
                       <li key={i} className="flex items-start gap-2 text-xs font-medium text-slate-700">
-                        <CheckCircle2 className="w-4 h-4 text-[#00A1AC] shrink-0 mt-0.5" />
+                        <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${plan.isVIP ? "text-amber-500" : "text-[#00A1AC]"}`} />
                         <span>{f}</span>
                       </li>
                     ))}
@@ -276,9 +299,11 @@ export default function BillingPage() {
                     <button
                       onClick={() => setCheckoutModal(plan)}
                       className={`w-full py-3 text-center rounded-2xl font-black text-xs transition-all cursor-pointer shadow-lg active:scale-95 flex items-center justify-center gap-2 ${
-                        plan.isPopular
-                          ? "bg-[#00A1AC] hover:bg-[#008790] text-white shadow-[#00A1AC]/25"
-                          : "bg-[#0c2e3d] hover:bg-[#103e52] text-white shadow-slate-900/10"
+                        plan.isVIP
+                          ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-amber-500/25"
+                          : plan.isPopular
+                            ? "bg-[#00A1AC] hover:bg-[#008790] text-white shadow-[#00A1AC]/25"
+                            : "bg-[#0c2e3d] hover:bg-[#103e52] text-white shadow-slate-900/10"
                       }`}
                     >
                       <span>Upgrade to {plan.name}</span>
@@ -310,7 +335,7 @@ export default function BillingPage() {
                 </div>
                 <h3 className="text-2xl font-black text-slate-900">Upgrade Successful!</h3>
                 <p className="text-xs text-slate-600 font-medium">
-                  Your account has been upgraded to <strong>{checkoutModal.name}</strong>. All features are now unlocked live across your dashboard!
+                  Your account has been upgraded to <strong>{checkoutModal.name}</strong>. All premium features are now unlocked live across your dashboard!
                 </p>
               </div>
             ) : (
@@ -321,7 +346,7 @@ export default function BillingPage() {
                   </div>
                   <h3 className="text-2xl font-black text-slate-900">{checkoutModal.name} Checkout</h3>
                   <p className="text-xs text-slate-500 font-medium mt-1">
-                    Upgrade your clinic plan to unlock unlimited services, custom domains, and all premium website templates.
+                    Upgrade your clinic plan to unlock 100% white-labeling, executive templates, video bios, and advanced telemetry analytics.
                   </p>
                 </div>
 
@@ -371,7 +396,11 @@ export default function BillingPage() {
                   <button 
                     onClick={() => handleUpgrade(checkoutModal.id)}
                     disabled={processingPayment}
-                    className="flex-2 py-3 bg-[#00A1AC] hover:bg-[#008790] text-white font-black text-xs rounded-2xl shadow-xl shadow-[#00A1AC]/30 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 cursor-pointer"
+                    className={`flex-2 py-3 text-white font-black text-xs rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 cursor-pointer ${
+                      checkoutModal.isVIP
+                        ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-500/30"
+                        : "bg-[#00A1AC] hover:bg-[#008790] shadow-[#00A1AC]/30"
+                    }`}
                   >
                     {processingPayment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                     <span>{processingPayment ? "Processing Upgrade..." : `Pay ₹${selectedCycle === "YEARLY" ? checkoutModal.priceYearly : checkoutModal.priceMonthly} & Unlock Instantly`}</span>

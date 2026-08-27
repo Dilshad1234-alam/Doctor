@@ -8,6 +8,9 @@ import DoctorProfile from "../../../../backend/models/DoctorProfile";
 import Subscription from "../../../../backend/models/Subscription";
 import { cookies } from "next/headers";
 
+import { getPlanTier } from "../../../../lib/planLimits";
+import { getThemeConfig } from "../../../../lib/themeColors";
+
 export const dynamic = "force-dynamic";
 
 async function handleSaveWebsiteBuilder(req) {
@@ -30,15 +33,19 @@ async function handleSaveWebsiteBuilder(req) {
       templateId, 
       themeColor, 
       primaryColor,
-      fontStyle,
+      buttonShape,
       buttonStyle,
+      fontStyle,
       showSections,
-      customDomain 
+      customDomain,
+      hideBranding,
+      videoBioUrl
     } = body;
 
     const photoUrl = doctorPhoto || profilePhoto || image || avatarUrl || "";
     const logoUrl = clinicLogo || logo || "";
-    const color = primaryColor || themeColor || "#00A1AC";
+    const requestedColor = themeColor || primaryColor || "teal";
+    const requestedShape = buttonShape || buttonStyle || "curved";
 
     let clinic = await Clinic.findOne({ ownerId: userId });
     if (!clinic) {
@@ -50,12 +57,39 @@ async function handleSaveWebsiteBuilder(req) {
 
     const clinicId = clinic ? clinic._id : userId;
 
-    // Check subscription plan
+    // Check subscription plan and retrieve tier limits
     const subscription = await Subscription.findOne({
       $or: [{ userId: userId }, { clinicId: clinicId }, { doctorId: userId }]
     }).lean();
 
-    const isAdvanced = subscription?.planId === "ADVANCED" || subscription?.planId === "PRO" || subscription?.planId === "PREMIUM";
+    const planId = (subscription?.planId || "BASIC").toUpperCase();
+    const isAdvanced = planId === "ADVANCED" || planId === "PRO" || planId === "PREMIUM";
+    const isPremium = planId === "PREMIUM";
+    const tierConfig = getPlanTier(planId);
+
+    // 1. Strict Color Validation
+    const mappedTheme = getThemeConfig(requestedColor);
+    let finalColor = requestedColor;
+    if (!tierConfig.allowedColors.includes(mappedTheme.id.toLowerCase())) {
+      finalColor = 'teal'; // Fallback to basic allowed color
+    }
+
+    // 2. Strict Shape Validation
+    let finalShape = requestedShape;
+    if (!tierConfig.allowedShapes.includes(requestedShape.toLowerCase())) {
+      finalShape = 'curved'; // Fallback to basic allowed shape
+    }
+
+    // 3. Strict Template Validation
+    let finalTemplate = templateId || "template-1";
+    if (!tierConfig.allowedTemplates.includes(finalTemplate.toLowerCase())) {
+      finalTemplate = "template-1"; // Fallback to basic template
+    }
+
+    // 4. Feature Gating
+    const finalCustomDomain = tierConfig.features.customDomain ? (customDomain || "") : "";
+    const finalHideBranding = tierConfig.features.whiteLabel ? Boolean(hideBranding) : false;
+    const finalVideoBioUrl = tierConfig.features.videoBio ? (videoBioUrl || "") : "";
 
     // 1. Sync & Permanently Save in DoctorProfile model
     await DoctorProfile.findOneAndUpdate(
@@ -71,7 +105,7 @@ async function handleSaveWebsiteBuilder(req) {
     // 2. Sync Clinic logo and customDomain if clinic exists
     if (clinic) {
       if (logoUrl !== undefined) clinic.logo = logoUrl;
-      if (customDomain !== undefined) clinic.customDomain = customDomain;
+      clinic.customDomain = finalCustomDomain;
       await clinic.save();
     }
 
@@ -82,11 +116,14 @@ async function handleSaveWebsiteBuilder(req) {
       clinicId: clinicId,
       doctorPhoto: photoUrl,
       clinicLogo: logoUrl,
-      primaryColor: color,
-      themeColor: color,
-      templateId: isAdvanced ? (templateId || "template-1") : "template-1",
+      primaryColor: finalColor,
+      themeColor: finalColor,
+      buttonShape: finalShape,
+      buttonStyle: finalShape,
+      templateId: finalTemplate,
       fontStyle: fontStyle || "Plus Jakarta Sans",
-      buttonStyle: buttonStyle || "rounded-xl",
+      hideBranding: finalHideBranding,
+      videoBioUrl: finalVideoBioUrl,
       showSections: showSections || { about: true, services: true, timings: true, contact: true },
       isPublished: true,
       publishedUrl: clinic?.slug ? `/${clinic.slug}` : ""
@@ -108,6 +145,7 @@ async function handleSaveWebsiteBuilder(req) {
       clinic, 
       doctor: updatedDoctor,
       isAdvanced,
+      isPremium,
       subscription 
     });
   } catch (error) {
@@ -134,7 +172,9 @@ export async function GET(req) {
       $or: [{ userId: userId }, ...(clinic ? [{ clinicId: clinic._id }] : []), { doctorId: userId }]
     }).lean();
 
-    const isAdvanced = subscription?.planId === "ADVANCED" || subscription?.planId === "PRO" || subscription?.planId === "PREMIUM";
+    const planId = (subscription?.planId || "BASIC").toUpperCase();
+    const isAdvanced = planId === "ADVANCED" || planId === "PRO" || planId === "PREMIUM";
+    const isPremium = planId === "PREMIUM";
 
     let websiteConfig = await WebsiteConfig.findOne({ 
       $or: [
@@ -156,6 +196,8 @@ export async function GET(req) {
         primaryColor: "#00A1AC",
         themeColor: "#00A1AC",
         fontStyle: "Plus Jakarta Sans",
+        hideBranding: false,
+        videoBioUrl: "",
         isPublished: true,
         showSections: { about: true, services: true, timings: true, contact: true }
       });
@@ -173,6 +215,7 @@ export async function GET(req) {
       slug: clinic?.slug || "",
       customDomain: clinic?.customDomain || "",
       isAdvanced,
+      isPremium,
       subscription 
     });
   } catch (error) {

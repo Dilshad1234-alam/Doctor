@@ -5,10 +5,11 @@ import {
   Globe, Palette, LayoutTemplate, Loader2, Save, ExternalLink, 
   CheckCircle2, Eye, LayoutGrid, Sparkles, Image as ImageIcon, 
   Upload, Trash2, User, RefreshCw, Building, Lock, ArrowUpRight,
-  ShieldCheck, Link2, Code, ShieldAlert, Check, Copy
+  ShieldCheck, Link2, Code, ShieldAlert, Check, Copy, Crown, Video, EyeOff
 } from "lucide-react";
 import Link from "next/link";
-import { PLAN_CONFIG, getPlanConfig } from "../../../../lib/planLimits.js";
+import { PLAN_CONFIG, getPlanConfig, getPlanTier } from "../../../../lib/planLimits.js";
+import { THEME_COLOR_MAP, BUTTON_SHAPE_MAP, getThemeConfig, getButtonShapeClass } from "../../../../lib/themeColors.js";
 
 export default function WebsiteBuilderPage() {
   const [config, setConfig] = useState({
@@ -16,8 +17,12 @@ export default function WebsiteBuilderPage() {
     doctorPhoto: '',
     clinicLogo: '',
     primaryColor: '#00A1AC',
+    themeColor: 'teal',
     fontStyle: 'Plus Jakarta Sans',
-    buttonStyle: 'rounded-xl',
+    buttonStyle: 'rounded-2xl',
+    buttonShape: 'curved',
+    hideBranding: false,
+    videoBioUrl: '',
     showSections: { about: true, services: true, timings: true, contact: true }
   });
   const [clinic, setClinic] = useState(null);
@@ -25,6 +30,7 @@ export default function WebsiteBuilderPage() {
   const [slug, setSlug] = useState("");
   const [customDomain, setCustomDomain] = useState("");
   const [isAdvanced, setIsAdvanced] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -41,7 +47,9 @@ export default function WebsiteBuilderPage() {
         const photo = json.websiteConfig?.doctorPhoto || json.doctor?.profilePhoto || json.doctor?.image || json.doctor?.avatarUrl || '';
         const logo = json.websiteConfig?.clinicLogo || json.clinic?.logo || '';
         const advanced = Boolean(json.isAdvanced);
+        const premium = Boolean(json.isPremium);
         setIsAdvanced(advanced);
+        setIsPremium(premium);
         
         if (json.websiteConfig) {
           setConfig(prev => ({
@@ -49,14 +57,18 @@ export default function WebsiteBuilderPage() {
             ...json.websiteConfig,
             templateId: advanced ? (json.websiteConfig.templateId || 'template-1') : 'template-1',
             doctorPhoto: photo || prev.doctorPhoto || '',
-            clinicLogo: logo || prev.clinicLogo || ''
+            clinicLogo: logo || prev.clinicLogo || '',
+            hideBranding: premium ? Boolean(json.websiteConfig.hideBranding) : false,
+            videoBioUrl: json.websiteConfig.videoBioUrl || ''
           }));
         } else {
           setConfig(prev => ({
             ...prev,
             templateId: 'template-1',
             doctorPhoto: photo || prev.doctorPhoto || '',
-            clinicLogo: logo || prev.clinicLogo || ''
+            clinicLogo: logo || prev.clinicLogo || '',
+            hideBranding: false,
+            videoBioUrl: ''
           }));
         }
         setClinic(json.clinic);
@@ -78,6 +90,7 @@ export default function WebsiteBuilderPage() {
   const savePayload = async (payloadToSave) => {
     setSaving(true);
     try {
+      const selectedColor = payloadToSave?.primaryColor || payloadToSave?.themeColor || config.primaryColor || config.themeColor || "#00A1AC";
       const payload = {
         ...config,
         ...payloadToSave,
@@ -89,8 +102,11 @@ export default function WebsiteBuilderPage() {
         avatarUrl: payloadToSave?.doctorPhoto !== undefined ? payloadToSave.doctorPhoto : (config.doctorPhoto || ""),
         clinicLogo: payloadToSave?.clinicLogo !== undefined ? payloadToSave.clinicLogo : (config.clinicLogo || ""),
         logo: payloadToSave?.clinicLogo !== undefined ? payloadToSave.clinicLogo : (config.clinicLogo || ""),
-        themeColor: config.primaryColor || "#00A1AC",
-        primaryColor: config.primaryColor || "#00A1AC"
+        themeColor: selectedColor,
+        primaryColor: selectedColor,
+        buttonStyle: payloadToSave?.buttonStyle !== undefined ? payloadToSave.buttonStyle : (config.buttonStyle || "rounded-xl"),
+        hideBranding: isPremium ? (payloadToSave?.hideBranding !== undefined ? payloadToSave.hideBranding : config.hideBranding) : false,
+        videoBioUrl: payloadToSave?.videoBioUrl !== undefined ? payloadToSave.videoBioUrl : (config.videoBioUrl || "")
       };
 
       const res = await fetch("/api/dashboard/website-builder", {
@@ -107,8 +123,12 @@ export default function WebsiteBuilderPage() {
           setConfig(prev => ({ 
             ...prev, 
             ...json.websiteConfig,
+            primaryColor: json.websiteConfig.primaryColor || json.websiteConfig.themeColor || selectedColor,
+            themeColor: json.websiteConfig.themeColor || json.websiteConfig.primaryColor || selectedColor,
             doctorPhoto: json.websiteConfig.doctorPhoto || json.doctor?.profilePhoto || json.doctor?.image || prev.doctorPhoto || '',
-            clinicLogo: json.websiteConfig.clinicLogo || json.clinic?.logo || prev.clinicLogo || ''
+            clinicLogo: json.websiteConfig.clinicLogo || json.clinic?.logo || prev.clinicLogo || '',
+            hideBranding: json.websiteConfig.hideBranding || false,
+            videoBioUrl: json.websiteConfig.videoBioUrl || ''
           }));
         }
         setTimeout(() => setSavedSuccess(false), 3000);
@@ -212,24 +232,37 @@ export default function WebsiteBuilderPage() {
       img: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=800&auto=format&fit=crop',
       isLocked: !isAdvanced,
       tier: 'Pro'
+    },
+    { 
+      id: 'template-4', 
+      name: 'Luxury Elite Specialist', 
+      isLocked: !isPremium,
+      tier: 'Premium'
     }
   ];
 
-  const colors = [
-    { name: 'Teal/Cyan (Brand)', value: '#00A1AC' },
-    { name: 'Clinical Blue', value: '#2563eb' },
-    { name: 'Care Emerald', value: '#059669' },
-    { name: 'Executive Navy', value: '#0a2635' },
-    { name: 'Gentle Rose', value: '#e11d48' },
-    { name: 'Royal Indigo', value: '#4f46e5' }
+  const userPlanId = isPremium ? 'PREMIUM' : isAdvanced ? 'ADVANCED' : 'BASIC';
+  const tierConfig = getPlanTier(userPlanId);
+
+  const THEME_COLORS = [
+    { id: 'teal', name: 'Teal/Cyan (Brand)', hex: '#00A1AC', value: '#00A1AC', isLocked: false, tier: 'Basic' },
+    { id: 'blue', name: 'Clinical Blue', hex: '#2563EB', value: '#2563EB', isLocked: false, tier: 'Basic' },
+    { id: 'emerald', name: 'Care Emerald', hex: '#059669', value: '#059669', isLocked: !tierConfig.allowedColors.includes('emerald'), tier: 'Advanced' },
+    { id: 'navy', name: 'Executive Navy', hex: '#0D3648', value: '#0D3648', isLocked: !tierConfig.allowedColors.includes('navy'), tier: 'Advanced' },
+    { id: 'rose', name: 'Gentle Rose', hex: '#E11D48', value: '#E11D48', isLocked: !tierConfig.allowedColors.includes('rose'), tier: 'Premium' },
+    { id: 'indigo', name: 'Royal Indigo', hex: '#4F46E5', value: '#4F46E5', isLocked: !tierConfig.allowedColors.includes('indigo'), tier: 'Premium' },
+    { id: 'gold', name: 'Luxury Gold', hex: '#D97706', value: '#D97706', isLocked: !tierConfig.allowedColors.includes('gold'), tier: 'Premium' }
   ];
 
   const buttonStyles = [
-    { id: 'rounded-xl', label: 'Soft (xl)' },
-    { id: 'rounded-2xl', label: 'Curved (2xl)' },
-    { id: 'rounded-full', label: 'Pill (full)' },
-    { id: 'rounded-none', label: 'Sharp (none)' }
+    { id: 'curved', label: 'Curved (2xl)', shapeClass: 'rounded-2xl', isLocked: false, tier: 'Basic' },
+    { id: 'soft', label: 'Soft (xl)', shapeClass: 'rounded-xl', isLocked: !tierConfig.allowedShapes.includes('soft'), tier: 'Advanced' },
+    { id: 'pill', label: 'Pill (full)', shapeClass: 'rounded-full', isLocked: !tierConfig.allowedShapes.includes('pill'), tier: 'Advanced' },
+    { id: 'sharp', label: 'Sharp (none)', shapeClass: 'rounded-none', isLocked: !tierConfig.allowedShapes.includes('sharp'), tier: 'Premium' }
   ];
+
+  const activeTheme = getThemeConfig(config.themeColor || config.primaryColor);
+  const activeShape = getButtonShapeClass(config.buttonShape || config.buttonStyle);
 
   const cleanDocName = doctor?.fullName ? `Dr. ${doctor.fullName.replace(/^Dr\.?\s*/i, '')}` : 'Dr. Doctor Name';
   const effectiveDoctorPhoto = config.doctorPhoto || doctor?.profilePhoto || doctor?.image || doctor?.avatarUrl || '';
@@ -246,14 +279,16 @@ export default function WebsiteBuilderPage() {
               Website Customizer & Theme
             </h1>
             <span className={`text-[11px] font-black px-3 py-0.5 rounded-full border ${
-              isAdvanced 
-                ? 'text-emerald-800 bg-emerald-100 border-emerald-200' 
-                : 'text-[#00A1AC] bg-[#00A1AC]/10 border-[#00A1AC]/20'
+              isPremium 
+                ? 'text-amber-800 bg-amber-100 border-amber-300 flex items-center gap-1' 
+                : isAdvanced 
+                  ? 'text-emerald-800 bg-emerald-100 border-emerald-200' 
+                  : 'text-[#00A1AC] bg-[#00A1AC]/10 border-[#00A1AC]/20'
             }`}>
-              {isAdvanced ? "Advanced Plan Active (All Unlocked)" : "Basic Plan (₹499/mo)"}
+              {isPremium ? <><Crown className="w-3 h-3 text-amber-600" /> Premium VIP Tier</> : isAdvanced ? "Advanced Plan (All Unlocked)" : "Basic Plan (₹499/mo)"}
             </span>
           </div>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">Customize your public landing page theme, doctor photo, clinic logo, and layout in real-time.</p>
+          <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">Customize your public landing page theme, doctor photo, clinic logo, video bio, and layout in real-time.</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {customDomain && isAdvanced ? (
@@ -298,33 +333,33 @@ export default function WebsiteBuilderPage() {
             <div className="flex border-b border-slate-100 bg-slate-50 overflow-x-auto">
               <button 
                 onClick={() => setActiveTab('templates')} 
-                className={`flex-1 min-w-[85px] py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === 'templates' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 min-w-[75px] py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === 'templates' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <LayoutTemplate className="w-4 h-4" /> Templates
               </button>
               <button 
                 onClick={() => setActiveTab('media')} 
-                className={`flex-1 min-w-[85px] py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === 'media' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 min-w-[75px] py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === 'media' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
               >
-                <ImageIcon className="w-4 h-4" /> Photos & Logo
+                <ImageIcon className="w-4 h-4" /> Media & Bio
+              </button>
+              <button 
+                onClick={() => setActiveTab('whitelabel')} 
+                className={`flex-1 min-w-[75px] py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === 'whitelabel' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                <Crown className="w-4 h-4 text-amber-500" /> White-label
               </button>
               <button 
                 onClick={() => setActiveTab('domain')} 
-                className={`flex-1 min-w-[85px] py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === 'domain' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 min-w-[75px] py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === 'domain' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <Link2 className="w-4 h-4" /> Domain
               </button>
               <button 
                 onClick={() => setActiveTab('theme')} 
-                className={`flex-1 min-w-[85px] py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === 'theme' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`flex-1 min-w-[75px] py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === 'theme' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 <Palette className="w-4 h-4" /> Theme
-              </button>
-              <button 
-                onClick={() => setActiveTab('sections')} 
-                className={`flex-1 min-w-[85px] py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${activeTab === 'sections' ? 'bg-white text-[#00A1AC] border-b-2 border-[#00A1AC] font-black' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                <LayoutGrid className="w-4 h-4" /> Sections
               </button>
             </div>
             
@@ -333,8 +368,8 @@ export default function WebsiteBuilderPage() {
               {activeTab === 'templates' && (
                 <div className="space-y-4">
                   <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 font-medium flex items-center justify-between">
-                    <span>{isAdvanced ? "Advanced Plan: All 3 Premium Templates Unlocked" : "Basic Plan: Standard Modern Template Included"}</span>
-                    <span className="font-bold text-[#00A1AC]">{isAdvanced ? "3 / 3 Unlocked" : "1 / 3 Unlocked"}</span>
+                    <span>{isPremium ? "Premium Tier: All 4 Luxury & Executive Templates Unlocked" : isAdvanced ? "Advanced Plan: 3 Templates Unlocked" : "Basic Plan: Standard Modern Template"}</span>
+                    <span className="font-bold text-[#00A1AC]">{isPremium ? "4 / 4 Unlocked" : isAdvanced ? "3 / 4 Unlocked" : "1 / 4 Unlocked"}</span>
                   </div>
 
                   {templates.map((t) => (
@@ -342,7 +377,7 @@ export default function WebsiteBuilderPage() {
                       key={t.id} 
                       onClick={() => {
                         if (t.isLocked) {
-                          promptUpgrade(`${t.name} (Premium Layout)`);
+                          promptUpgrade(`${t.name} (${t.tier} Layout)`);
                         } else {
                           updateConfig('templateId', t.id);
                           savePayload({ templateId: t.id });
@@ -367,7 +402,7 @@ export default function WebsiteBuilderPage() {
                         
                         {t.isLocked ? (
                           <div className="absolute top-3 right-3 bg-amber-500/90 text-white text-[11px] font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1 border border-white/20 backdrop-blur-sm">
-                            <Lock className="w-3 h-3" /> Upgrade to Pro
+                            <Lock className="w-3 h-3" /> Upgrade to {t.tier}
                           </div>
                         ) : config.templateId === t.id ? (
                           <div className="absolute top-3 right-3 bg-[#00A1AC] text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1 border border-white/20">
@@ -385,7 +420,7 @@ export default function WebsiteBuilderPage() {
                 </div>
               )}
 
-              {/* Photos & Logo Tab */}
+              {/* Photos, Logo & Video Bio Tab */}
               {activeTab === 'media' && (
                 <div className="space-y-6">
                   {/* Doctor Profile Photo Section */}
@@ -444,7 +479,7 @@ export default function WebsiteBuilderPage() {
                               onChange={(e) => handleFileUpload(e, 'doctorPhoto')} 
                             />
                           </label>
-                          <span className="text-[10px] text-slate-400">JPG, PNG, WebP (Auto-saves)</span>
+                          <span className="text-[10px] text-slate-400">JPG, PNG, WebP</span>
                         </div>
                       </div>
                     </div>
@@ -511,6 +546,99 @@ export default function WebsiteBuilderPage() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Video Bio / Intro Hero Link (Premium Feature) */}
+                  <div className={`p-5 rounded-2xl border space-y-3 ${isPremium ? 'bg-white border-amber-300 shadow-sm' : 'bg-slate-50 border-slate-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-black text-xs uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                        <Video className={`w-4 h-4 ${isPremium ? 'text-amber-500' : 'text-slate-400'}`} /> Video Bio & Intro Link
+                      </h3>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                        isPremium ? 'text-amber-800 bg-amber-100 border border-amber-200' : 'text-slate-500 bg-slate-200'
+                      }`}>
+                        {isPremium ? <><Crown className="w-3 h-3 text-amber-600" /> Unlocked</> : <><Lock className="w-3 h-3 text-amber-600" /> Premium</>}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[11px] font-bold text-slate-600">YouTube or Vimeo Video URL</label>
+                      <input 
+                        type="text" 
+                        disabled={!isPremium}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        value={config.videoBioUrl || ""}
+                        onChange={(e) => updateConfig('videoBioUrl', e.target.value)}
+                        onBlur={(e) => isPremium && savePayload({ videoBioUrl: e.target.value })}
+                        className={`w-full border rounded-xl px-3 py-2 text-xs font-medium focus:outline-none transition-all ${
+                          isPremium 
+                            ? 'bg-white border-slate-200 text-slate-900 focus:border-amber-400' 
+                            : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                        }`}
+                      />
+                      <p className="text-[10px] text-slate-400">Embeds an interactive video consultation introduction on your public landing hero.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* White-label Switch Tab (Premium Feature) */}
+              {activeTab === 'whitelabel' && (
+                <div className="space-y-6">
+                  <div className={`p-6 rounded-3xl border space-y-4 shadow-sm ${
+                    isPremium ? 'bg-gradient-to-br from-amber-500/10 via-white to-teal-50 border-amber-300' : 'bg-white border-slate-200'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Crown className="w-5 h-5 text-amber-500" />
+                        <h3 className="font-black text-sm text-slate-900">100% White-Label Branding</h3>
+                      </div>
+                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
+                        isPremium ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {isPremium ? "VIP Premium Active" : "Premium Tier Only"}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                      Completely remove &ldquo;Powered by DocPulse&rdquo; and any third-party SaaS badges from your public clinic website, booking slips, and patient portals.
+                    </p>
+
+                    {/* Toggle Switch */}
+                    <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
+                      <div>
+                        <span className="font-bold text-xs text-slate-900 block">Remove Platform Branding</span>
+                        <span className="text-[11px] text-slate-400 font-medium">Render only your clinic copyright on footer</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          if (!isPremium) {
+                            promptUpgrade("100% White-Label Branding Switch");
+                          } else {
+                            const updated = !config.hideBranding;
+                            updateConfig('hideBranding', updated);
+                            savePayload({ hideBranding: updated });
+                          }
+                        }} 
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                          config.hideBranding ? 'bg-amber-500' : 'bg-slate-300'
+                        }`}
+                      >
+                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                          config.hideBranding ? 'translate-x-5' : 'translate-x-0'
+                        }`} />
+                      </button>
+                    </div>
+
+                    {!isPremium && (
+                      <button 
+                        onClick={() => promptUpgrade("100% White-Label Mode")}
+                        className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                      >
+                        <Crown className="w-3.5 h-3.5" /> Unlock White-Label (Upgrade to Premium)
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -529,10 +657,9 @@ export default function WebsiteBuilderPage() {
                       <span className="font-mono text-slate-400">docpulse.com/</span>
                       <span className="font-bold text-[#00A1AC] font-mono">{slug || 'clinic-slug'}</span>
                     </div>
-                    <p className="text-[11px] text-slate-500">Free system subdomain for direct patient bookings.</p>
                   </div>
 
-                  {/* Custom Domain (Unlocked on Advanced Plan) */}
+                  {/* Custom Domain */}
                   <div className={`bg-white border rounded-2xl p-5 space-y-4 shadow-sm relative overflow-hidden ${isAdvanced ? 'border-emerald-200' : 'border-amber-200'}`}>
                     <div className="flex items-center justify-between">
                       <h3 className="font-black text-xs uppercase tracking-wider text-slate-900 flex items-center gap-2">
@@ -542,7 +669,7 @@ export default function WebsiteBuilderPage() {
                         isAdvanced ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100'
                       }`}>
                         {isAdvanced ? <CheckCircle2 className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                        {isAdvanced ? "Unlocked (Advanced)" : "Pro Feature"}
+                        {isAdvanced ? "Unlocked" : "Pro Feature"}
                       </span>
                     </div>
 
@@ -573,8 +700,7 @@ export default function WebsiteBuilderPage() {
                       </div>
                     </div>
 
-                    {isAdvanced ? (
-                      /* DNS CNAME Configuration Guide Box */
+                    {isAdvanced && (
                       <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                         <div className="flex items-center justify-between text-xs font-bold text-slate-700">
                           <span>DNS CNAME Verification Record:</span>
@@ -593,27 +719,7 @@ export default function WebsiteBuilderPage() {
                             {copiedDns ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                         </div>
-                        <p className="text-[10px] text-slate-500">
-                          Add the above CNAME record in your domain provider (GoDaddy, Namecheap, Cloudflare). Propagation takes 5-15 minutes.
-                        </p>
                       </div>
-                    ) : (
-                      <>
-                        <div className="p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-xl flex items-start gap-2.5">
-                          <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                          <div className="text-[11px] text-amber-800 font-medium leading-relaxed">
-                            <span className="font-bold block mb-0.5">Custom Domain linking is available on Advanced & Premium plans.</span>
-                            Upgrade to link your personal domain, configure automated SSL certificates, and remove DocPulse branding.
-                          </div>
-                        </div>
-
-                        <button 
-                          onClick={() => promptUpgrade("Custom Domain Linking")}
-                          className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-                        >
-                          <Lock className="w-3.5 h-3.5" /> Unlock Custom Domain (Upgrade)
-                        </button>
-                      </>
                     )}
                   </div>
                 </div>
@@ -625,84 +731,89 @@ export default function WebsiteBuilderPage() {
                   <div>
                     <h3 className="font-bold text-slate-500 text-xs uppercase tracking-wider mb-3">Primary Brand Color</h3>
                     <div className="grid grid-cols-2 gap-3">
-                      {colors.map(color => (
-                        <div 
-                          key={color.value} 
-                          onClick={() => {
-                            updateConfig('primaryColor', color.value);
-                            savePayload({ primaryColor: color.value, themeColor: color.value });
-                          }} 
-                          className={`cursor-pointer flex items-center gap-3 p-3 rounded-2xl border transition-all ${config.primaryColor === color.value ? 'border-[#00A1AC] bg-[#00A1AC]/5 shadow-sm ring-1 ring-[#00A1AC]/30' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
-                        >
-                          <div className="w-6 h-6 rounded-full shadow-sm shrink-0" style={{ backgroundColor: color.value }} />
-                          <span className="font-bold text-xs text-[#0f172a]">{color.name}</span>
-                        </div>
-                      ))}
+                      {THEME_COLORS.map((color) => {
+                        const isSelected = 
+                          (config.themeColor || '').toLowerCase() === color.id.toLowerCase() ||
+                          (config.primaryColor || '').toLowerCase() === color.hex.toLowerCase();
+
+                        return (
+                          <button
+                            key={color.id}
+                            type="button"
+                            onClick={() => {
+                              if (color.isLocked) {
+                                setUpgradeReason(`The "${color.name}" palette requires the ${color.tier} Plan. Upgrade now to unlock premium brand colors.`);
+                                setShowUpgradeModal(true);
+                                return;
+                              }
+                              updateConfig('primaryColor', color.hex);
+                              updateConfig('themeColor', color.id);
+                              savePayload({ primaryColor: color.hex, themeColor: color.id });
+                            }}
+                            className={`flex items-center justify-between p-3 rounded-2xl border transition-all text-left w-full cursor-pointer ${
+                              isSelected
+                                ? 'border-[#00A1AC] bg-[#00A1AC]/5 shadow-sm ring-2 ring-[#00A1AC]/30 font-bold'
+                                : color.isLocked
+                                  ? 'border-slate-200 bg-slate-50/80 opacity-75 hover:opacity-100 hover:border-amber-300'
+                                  : 'border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="w-5 h-5 rounded-full shrink-0 shadow-sm"
+                                style={{ backgroundColor: color.hex }}
+                              />
+                              <span className="text-xs font-bold text-slate-900">{color.name}</span>
+                            </div>
+                            {color.isLocked && (
+                              <span className="text-[10px] font-black uppercase text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1 border border-amber-300">
+                                <Lock className="w-2.5 h-2.5" /> {color.tier}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
                   <div>
                     <h3 className="font-bold text-slate-500 text-xs uppercase tracking-wider mb-3">Button Shape</h3>
                     <div className="grid grid-cols-2 gap-3">
-                      {buttonStyles.map(style => (
-                        <button 
-                          key={style.id} 
-                          onClick={() => {
-                            updateConfig('buttonStyle', style.id);
-                            savePayload({ buttonStyle: style.id });
-                          }} 
-                          className={`py-2.5 px-3 border text-xs font-bold transition-all ${style.id} ${config.buttonStyle === style.id ? 'border-[#00A1AC] bg-[#00A1AC] text-white shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'}`}
-                        >
-                          {style.label}
-                        </button>
-                      ))}
+                      {buttonStyles.map(style => {
+                        const isSelected = 
+                          (config.buttonShape || '').toLowerCase() === style.id.toLowerCase() ||
+                          (config.buttonStyle || '').toLowerCase() === style.shapeClass.toLowerCase() ||
+                          (config.buttonStyle || '').toLowerCase() === style.id.toLowerCase();
+
+                        return (
+                          <button 
+                            key={style.id} 
+                            type="button"
+                            onClick={() => {
+                              if (style.isLocked) {
+                                setUpgradeReason(`The "${style.label}" button shape requires the ${style.tier} Plan. Upgrade now to unlock custom styling.`);
+                                setShowUpgradeModal(true);
+                                return;
+                              }
+                              updateConfig('buttonStyle', style.shapeClass);
+                              updateConfig('buttonShape', style.id);
+                              savePayload({ buttonStyle: style.shapeClass, buttonShape: style.id });
+                            }} 
+                            className={`py-2.5 px-3 border text-xs font-bold transition-all cursor-pointer flex items-center justify-between ${style.shapeClass} ${
+                              isSelected 
+                                ? 'border-[#00A1AC] bg-[#00A1AC] text-white shadow-sm' 
+                                : style.isLocked
+                                  ? 'border-slate-200 bg-slate-50/80 text-slate-500 opacity-75 hover:opacity-100 hover:border-amber-300'
+                                  : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300'
+                            }`}
+                          >
+                            <span>{style.label}</span>
+                            {style.isLocked && <Lock className="w-3 h-3 text-amber-600 shrink-0" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-
-                  {/* Advanced Customizations */}
-                  <div className={`p-4 rounded-2xl space-y-3 border ${isAdvanced ? 'bg-slate-50 border-slate-200' : 'bg-slate-100/70 border-slate-200'}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-slate-700 flex items-center gap-1.5">
-                        <Code className="w-3.5 h-3.5 text-slate-500" /> Custom CSS & Header Scripts
-                      </span>
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                        isAdvanced ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100'
-                      }`}>
-                        {isAdvanced ? <Check className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                        {isAdvanced ? "Unlocked" : "Pro Only"}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500">
-                      {isAdvanced 
-                        ? "Inject custom CSS stylesheets and tracking pixels for Google Tag Manager & Meta Pixel."
-                        : "Injecting custom CSS and third-party analytics pixels is available on Advanced & Premium plans."}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Sections Tab */}
-              {activeTab === 'sections' && (
-                <div className="space-y-3">
-                  {Object.keys(config.showSections).map(section => {
-                    const labels = { about: 'About Doctor Section', services: 'Services & Pricing', timings: 'OPD Timings', contact: 'Contact & Directions' };
-                    return (
-                      <div key={section} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                        <span className="font-bold text-xs sm:text-sm text-[#0f172a]">{labels[section] || section}</span>
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                            const updated = !config.showSections[section];
-                            updateSection(section, updated);
-                            savePayload({ showSections: { ...config.showSections, [section]: updated } });
-                          }} 
-                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${config.showSections[section] ? 'bg-[#00A1AC]' : 'bg-slate-300'}`}
-                        >
-                          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${config.showSections[section] ? 'translate-x-5' : 'translate-x-0'}`} />
-                        </button>
-                      </div>
-                    );
-                  })}
                 </div>
               )}
             </div>
@@ -775,66 +886,12 @@ export default function WebsiteBuilderPage() {
                 </button>
               </div>
 
-              <div className="p-6 space-y-8">
-                {config.showSections.about && (
-                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: config.primaryColor }}>About The Doctor</h3>
-                    <div className="flex gap-4 items-start bg-white/5 border border-white/10 p-4 rounded-2xl">
-                      <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 shrink-0 overflow-hidden flex items-center justify-center font-bold text-white">
-                        {effectiveDoctorPhoto ? (
-                          <img src={effectiveDoctorPhoto} alt="Doctor" className="w-full h-full object-cover object-top" />
-                        ) : (
-                          cleanDocName.charAt(4) || "D"
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-bold text-base text-white">{cleanDocName}</div>
-                        <div className="text-xs font-semibold" style={{ color: config.primaryColor }}>{doctor?.specialization || 'Medical Specialist'}</div>
-                        <p className="text-xs text-slate-400 mt-1 leading-relaxed">{doctor?.bio || 'Dedicated medical professional with extensive clinical expertise.'}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {config.showSections.services && (
-                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: config.primaryColor }}>Services Offered</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
-                        <div className="font-bold text-white text-xs mb-1">General Consultation</div>
-                        <div className="text-[11px] text-slate-400">15 mins • ₹500</div>
-                      </div>
-                      <div className="p-3.5 bg-white/5 rounded-2xl border border-white/10">
-                        <div className="font-bold text-white text-xs mb-1">Follow-up Visit</div>
-                        <div className="text-[11px] text-slate-400">10 mins • ₹300</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {config.showSections.timings && (
-                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: config.primaryColor }}>OPD Timings</h3>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-2 text-xs">
-                      <div className="flex justify-between"><span className="text-slate-400">Mon - Sat</span><span className="font-bold text-white">09:00 AM - 05:00 PM</span></div>
-                      <div className="flex justify-between"><span className="text-slate-400">Sunday</span><span className="font-bold text-rose-400">Closed</span></div>
-                    </div>
-                  </div>
-                )}
-                
-                {config.showSections.contact && (
-                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: config.primaryColor }}>Location & Contact</h3>
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-xs text-slate-300 space-y-1.5">
-                      <div>📍 {clinic?.address || 'Main Road, Clinic Location'}</div>
-                      <div>📞 {clinic?.phone || '+91 9999999999'}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
               {/* Preview Footer */}
-              {isAdvanced ? (
+              {isPremium && config.hideBranding ? (
+                <div className="py-6 text-center text-xs text-slate-500 border-t border-white/10 mt-6 font-medium">
+                  © {new Date().getFullYear()} {clinic?.name || 'Clinic'}. All rights reserved.
+                </div>
+              ) : isAdvanced ? (
                 <div className="text-[11px] text-slate-500 py-3 text-center border-t border-white/10 mt-6">
                   Powered by DocPulse
                 </div>
@@ -857,11 +914,11 @@ export default function WebsiteBuilderPage() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center animate-in zoom-in-95">
             <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-7 h-7" />
+              <Crown className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">Upgrade to Unlock Feature</h3>
+            <h3 className="text-xl font-black text-slate-900 mb-2">Premium Feature Locked</h3>
             <p className="text-xs text-slate-600 leading-relaxed mb-6 font-medium">
-              <strong>{upgradeReason}</strong> is available on Advanced (₹999/mo) and Premium (₹1499/mo) plans. Upgrade now to unlock custom domains, multi-templates, and full white-labeling.
+              <strong>{upgradeReason}</strong> is exclusive to the <strong>Premium Tier (₹1,499/mo)</strong>. Upgrade now to remove all SaaS branding, unlock luxury executive templates, and video bio embeds.
             </p>
             <div className="flex items-center justify-center gap-3">
               <button 
@@ -872,9 +929,9 @@ export default function WebsiteBuilderPage() {
               </button>
               <Link 
                 href="/dashboard/subscription"
-                className="px-6 py-2.5 rounded-xl bg-[#00A1AC] hover:bg-[#008790] text-white font-black text-xs shadow-lg shadow-[#00A1AC]/25 transition-all flex items-center gap-1.5"
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 text-white font-black text-xs shadow-lg shadow-amber-500/25 transition-all flex items-center gap-1.5"
               >
-                View Plans & Upgrade <ArrowUpRight className="w-4 h-4" />
+                Upgrade to Premium (₹1,499/mo) <ArrowUpRight className="w-4 h-4" />
               </Link>
             </div>
           </div>

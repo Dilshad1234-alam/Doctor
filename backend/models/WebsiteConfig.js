@@ -14,7 +14,6 @@ const WebsiteConfigSchema = new mongoose.Schema(
     },
     templateId: {
       type: String,
-      enum: ["template-1", "template-2", "template-3"],
       default: "template-1",
     },
     doctorPhoto: {
@@ -27,11 +26,11 @@ const WebsiteConfigSchema = new mongoose.Schema(
     },
     themeColor: {
       type: String,
-      default: "",
+      default: "#00A1AC",
     },
     primaryColor: {
       type: String,
-      default: "#2563eb",
+      default: "#00A1AC",
     },
     fontStyle: {
       type: String,
@@ -39,8 +38,19 @@ const WebsiteConfigSchema = new mongoose.Schema(
     },
     buttonStyle: {
       type: String,
-      enum: ["rounded-lg", "rounded-xl", "rounded-2xl", "rounded-full", "rounded-none"],
-      default: "rounded-xl",
+      default: "rounded-2xl",
+    },
+    buttonShape: {
+      type: String,
+      default: "curved",
+    },
+    hideBranding: {
+      type: Boolean,
+      default: false,
+    },
+    videoBioUrl: {
+      type: String,
+      default: "",
     },
     showSections: {
       about: { type: Boolean, default: true },

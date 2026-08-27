@@ -57,13 +57,15 @@ export async function GET(req) {
     }
 
     const planLimits = getPlanConfig(subscription.planId);
+    const planId = (subscription.planId || "BASIC").toUpperCase();
 
     return NextResponse.json({ 
       success: true, 
       subscription,
       planLimits,
       clinic,
-      isAdvanced: subscription.planId === "ADVANCED" || subscription.planId === "PRO" || subscription.planId === "PREMIUM"
+      isAdvanced: planId === "ADVANCED" || planId === "PRO" || planId === "PREMIUM",
+      isPremium: planId === "PREMIUM"
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -78,7 +80,7 @@ export async function POST(req) {
 
     const body = await req.json().catch(() => ({}));
     const targetPlan = (body.planId || "ADVANCED").toUpperCase();
-    const planConfig = PLAN_CONFIG[targetPlan] || PLAN_CONFIG.PRO;
+    const planConfig = PLAN_CONFIG[targetPlan] || (targetPlan === "PREMIUM" ? PLAN_CONFIG.PREMIUM : PLAN_CONFIG.PRO);
 
     let clinic = await Clinic.findOne({ ownerId: userId });
     if (!clinic) {
@@ -99,8 +101,8 @@ export async function POST(req) {
         doctorId: userId,
         clinicId: clinicId,
         planId: targetPlan,
-        planName: planConfig.name || "Advanced Plan",
-        price: planConfig.price || 999,
+        planName: planConfig.name || "Premium Tier",
+        price: planConfig.price || 1499,
         billingCycle: body.billingCycle || "MONTHLY",
         status: "ACTIVE",
         startDate: now,
@@ -111,7 +113,7 @@ export async function POST(req) {
 
     return NextResponse.json({
       success: true,
-      message: `🎉 Congratulations! Successfully upgraded to ${planConfig.name}. All Advanced features are now unlocked instantly!`,
+      message: `🎉 Congratulations! Successfully upgraded to ${planConfig.name}. All Premium features are now unlocked instantly!`,
       subscription,
       planConfig
     });

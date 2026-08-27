@@ -6,12 +6,15 @@ import { usePathname } from "next/navigation";
 import { 
   LayoutDashboard, Calendar, Stethoscope, Clock, Globe, 
   CreditCard, Settings, LogOut, Sparkles, HeartPulse,
-  ArrowLeft, ExternalLink, Menu, X, ShieldCheck, User
+  ArrowLeft, ExternalLink, Menu, X, ShieldCheck, User,
+  BarChart3, Crown, MessageSquare, Headphones
 } from "lucide-react";
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [showVipModal, setShowVipModal] = useState(false);
   const [userState, setUserState] = useState({
     name: "Doctor",
     email: "",
@@ -21,24 +24,35 @@ export default function DashboardLayout({ children }) {
   const doctorInfo = userState;
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndSub = async () => {
       try {
-        const res = await fetch("/api/auth/me");
-        const json = await res.json();
-        if (json.success && json.user) {
-          const isDone = Boolean(json.user.isOnboardingCompleted || json.user.hasCompletedOnboarding);
+        const [meRes, subRes] = await Promise.all([
+          fetch("/api/auth/me"),
+          fetch("/api/subscription/upgrade", { cache: "no-store" })
+        ]);
+        const [meJson, subJson] = await Promise.all([
+          meRes.json(),
+          subRes.json()
+        ]);
+        
+        if (meJson.success && meJson.user) {
+          const isDone = Boolean(meJson.user.isOnboardingCompleted || meJson.user.hasCompletedOnboarding);
           setUserState({
-            name: json.user.name ? `Dr. ${json.user.name.replace(/^Dr\.?\s*/i, "")}` : "Doctor",
-            email: json.user.email || "",
-            clinicSlug: json.user.slug || "",
+            name: meJson.user.name ? `Dr. ${meJson.user.name.replace(/^Dr\.?\s*/i, "")}` : "Doctor",
+            email: meJson.user.email || "",
+            clinicSlug: meJson.user.slug || "",
             isOnboardingCompleted: isDone,
           });
+        }
+
+        if (subJson.success && subJson.isPremium) {
+          setIsPremium(true);
         }
       } catch (e) {
         console.error(e);
       }
     };
-    fetchUser();
+    fetchUserAndSub();
   }, [pathname]);
 
   // Seamless Layout Guard: Do not mount dashboard sidebar/topbar during onboarding
@@ -55,8 +69,9 @@ export default function DashboardLayout({ children }) {
     { name: "Appointments Queue", href: "/dashboard/appointments", icon: Calendar, badge: null },
     { name: "Clinic Services", href: "/dashboard/services", icon: Stethoscope, badge: null },
     { name: "OPD Availability", href: "/dashboard/availability", icon: Clock, badge: null },
+    { name: "Telemetry & Analytics", href: "/dashboard/analytics", icon: BarChart3, badge: isPremium ? "VIP" : "New" },
     { name: "Website Builder", href: "/dashboard/website", icon: Globe, badge: "Web" },
-    { name: "Subscription & Plan", href: "/dashboard/billing", icon: CreditCard, badge: "SaaS" },
+    { name: "Subscription & Plan", href: "/dashboard/billing", icon: CreditCard, badge: isPremium ? "VIP" : "SaaS" },
     { name: "Clinic Settings", href: "/dashboard/settings", icon: Settings, badge: null },
   ];
 
@@ -86,7 +101,7 @@ export default function DashboardLayout({ children }) {
         />
       )}
 
-      {/* Sidebar Component (Medical Navy #0c2e3d Background & Teal #00A1AC Active Pill) */}
+      {/* Sidebar Component */}
       <aside
         className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-[#0c2e3d] text-white border-r border-[#15465c] flex flex-col justify-between p-6 transition-transform duration-300 ease-in-out shadow-2xl ${
           isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
@@ -103,7 +118,7 @@ export default function DashboardLayout({ children }) {
                 <div className="flex items-center gap-2">
                   <span className="font-black text-xl text-white tracking-tight">DocPulse</span>
                   <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-[#00A1AC]/30 text-teal-200 border border-[#00A1AC]/40">
-                    Doctor
+                    {isPremium ? "VIP Tier" : "Doctor"}
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-300 font-medium">Doctor Suite</p>
@@ -126,7 +141,7 @@ export default function DashboardLayout({ children }) {
               </div>
               <span className="text-xs font-bold text-slate-200">Doctor Suite Mode</span>
             </div>
-            <span className="text-[10px] font-black text-white bg-[#00A1AC] px-2 py-0.5 rounded-full">v2.4</span>
+            <span className="text-[10px] font-black text-white bg-[#00A1AC] px-2 py-0.5 rounded-full">v2.5</span>
           </div>
 
           {/* Navigation Links */}
@@ -159,9 +174,11 @@ export default function DashboardLayout({ children }) {
                   {item.badge && (
                     <span
                       className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                        active
-                          ? "bg-white/25 text-white"
-                          : "bg-[#00A1AC]/20 text-[#00A1AC] border border-[#00A1AC]/30"
+                        item.badge === "VIP"
+                          ? "bg-amber-400/20 text-amber-300 border border-amber-400/40"
+                          : active
+                            ? "bg-white/25 text-white"
+                            : "bg-[#00A1AC]/20 text-[#00A1AC] border border-[#00A1AC]/30"
                       }`}
                     >
                       {item.badge}
@@ -185,7 +202,7 @@ export default function DashboardLayout({ children }) {
                 <ArrowLeft className="w-3.5 h-3.5 text-[#00A1AC]" />
                 <span>View Live Clinic Site</span>
               </div>
-              <ExternalLink className="w-3 h-3 text-[#00A1AC]" />
+              <ExternalLink className="w-3.5 h-3.5 text-[#00A1AC]" />
             </Link>
           )}
 
@@ -198,7 +215,9 @@ export default function DashboardLayout({ children }) {
               <div className="min-w-0">
                 <p className="text-xs font-black text-white truncate">{doctorInfo.name}</p>
                 <p className="text-[11px] text-slate-300 truncate">{doctorInfo.email}</p>
-                <span className="inline-block text-[9px] font-black text-[#00A1AC] uppercase mt-0.5">Verified Doctor</span>
+                <span className="inline-block text-[9px] font-black text-[#00A1AC] uppercase mt-0.5">
+                  {isPremium ? "VIP Premium Doctor" : "Verified Doctor"}
+                </span>
               </div>
             </div>
             <button
@@ -212,7 +231,7 @@ export default function DashboardLayout({ children }) {
         </div>
       </aside>
 
-      {/* Main Content Area (Clean White Header + Slate-50 Background) */}
+      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
         {/* Top Navbar */}
         <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-6 sm:px-10 py-3.5 flex items-center justify-between shadow-sm">
@@ -235,10 +254,22 @@ export default function DashboardLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
-              <span className="w-2 h-2 rounded-full bg-[#00A1AC] animate-pulse"></span>
-              <span>All Systems Operational</span>
-            </div>
+            {/* VIP Priority Support Badge (Premium Doctors) */}
+            {isPremium ? (
+              <button
+                onClick={() => setShowVipModal(true)}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-teal-50 border border-amber-400 text-xs font-black text-amber-900 hover:shadow-md transition-all cursor-pointer"
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-600" />
+                <span>VIP Priority Support</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              </button>
+            ) : (
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
+                <span className="w-2 h-2 rounded-full bg-[#00A1AC] animate-pulse"></span>
+                <span>All Systems Operational</span>
+              </div>
+            )}
 
             {doctorInfo.clinicSlug && (
               <Link
@@ -253,7 +284,63 @@ export default function DashboardLayout({ children }) {
           </div>
         </header>
 
-        {/* Page Children with slate-50 background */}
+        {/* VIP Support Modal */}
+        {showVipModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-amber-600 font-black text-base">
+                  <Crown className="w-5 h-5" /> VIP Priority Support Desk
+                </div>
+                <button 
+                  onClick={() => setShowVipModal(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                As a <strong>Premium Tier Member</strong>, your practice has a dedicated onboarding manager and direct 24/7 priority channel.
+              </p>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-900 block">Direct WhatsApp Priority</span>
+                    <span className="text-slate-500 text-[11px]">+91 9523663754 (Avg response &lt; 5 mins)</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-teal-100 text-[#00A1AC] flex items-center justify-center">
+                    <Headphones className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-900 block">Dedicated Account Executive</span>
+                    <span className="text-slate-500 text-[11px]">vip-support@docpulse.internal</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <a
+                  href="https://wa.me/919523663754?text=Hi%20VIP%20Support,%20I%20need%20assistance%20with%20my%20clinic%20setup"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white text-center font-black text-xs rounded-2xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2"
+                >
+                  <span>Open WhatsApp Priority Chat</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Page Children */}
         <main className="flex-1 bg-slate-50 min-h-screen">
           {children}
         </main>

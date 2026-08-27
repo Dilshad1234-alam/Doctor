@@ -5,7 +5,7 @@ import {
   Search, Calendar as CalendarIcon, CheckCircle2, 
   XCircle, Clock, Filter, Loader2, AlertCircle, RefreshCw, Sparkles, User,
   Check, X, Ban, ShieldCheck, Power, ArrowRight, Download, Lock, FileSpreadsheet,
-  ArrowUpRight, FileText, CalendarRange
+  ArrowUpRight, FileText, CalendarRange, Crown, Printer
 } from "lucide-react";
 import Link from "next/link";
 
@@ -23,6 +23,7 @@ export default function AppointmentsPage() {
   
   // Plan & Capacity State
   const [isAdvanced, setIsAdvanced] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [toast, setToast] = useState(null);
   const [todaySchedule, setTodaySchedule] = useState(null);
@@ -38,6 +39,7 @@ export default function AppointmentsPage() {
       const json = await res.json();
       if (json.success) {
         setIsAdvanced(Boolean(json.isAdvanced));
+        setIsPremium(Boolean(json.isPremium));
       }
     } catch (e) {
       console.error(e);
@@ -107,7 +109,7 @@ export default function AppointmentsPage() {
     return Array.from(set);
   }, [appointments]);
 
-  // Instant In-Memory Filter (supports search, single date, date range, status, and service filter)
+  // Instant In-Memory Filter
   const filteredAppointments = useMemo(() => {
     return appointments.filter((item) => {
       const matchesFilter =
@@ -181,6 +183,14 @@ export default function AppointmentsPage() {
     document.body.removeChild(link);
 
     showToast("✅ CSV exported successfully!", "success");
+  };
+
+  const printPatientRoster = () => {
+    if (!isPremium) {
+      handleProFeatureClick("Download Financial Report & Print Roster (Premium)");
+      return;
+    }
+    window.print();
   };
 
   const toggleTodayCapacity = async () => {
@@ -298,18 +308,20 @@ export default function AppointmentsPage() {
               Appointments Queue
             </h1>
             <span className={`text-[11px] font-black px-3 py-0.5 rounded-full border ${
-              isAdvanced 
-                ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
-                : 'bg-[#00A1AC]/10 text-[#00A1AC] border-[#00A1AC]/20'
+              isPremium
+                ? 'bg-amber-100 text-amber-800 border-amber-300 flex items-center gap-1'
+                : isAdvanced 
+                  ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
+                  : 'bg-[#00A1AC]/10 text-[#00A1AC] border-[#00A1AC]/20'
             }`}>
-              {isAdvanced ? "Advanced Plan (Full Suite)" : "Basic Patient List"}
+              {isPremium ? <><Crown className="w-3 h-3 text-amber-600" /> Premium VIP Full Suite</> : isAdvanced ? "Advanced Plan (Full Suite)" : "Basic Patient List"}
             </span>
           </div>
           <p className="text-slate-500 mt-1 text-xs sm:text-sm font-medium">Review patient booking requests, approve consultations, and manage daily capacity.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* CSV Export Button (Unlocked on Advanced) */}
+          {/* CSV Export Button */}
           <button 
             type="button"
             onClick={exportCSV}
@@ -323,6 +335,22 @@ export default function AppointmentsPage() {
             <FileSpreadsheet className="w-3.5 h-3.5 text-[#00A1AC]" />
             <span>Export CSV</span>
             {!isAdvanced && <Lock className="w-3 h-3 text-amber-600" />}
+          </button>
+
+          {/* Print Roster PDF Button (Premium Feature) */}
+          <button 
+            type="button"
+            onClick={printPatientRoster}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer ${
+              isPremium 
+                ? 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-300' 
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200'
+            }`}
+            title={isPremium ? "Print daily OPD roster or save as PDF" : "Print OPD Roster (Upgrade to Premium)"}
+          >
+            <Printer className="w-3.5 h-3.5 text-amber-600" />
+            <span>Print / PDF Roster</span>
+            {!isPremium && <Lock className="w-3 h-3 text-amber-600" />}
           </button>
 
           {/* Quick Switch: Mark Today's Slots as Full / Closed */}
@@ -372,7 +400,7 @@ export default function AppointmentsPage() {
             />
           </div>
           
-          {/* Date Range Filter (Unlocked on Advanced) */}
+          {/* Date Range Filter */}
           <div className="relative shrink-0 flex items-center gap-2">
             <input 
               type="date"
@@ -450,7 +478,7 @@ export default function AppointmentsPage() {
           </div>
         </div>
 
-        {/* Treatment Service Filter Pills (Unlocked on Advanced) */}
+        {/* Treatment Service Filter Pills */}
         {isAdvanced && availableServices.length > 0 && (
           <div className="flex items-center gap-2 pt-2 border-t border-slate-100 overflow-x-auto text-xs">
             <span className="font-bold text-slate-400 text-[11px] uppercase tracking-wider shrink-0">Treatments:</span>
@@ -478,7 +506,7 @@ export default function AppointmentsPage() {
 
       </div>
 
-      {/* Data Table / List (White Card) */}
+      {/* Data Table / List */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm overflow-hidden min-h-[420px] relative">
         
         {loading && appointments.length === 0 && (
@@ -645,7 +673,7 @@ export default function AppointmentsPage() {
             </div>
             <h3 className="text-xl font-black text-slate-900 mb-2">Pro Feature Locked</h3>
             <p className="text-xs text-slate-600 leading-relaxed mb-6 font-medium">
-              <strong>{upgradeFeature}</strong> is available on Advanced (₹999/mo) and Premium tiers. Basic plan includes real-time patient queue, contact records, and instant confirmation workflows.
+              <strong>{upgradeFeature}</strong> is available on Advanced (₹999/mo) and Premium (₹1,499/mo) tiers.
             </p>
             <div className="flex items-center justify-center gap-3">
               <button 
@@ -658,7 +686,7 @@ export default function AppointmentsPage() {
                 href="/dashboard/subscription"
                 className="px-6 py-2.5 rounded-xl bg-[#00A1AC] hover:bg-[#008790] text-white font-black text-xs shadow-lg shadow-[#00A1AC]/25 transition-all flex items-center gap-1.5"
               >
-                Upgrade to Pro (₹999/mo) <ArrowUpRight className="w-4 h-4" />
+                Upgrade to Pro / Premium <ArrowUpRight className="w-4 h-4" />
               </Link>
             </div>
           </div>

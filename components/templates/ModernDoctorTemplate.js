@@ -18,7 +18,19 @@ export default function ModernDoctorTemplate({
   slug = ""
 }) {
   const cleanDoctorName = `Dr. ${doctor?.fullName?.replace(/^Dr\.?\s*/i, "") || "Doctor"}`;
-  const primaryColor = websiteConfig?.primaryColor || websiteConfig?.themeColor || clinic?.websiteConfig?.primaryColor || '#00A1AC';
+  
+  const COLOR_MAP = {
+    teal: '#00A1AC',
+    blue: '#2563EB',
+    emerald: '#059669',
+    navy: '#0D3648',
+    rose: '#E11D48',
+    indigo: '#4F46E5',
+    gold: '#D97706'
+  };
+
+  const rawColor = websiteConfig?.primaryColor || websiteConfig?.themeColor || clinic?.websiteConfig?.primaryColor || '#00A1AC';
+  const primaryColor = COLOR_MAP[rawColor?.toLowerCase()] || rawColor;
   const buttonStyle = websiteConfig?.buttonStyle || clinic?.websiteConfig?.buttonStyle || 'rounded-xl';
   const effectivePhoto = doctor?.profilePhoto || websiteConfig?.doctorPhoto || doctor?.image || doctor?.avatarUrl;
 
