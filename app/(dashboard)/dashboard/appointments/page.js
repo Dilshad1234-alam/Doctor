@@ -5,7 +5,7 @@ import {
   Search, Calendar as CalendarIcon, CheckCircle2, 
   XCircle, Clock, Filter, Loader2, AlertCircle, RefreshCw, Sparkles, User,
   Check, X, Ban, ShieldCheck, Power, ArrowRight, Download, Lock, FileSpreadsheet,
-  ArrowUpRight, FileText
+  ArrowUpRight, FileText, CalendarRange
 } from "lucide-react";
 import Link from "next/link";
 
@@ -17,9 +17,12 @@ export default function AppointmentsPage() {
   // Filters
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
+  const [selectedServiceFilter, setSelectedServiceFilter] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   
-  // UI & Capacity State
+  // Plan & Capacity State
+  const [isAdvanced, setIsAdvanced] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [toast, setToast] = useState(null);
   const [todaySchedule, setTodaySchedule] = useState(null);
@@ -27,9 +30,20 @@ export default function AppointmentsPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState("");
 
-  const todayDayOfWeek = new Date().getDay(); // 0 = Sunday, 1 = Monday ...
+  const todayDayOfWeek = new Date().getDay();
 
-  // Fetch current clinic availability to check today's capacity status
+  const fetchSubscriptionStatus = async () => {
+    try {
+      const res = await fetch("/api/subscription/upgrade", { cache: "no-store" });
+      const json = await res.json();
+      if (json.success) {
+        setIsAdvanced(Boolean(json.isAdvanced));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const fetchAvailability = async () => {
     try {
       const res = await fetch("/api/clinic/availability");
@@ -71,6 +85,7 @@ export default function AppointmentsPage() {
   };
 
   useEffect(() => {
+    fetchSubscriptionStatus();
     fetchAvailability();
     fetchAppointments(false);
 
@@ -83,7 +98,16 @@ export default function AppointmentsPage() {
     };
   }, []);
 
-  // Instant In-Memory Filter
+  // Unique service names for treatment filter pills
+  const availableServices = useMemo(() => {
+    const set = new Set();
+    appointments.forEach(apt => {
+      if (apt.serviceName) set.add(apt.serviceName);
+    });
+    return Array.from(set);
+  }, [appointments]);
+
+  // Instant In-Memory Filter (supports search, single date, date range, status, and service filter)
   const filteredAppointments = useMemo(() => {
     return appointments.filter((item) => {
       const matchesFilter =
@@ -91,22 +115,27 @@ export default function AppointmentsPage() {
         (activeFilter === 'PENDING' && (item.status === 'PENDING' || !item.status)) ||
         item.status === activeFilter;
 
+      const matchesService =
+        selectedServiceFilter === 'ALL' || item.serviceName === selectedServiceFilter;
+
       const matchesSearch =
         !searchQuery ||
         item.patientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.patientPhone?.includes(searchQuery);
 
       let matchesDate = true;
-      if (dateFilter) {
-        const itemDate = new Date(item.appointmentDate).toISOString().split('T')[0];
-        matchesDate = itemDate === dateFilter || String(item.appointmentDate).startsWith(dateFilter);
+      const itemDateStr = new Date(item.appointmentDate).toISOString().split('T')[0];
+
+      if (dateFilter && endDateFilter) {
+        matchesDate = itemDateStr >= dateFilter && itemDateStr <= endDateFilter;
+      } else if (dateFilter) {
+        matchesDate = itemDateStr === dateFilter || String(item.appointmentDate).startsWith(dateFilter);
       }
 
-      return matchesFilter && matchesSearch && matchesDate;
+      return matchesFilter && matchesService && matchesSearch && matchesDate;
     });
-  }, [appointments, activeFilter, searchQuery, dateFilter]);
+  }, [appointments, activeFilter, selectedServiceFilter, searchQuery, dateFilter, endDateFilter]);
 
-  // Count calculations for filter badges
   const counts = useMemo(() => {
     const res = { ALL: appointments.length, PENDING: 0, CONFIRMED: 0, COMPLETED: 0, CANCELLED: 0 };
     appointments.forEach(apt => {
@@ -117,6 +146,42 @@ export default function AppointmentsPage() {
     });
     return res;
   }, [appointments]);
+
+  const exportCSV = () => {
+    if (!isAdvanced) {
+      handleProFeatureClick("CSV & Excel Patient Data Export");
+      return;
+    }
+
+    if (filteredAppointments.length === 0) {
+      showToast("No appointment records to export", "error");
+      return;
+    }
+
+    const headers = ["Patient Name", "Phone", "Age", "Gender", "Service", "Fee (INR)", "Date", "Time Slot", "Status"];
+    const rows = filteredAppointments.map(apt => [
+      `"${apt.patientName || ''}"`,
+      `"${apt.patientPhone || ''}"`,
+      apt.patientAge || '',
+      `"${apt.patientGender || ''}"`,
+      `"${apt.serviceName || 'Consultation'}"`,
+      apt.price || 500,
+      new Date(apt.appointmentDate).toISOString().split('T')[0],
+      `"${apt.timeSlot || ''}"`,
+      `"${apt.status || 'PENDING'}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `DocPulse_Appointments_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast("✅ CSV exported successfully!", "success");
+  };
 
   const toggleTodayCapacity = async () => {
     if (isTogglingToday) return;
@@ -232,24 +297,32 @@ export default function AppointmentsPage() {
               <CalendarIcon className="w-7 h-7 text-[#00A1AC]" />
               Appointments Queue
             </h1>
-            <span className="text-[11px] font-black text-[#00A1AC] bg-[#00A1AC]/10 border border-[#00A1AC]/20 px-3 py-0.5 rounded-full">
-              Basic Patient List
+            <span className={`text-[11px] font-black px-3 py-0.5 rounded-full border ${
+              isAdvanced 
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-200' 
+                : 'bg-[#00A1AC]/10 text-[#00A1AC] border-[#00A1AC]/20'
+            }`}>
+              {isAdvanced ? "Advanced Plan (Full Suite)" : "Basic Patient List"}
             </span>
           </div>
           <p className="text-slate-500 mt-1 text-xs sm:text-sm font-medium">Review patient booking requests, approve consultations, and manage daily capacity.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Locked CSV Export (Pro Feature) */}
+          {/* CSV Export Button (Unlocked on Advanced) */}
           <button 
             type="button"
-            onClick={() => handleProFeatureClick("CSV & Excel Patient Export")}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
-            title="Export patient records to CSV (Advanced Plan)"
+            onClick={exportCSV}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer ${
+              isAdvanced 
+                ? 'bg-white hover:bg-slate-100 text-slate-800 border border-slate-300' 
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200'
+            }`}
+            title={isAdvanced ? "Download patient data as CSV spreadsheet" : "Export patient records (Upgrade to Pro)"}
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-slate-500" />
+            <FileSpreadsheet className="w-3.5 h-3.5 text-[#00A1AC]" />
             <span>Export CSV</span>
-            <Lock className="w-3 h-3 text-amber-600" />
+            {!isAdvanced && <Lock className="w-3 h-3 text-amber-600" />}
           </button>
 
           {/* Quick Switch: Mark Today's Slots as Full / Closed */}
@@ -283,84 +356,125 @@ export default function AppointmentsPage() {
         </div>
       </div>
 
-      {/* Filters Bar (Clean White Card) */}
-      <div className="w-full flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-sm">
+      {/* Filters Bar */}
+      <div className="w-full flex flex-col gap-3 bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-sm">
         
-        {/* Search Input Container */}
-        <div className="flex-1 min-w-[200px] relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Search patient name or phone..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 focus:bg-white focus:outline-none text-xs text-[#0f172a] placeholder-slate-400 transition-all font-medium"
-          />
-        </div>
-        
-        {/* Date Filter Input */}
-        <div className="relative shrink-0 flex items-center gap-2">
-          <input 
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="min-w-[130px] bg-slate-50 border border-slate-200 text-[#0f172a] rounded-2xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 transition-all font-medium"
-          />
-          {dateFilter && (
-            <button 
-              onClick={() => setDateFilter("")} 
-              className="text-slate-400 hover:text-slate-700"
-              title="Clear date"
-            >
-              <XCircle className="w-4 h-4" />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => handleProFeatureClick("Advanced Date Range & Multi-Month Filter")}
-            className="text-[11px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-2xl flex items-center gap-1 border border-slate-200 transition-all"
-            title="Multi-range date filters available on Pro tier"
-          >
-            Range <Lock className="w-3 h-3 text-amber-600" />
-          </button>
+        <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-3">
+          {/* Search Input Container */}
+          <div className="flex-1 min-w-[200px] relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search patient name or phone..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 focus:bg-white focus:outline-none text-xs text-[#0f172a] placeholder-slate-400 transition-all font-medium"
+            />
+          </div>
+          
+          {/* Date Range Filter (Unlocked on Advanced) */}
+          <div className="relative shrink-0 flex items-center gap-2">
+            <input 
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="min-w-[130px] bg-slate-50 border border-slate-200 text-[#0f172a] rounded-2xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 transition-all font-medium"
+            />
+            {isAdvanced ? (
+              <>
+                <span className="text-xs text-slate-400 font-bold">to</span>
+                <input 
+                  type="date"
+                  value={endDateFilter}
+                  onChange={(e) => setEndDateFilter(e.target.value)}
+                  className="min-w-[130px] bg-slate-50 border border-slate-200 text-[#0f172a] rounded-2xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20 transition-all font-medium"
+                />
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleProFeatureClick("Date Range Multi-Month Filter")}
+                className="text-[11px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-2xl flex items-center gap-1 border border-slate-200 transition-all cursor-pointer"
+                title="Date range filters unlocked on Advanced tier"
+              >
+                Range <Lock className="w-3 h-3 text-amber-600" />
+              </button>
+            )}
+
+            {(dateFilter || endDateFilter) && (
+              <button 
+                onClick={() => { setDateFilter(""); setEndDateFilter(""); }} 
+                className="text-slate-400 hover:text-slate-700 p-1"
+                title="Clear date"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-hidden flex-wrap shrink-0">
+            {[
+              { id: 'ALL', label: 'All Queue' },
+              { id: 'PENDING', label: 'Pending' },
+              { id: 'CONFIRMED', label: 'Confirmed' },
+              { id: 'COMPLETED', label: 'Completed' },
+              { id: 'CANCELLED', label: 'Cancelled' }
+            ].map(tab => {
+              const isSelected = activeFilter === tab.id;
+              const count = counts[tab.id] || 0;
+              return (
+                <button 
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveFilter(tab.id)}
+                  className={`transition-all duration-200 cursor-pointer flex items-center gap-1.5 rounded-full px-4 py-2 text-xs ${
+                    isSelected 
+                    ? 'bg-[#00A1AC] text-white font-black shadow-md shadow-[#00A1AC]/25' 
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {count > 0 && (
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black transition-colors ${
+                      isSelected 
+                        ? 'bg-white text-[#00A1AC]' 
+                        : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-hidden flex-wrap shrink-0">
-          {[
-            { id: 'ALL', label: 'All Queue' },
-            { id: 'PENDING', label: 'Pending' },
-            { id: 'CONFIRMED', label: 'Confirmed' },
-            { id: 'COMPLETED', label: 'Completed' },
-            { id: 'CANCELLED', label: 'Cancelled' }
-          ].map(tab => {
-            const isSelected = activeFilter === tab.id;
-            const count = counts[tab.id] || 0;
-            return (
-              <button 
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveFilter(tab.id)}
-                className={`transition-all duration-200 cursor-pointer flex items-center gap-1.5 rounded-full px-4 py-2 text-xs ${
-                  isSelected 
-                  ? 'bg-[#00A1AC] text-white font-black shadow-md shadow-[#00A1AC]/25' 
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold'
+        {/* Treatment Service Filter Pills (Unlocked on Advanced) */}
+        {isAdvanced && availableServices.length > 0 && (
+          <div className="flex items-center gap-2 pt-2 border-t border-slate-100 overflow-x-auto text-xs">
+            <span className="font-bold text-slate-400 text-[11px] uppercase tracking-wider shrink-0">Treatments:</span>
+            <button
+              onClick={() => setSelectedServiceFilter("ALL")}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                selectedServiceFilter === "ALL" ? "bg-[#00A1AC] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              All Services
+            </button>
+            {availableServices.map(srv => (
+              <button
+                key={srv}
+                onClick={() => setSelectedServiceFilter(srv)}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                  selectedServiceFilter === srv ? "bg-[#00A1AC] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                <span>{tab.label}</span>
-                {count > 0 && (
-                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black transition-colors ${
-                    isSelected 
-                      ? 'bg-white text-[#00A1AC]' 
-                      : 'bg-slate-200 text-slate-700'
-                  }`}>
-                    {count}
-                  </span>
-                )}
+                {srv}
               </button>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
 
       </div>
 
@@ -408,10 +522,10 @@ export default function AppointmentsPage() {
                         <p className="text-slate-500 text-xs max-w-sm">
                           Try selecting a different status filter or clearing your search criteria.
                         </p>
-                        {(activeFilter !== "ALL" || dateFilter || searchQuery) && (
+                        {(activeFilter !== "ALL" || dateFilter || endDateFilter || selectedServiceFilter !== "ALL" || searchQuery) && (
                           <button 
                             type="button"
-                            onClick={() => { setActiveFilter("ALL"); setDateFilter(""); setSearchQuery(""); }} 
+                            onClick={() => { setActiveFilter("ALL"); setDateFilter(""); setEndDateFilter(""); setSelectedServiceFilter("ALL"); setSearchQuery(""); }} 
                             className="mt-4 text-xs text-[#00A1AC] font-bold hover:underline cursor-pointer"
                           >
                             Clear all filters
@@ -522,7 +636,7 @@ export default function AppointmentsPage() {
         )}
       </div>
 
-      {/* Upgrade Modal for Pro Features */}
+      {/* Upgrade Modal */}
       {showUpgradeModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-3xl p-8 max-w-md w-full shadow-2xl text-center animate-in zoom-in-95">

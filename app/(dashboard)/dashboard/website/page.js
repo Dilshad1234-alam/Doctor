@@ -5,7 +5,7 @@ import {
   Globe, Palette, LayoutTemplate, Loader2, Save, ExternalLink, 
   CheckCircle2, Eye, LayoutGrid, Sparkles, Image as ImageIcon, 
   Upload, Trash2, User, RefreshCw, Building, Lock, ArrowUpRight,
-  ShieldCheck, Link2, Code, ShieldAlert
+  ShieldCheck, Link2, Code, ShieldAlert, Check, Copy
 } from "lucide-react";
 import Link from "next/link";
 import { PLAN_CONFIG, getPlanConfig } from "../../../../lib/planLimits.js";
@@ -24,12 +24,14 @@ export default function WebsiteBuilderPage() {
   const [doctor, setDoctor] = useState(null);
   const [slug, setSlug] = useState("");
   const [customDomain, setCustomDomain] = useState("");
+  const [isAdvanced, setIsAdvanced] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState("templates");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState("");
+  const [copiedDns, setCopiedDns] = useState(false);
 
   const syncConfigFromServer = async () => {
     try {
@@ -38,12 +40,14 @@ export default function WebsiteBuilderPage() {
       if (json.success) {
         const photo = json.websiteConfig?.doctorPhoto || json.doctor?.profilePhoto || json.doctor?.image || json.doctor?.avatarUrl || '';
         const logo = json.websiteConfig?.clinicLogo || json.clinic?.logo || '';
+        const advanced = Boolean(json.isAdvanced);
+        setIsAdvanced(advanced);
         
         if (json.websiteConfig) {
           setConfig(prev => ({
             ...prev,
             ...json.websiteConfig,
-            templateId: 'template-1', // Basic plan locked to template-1
+            templateId: advanced ? (json.websiteConfig.templateId || 'template-1') : 'template-1',
             doctorPhoto: photo || prev.doctorPhoto || '',
             clinicLogo: logo || prev.clinicLogo || ''
           }));
@@ -58,6 +62,7 @@ export default function WebsiteBuilderPage() {
         setClinic(json.clinic);
         setDoctor(json.doctor);
         setSlug(json.slug);
+        setCustomDomain(json.customDomain || json.clinic?.customDomain || "");
       }
     } catch (err) {
       console.error("Failed to fetch website config:", err);
@@ -76,7 +81,8 @@ export default function WebsiteBuilderPage() {
       const payload = {
         ...config,
         ...payloadToSave,
-        templateId: 'template-1', // Basic plan stays template-1
+        customDomain: payloadToSave?.customDomain !== undefined ? payloadToSave.customDomain : customDomain,
+        templateId: isAdvanced ? (payloadToSave?.templateId || config.templateId || 'template-1') : 'template-1',
         doctorPhoto: payloadToSave?.doctorPhoto !== undefined ? payloadToSave.doctorPhoto : (config.doctorPhoto || ""),
         profilePhoto: payloadToSave?.doctorPhoto !== undefined ? payloadToSave.doctorPhoto : (config.doctorPhoto || ""),
         image: payloadToSave?.doctorPhoto !== undefined ? payloadToSave.doctorPhoto : (config.doctorPhoto || ""),
@@ -118,7 +124,7 @@ export default function WebsiteBuilderPage() {
   };
 
   const saveConfig = async () => {
-    await savePayload(config);
+    await savePayload({ ...config, customDomain });
   };
 
   const updateConfig = (field, value) => {
@@ -132,6 +138,12 @@ export default function WebsiteBuilderPage() {
   const promptUpgrade = (featureName) => {
     setUpgradeReason(featureName);
     setShowUpgradeModal(true);
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedDns(true);
+    setTimeout(() => setCopiedDns(false), 2500);
   };
 
   const handleFileUpload = (e, field) => {
@@ -190,7 +202,7 @@ export default function WebsiteBuilderPage() {
       name: 'Medical Oceanic Pro', 
       desc: 'High-tech oceanic theme for specialized healthcare centers',
       img: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=800&auto=format&fit=crop',
-      isLocked: true,
+      isLocked: !isAdvanced,
       tier: 'Pro'
     },
     { 
@@ -198,7 +210,7 @@ export default function WebsiteBuilderPage() {
       name: 'Family Health Care', 
       desc: 'Warm, approachable layout for family & general practice',
       img: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=800&auto=format&fit=crop',
-      isLocked: true,
+      isLocked: !isAdvanced,
       tier: 'Pro'
     }
   ];
@@ -233,14 +245,27 @@ export default function WebsiteBuilderPage() {
               <Globe className="w-7 h-7 text-[#00A1AC]" />
               Website Customizer & Theme
             </h1>
-            <span className="text-[11px] font-black text-[#00A1AC] bg-[#00A1AC]/10 border border-[#00A1AC]/20 px-3 py-0.5 rounded-full">
-              Basic Plan (₹499/mo)
+            <span className={`text-[11px] font-black px-3 py-0.5 rounded-full border ${
+              isAdvanced 
+                ? 'text-emerald-800 bg-emerald-100 border-emerald-200' 
+                : 'text-[#00A1AC] bg-[#00A1AC]/10 border-[#00A1AC]/20'
+            }`}>
+              {isAdvanced ? "Advanced Plan Active (All Unlocked)" : "Basic Plan (₹499/mo)"}
             </span>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">Customize your public landing page theme, doctor photo, clinic logo, and layout in real-time.</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          {slug && (
+          {customDomain && isAdvanced ? (
+            <a 
+              href={`https://${customDomain.replace(/^https?:\/\//, '')}`} 
+              target="_blank" 
+              rel="noreferrer" 
+              className="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-2xl font-bold transition-all text-xs active:scale-95 cursor-pointer"
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-600" /> {customDomain}
+            </a>
+          ) : slug ? (
             <a 
               href={`/${slug}`} 
               target="_blank" 
@@ -249,7 +274,7 @@ export default function WebsiteBuilderPage() {
             >
               <ExternalLink className="w-3.5 h-3.5 text-[#00A1AC]" /> /{slug}
             </a>
-          )}
+          ) : null}
           <button 
             onClick={saveConfig} 
             disabled={saving} 
@@ -308,8 +333,8 @@ export default function WebsiteBuilderPage() {
               {activeTab === 'templates' && (
                 <div className="space-y-4">
                   <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-600 font-medium flex items-center justify-between">
-                    <span>Basic Plan: Standard Modern Template Included</span>
-                    <span className="font-bold text-[#00A1AC]">1 Template Unlocked</span>
+                    <span>{isAdvanced ? "Advanced Plan: All 3 Premium Templates Unlocked" : "Basic Plan: Standard Modern Template Included"}</span>
+                    <span className="font-bold text-[#00A1AC]">{isAdvanced ? "3 / 3 Unlocked" : "1 / 3 Unlocked"}</span>
                   </div>
 
                   {templates.map((t) => (
@@ -325,7 +350,7 @@ export default function WebsiteBuilderPage() {
                       }} 
                       className={`relative cursor-pointer rounded-2xl overflow-hidden border-2 transition-all ${
                         t.isLocked 
-                          ? 'border-slate-200 opacity-80 hover:opacity-100' 
+                          ? 'border-slate-200 opacity-70 hover:opacity-90' 
                           : config.templateId === t.id 
                             ? 'border-[#00A1AC] shadow-lg ring-2 ring-[#00A1AC]/30' 
                             : 'border-slate-200 hover:border-slate-300'
@@ -492,59 +517,104 @@ export default function WebsiteBuilderPage() {
               {/* Domain & URL Tab */}
               {activeTab === 'domain' && (
                 <div className="space-y-6">
-                  {/* Platform Subdomain (Allowed on Basic) */}
+                  {/* Platform Subdomain */}
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-black text-xs uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-[#00A1AC]" /> Platform Subdomain (Active)
+                        <Globe className="w-4 h-4 text-[#00A1AC]" /> Platform Subdomain
                       </h3>
-                      <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">Included</span>
+                      <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">Active</span>
                     </div>
                     <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700">
                       <span className="font-mono text-slate-400">docpulse.com/</span>
                       <span className="font-bold text-[#00A1AC] font-mono">{slug || 'clinic-slug'}</span>
                     </div>
-                    <p className="text-[11px] text-slate-500">Your public booking website is live and shareable under this URL.</p>
+                    <p className="text-[11px] text-slate-500">Free system subdomain for direct patient bookings.</p>
                   </div>
 
-                  {/* Custom Domain (Locked on Basic Plan) */}
-                  <div className="bg-white border border-amber-200 rounded-2xl p-5 space-y-4 shadow-sm relative overflow-hidden">
+                  {/* Custom Domain (Unlocked on Advanced Plan) */}
+                  <div className={`bg-white border rounded-2xl p-5 space-y-4 shadow-sm relative overflow-hidden ${isAdvanced ? 'border-emerald-200' : 'border-amber-200'}`}>
                     <div className="flex items-center justify-between">
                       <h3 className="font-black text-xs uppercase tracking-wider text-slate-900 flex items-center gap-2">
-                        <Link2 className="w-4 h-4 text-amber-500" /> Custom Domain (e.g. drdilshad.com)
+                        <Link2 className={`w-4 h-4 ${isAdvanced ? 'text-emerald-600' : 'text-amber-500'}`} /> Custom Domain
                       </h3>
-                      <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Pro Feature
+                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 ${
+                        isAdvanced ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100'
+                      }`}>
+                        {isAdvanced ? <CheckCircle2 className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                        {isAdvanced ? "Unlocked (Advanced)" : "Pro Feature"}
                       </span>
                     </div>
 
-                    <div className="relative">
-                      <input 
-                        type="text" 
-                        disabled
-                        placeholder="e.g. www.drdilshadclinic.com" 
-                        value={customDomain}
-                        className="w-full bg-slate-100 border border-slate-200 text-slate-400 rounded-xl px-3 py-2.5 text-xs font-medium cursor-not-allowed" 
-                      />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Lock className="w-4 h-4 text-slate-400" />
+                    <div className="space-y-2">
+                      <label className="block text-[11px] font-bold text-slate-600 uppercase">Your Custom Domain URL</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          disabled={!isAdvanced}
+                          placeholder="e.g. drdilshadclinic.com" 
+                          value={customDomain}
+                          onChange={(e) => setCustomDomain(e.target.value)}
+                          className={`flex-1 border rounded-xl px-3 py-2.5 text-xs font-medium focus:outline-none transition-all ${
+                            isAdvanced 
+                              ? 'bg-white border-slate-200 text-slate-900 focus:border-[#00A1AC] focus:ring-2 focus:ring-[#00A1AC]/20' 
+                              : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                          }`}
+                        />
+                        {isAdvanced && (
+                          <button
+                            type="button"
+                            onClick={() => savePayload({ customDomain })}
+                            className="px-4 py-2 bg-[#00A1AC] hover:bg-[#008790] text-white font-bold text-xs rounded-xl transition-all shadow-md active:scale-95 cursor-pointer"
+                          >
+                            Save Domain
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    <div className="p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-xl flex items-start gap-2.5">
-                      <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div className="text-[11px] text-amber-800 font-medium leading-relaxed">
-                        <span className="font-bold block mb-0.5">Custom Domain linking is available on Advanced & Premium plans.</span>
-                        Upgrade to link your personal domain, configure automated SSL certificates, and remove DocPulse branding.
+                    {isAdvanced ? (
+                      /* DNS CNAME Configuration Guide Box */
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                          <span>DNS CNAME Verification Record:</span>
+                          <span className="text-[10px] text-emerald-600 font-mono flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3" /> SSL Auto-Provisioned
+                          </span>
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded-lg p-2.5 font-mono text-[11px] text-slate-700 flex items-center justify-between">
+                          <span>CNAME &nbsp; @ &nbsp; points to &nbsp; <strong>cname.docpulse.com</strong></span>
+                          <button 
+                            type="button"
+                            onClick={() => copyToClipboard("cname.docpulse.com")}
+                            className="p-1 text-slate-400 hover:text-slate-700"
+                            title="Copy CNAME value"
+                          >
+                            {copiedDns ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-slate-500">
+                          Add the above CNAME record in your domain provider (GoDaddy, Namecheap, Cloudflare). Propagation takes 5-15 minutes.
+                        </p>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="p-3.5 bg-amber-50/60 border border-amber-200/80 rounded-xl flex items-start gap-2.5">
+                          <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div className="text-[11px] text-amber-800 font-medium leading-relaxed">
+                            <span className="font-bold block mb-0.5">Custom Domain linking is available on Advanced & Premium plans.</span>
+                            Upgrade to link your personal domain, configure automated SSL certificates, and remove DocPulse branding.
+                          </div>
+                        </div>
 
-                    <button 
-                      onClick={() => promptUpgrade("Custom Domain Linking")}
-                      className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-                    >
-                      <Lock className="w-3.5 h-3.5" /> Unlock Custom Domain (Upgrade)
-                    </button>
+                        <button 
+                          onClick={() => promptUpgrade("Custom Domain Linking")}
+                          className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                        >
+                          <Lock className="w-3.5 h-3.5" /> Unlock Custom Domain (Upgrade)
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -589,17 +659,24 @@ export default function WebsiteBuilderPage() {
                     </div>
                   </div>
 
-                  {/* Locked Advanced Customizations */}
-                  <div className="p-4 bg-slate-100/70 border border-slate-200 rounded-2xl space-y-3">
+                  {/* Advanced Customizations */}
+                  <div className={`p-4 rounded-2xl space-y-3 border ${isAdvanced ? 'bg-slate-50 border-slate-200' : 'bg-slate-100/70 border-slate-200'}`}>
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs text-slate-700 flex items-center gap-1.5">
                         <Code className="w-3.5 h-3.5 text-slate-500" /> Custom CSS & Header Scripts
                       </span>
-                      <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Pro Only
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                        isAdvanced ? 'text-emerald-700 bg-emerald-100' : 'text-amber-700 bg-amber-100'
+                      }`}>
+                        {isAdvanced ? <Check className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                        {isAdvanced ? "Unlocked" : "Pro Only"}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500">Injecting custom CSS and third-party analytics pixels is available on Advanced & Premium plans.</p>
+                    <p className="text-[11px] text-slate-500">
+                      {isAdvanced 
+                        ? "Inject custom CSS stylesheets and tracking pixels for Google Tag Manager & Meta Pixel."
+                        : "Injecting custom CSS and third-party analytics pixels is available on Advanced & Premium plans."}
+                    </p>
                   </div>
                 </div>
               )}
@@ -756,13 +833,19 @@ export default function WebsiteBuilderPage() {
                 )}
               </div>
               
-              {/* Enforced Platform Branding Footer */}
-              <div className="p-6 bg-[#071720] text-slate-400 text-center text-xs border-t border-white/10 mt-6 space-y-1">
-                <p>© {new Date().getFullYear()} {clinic?.name || 'Clinic'}. All rights reserved.</p>
-                <p className="text-slate-500">
-                  Powered by <span className="font-bold text-[#00A1AC]">DocPulse CRM</span>
-                </p>
-              </div>
+              {/* Preview Footer */}
+              {isAdvanced ? (
+                <div className="text-[11px] text-slate-500 py-3 text-center border-t border-white/10 mt-6">
+                  Powered by DocPulse
+                </div>
+              ) : (
+                <div className="p-6 bg-[#071720] text-slate-400 text-center text-xs border-t border-white/10 mt-6 space-y-1">
+                  <p>© {new Date().getFullYear()} {clinic?.name || 'Clinic'}. All rights reserved.</p>
+                  <p className="text-slate-500">
+                    Powered by <span className="font-bold text-[#00A1AC]">DocPulse CRM</span>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import User from "../../../../backend/models/User";
 import Clinic from "../../../../backend/models/Clinic";
 import WebsiteConfig from "../../../../backend/models/WebsiteConfig";
 import DoctorProfile from "../../../../backend/models/DoctorProfile";
+import Subscription from "../../../../backend/models/Subscription";
 import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,8 @@ async function handleSaveWebsiteBuilder(req) {
       primaryColor,
       fontStyle,
       buttonStyle,
-      showSections 
+      showSections,
+      customDomain 
     } = body;
 
     const photoUrl = doctorPhoto || profilePhoto || image || avatarUrl || "";
@@ -48,6 +50,13 @@ async function handleSaveWebsiteBuilder(req) {
 
     const clinicId = clinic ? clinic._id : userId;
 
+    // Check subscription plan
+    const subscription = await Subscription.findOne({
+      $or: [{ userId: userId }, { clinicId: clinicId }, { doctorId: userId }]
+    }).lean();
+
+    const isAdvanced = subscription?.planId === "ADVANCED" || subscription?.planId === "PRO" || subscription?.planId === "PREMIUM";
+
     // 1. Sync & Permanently Save in DoctorProfile model
     await DoctorProfile.findOneAndUpdate(
       { $or: [{ userId: userId }, ...(clinic ? [{ clinicId: clinic._id }] : [])] },
@@ -59,9 +68,10 @@ async function handleSaveWebsiteBuilder(req) {
       { new: true, upsert: true }
     );
 
-    // 2. Sync Clinic logo if clinic exists
+    // 2. Sync Clinic logo and customDomain if clinic exists
     if (clinic) {
-      clinic.logo = logoUrl;
+      if (logoUrl !== undefined) clinic.logo = logoUrl;
+      if (customDomain !== undefined) clinic.customDomain = customDomain;
       await clinic.save();
     }
 
@@ -74,7 +84,7 @@ async function handleSaveWebsiteBuilder(req) {
       clinicLogo: logoUrl,
       primaryColor: color,
       themeColor: color,
-      templateId: templateId || "template-1",
+      templateId: isAdvanced ? (templateId || "template-1") : "template-1",
       fontStyle: fontStyle || "Plus Jakarta Sans",
       buttonStyle: buttonStyle || "rounded-xl",
       showSections: showSections || { about: true, services: true, timings: true, contact: true },
@@ -85,7 +95,7 @@ async function handleSaveWebsiteBuilder(req) {
     const websiteConfig = await WebsiteConfig.findOneAndUpdate(
       { $or: [{ clinicId: clinicId }, { doctorId: userId }] },
       configUpdate,
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
 
     const updatedDoctor = await DoctorProfile.findOne({ 
@@ -96,7 +106,9 @@ async function handleSaveWebsiteBuilder(req) {
       success: true, 
       websiteConfig, 
       clinic, 
-      doctor: updatedDoctor 
+      doctor: updatedDoctor,
+      isAdvanced,
+      subscription 
     });
   } catch (error) {
     console.error("Website Builder save error:", error);
@@ -117,6 +129,12 @@ export async function GET(req) {
     const doctor = await DoctorProfile.findOne({ 
       $or: [{ userId: userId }, ...(clinic ? [{ clinicId: clinic._id }] : [])] 
     });
+
+    const subscription = await Subscription.findOne({
+      $or: [{ userId: userId }, ...(clinic ? [{ clinicId: clinic._id }] : []), { doctorId: userId }]
+    }).lean();
+
+    const isAdvanced = subscription?.planId === "ADVANCED" || subscription?.planId === "PRO" || subscription?.planId === "PREMIUM";
 
     let websiteConfig = await WebsiteConfig.findOne({ 
       $or: [
@@ -152,7 +170,10 @@ export async function GET(req) {
       clinic, 
       doctor, 
       websiteConfig, 
-      slug: clinic?.slug || "" 
+      slug: clinic?.slug || "",
+      customDomain: clinic?.customDomain || "",
+      isAdvanced,
+      subscription 
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

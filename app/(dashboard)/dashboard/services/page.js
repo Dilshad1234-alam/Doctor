@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { 
   PlusCircle, Trash2, Loader2, Stethoscope, AlertCircle, 
-  Sparkles, Clock, CheckCircle2, Lock, ArrowUpRight, ShieldAlert 
+  Sparkles, Clock, CheckCircle2, Lock, ArrowUpRight, ShieldAlert, Infinity as InfinityIcon
 } from "lucide-react";
 import Link from "next/link";
 import { PLAN_CONFIG, getPlanConfig } from "../../../../lib/planLimits.js";
@@ -37,8 +37,10 @@ export default function ServicesPage() {
     fetchServices();
   }, [fetchServices]);
 
-  const maxServices = planInfo.maxServices || 5;
-  const isLimitReached = services.length >= maxServices;
+  const currentPlanId = (planInfo.planId || "BASIC").toUpperCase();
+  const isAdvancedOrPro = currentPlanId === "ADVANCED" || currentPlanId === "PRO" || currentPlanId === "PREMIUM";
+  const maxServices = isAdvancedOrPro ? 999 : (planInfo.maxServices || 5);
+  const isLimitReached = !isAdvancedOrPro && services.length >= 5;
 
   const addService = async (e) => {
     e.preventDefault();
@@ -90,7 +92,7 @@ export default function ServicesPage() {
     );
   }
 
-  const usagePercent = Math.min(100, Math.round((services.length / maxServices) * 100));
+  const usagePercent = isAdvancedOrPro ? 100 : Math.min(100, Math.round((services.length / 5) * 100));
 
   return (
     <div className="p-6 sm:p-10 space-y-8 max-w-5xl mx-auto font-sans bg-slate-50 text-[#0f172a] min-h-screen">
@@ -107,7 +109,7 @@ export default function ServicesPage() {
             href="/dashboard/subscription" 
             className="flex items-center gap-2 bg-[#00A1AC]/10 hover:bg-[#00A1AC]/20 text-[#00A1AC] border border-[#00A1AC]/20 px-4 py-2 rounded-2xl font-bold transition-all text-xs active:scale-95"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#00A1AC]" /> {planInfo.name || "Basic Plan"}
+            <Sparkles className="w-3.5 h-3.5 text-[#00A1AC]" /> {isAdvancedOrPro ? "Advanced Plan (Unlimited)" : "Basic Plan (Capped)"}
           </Link>
         </div>
       </div>
@@ -118,30 +120,40 @@ export default function ServicesPage() {
           <div>
             <div className="flex items-center gap-2">
               <span className="font-black text-sm text-slate-900">Services Usage:</span>
-              <span className={`text-sm font-black px-2.5 py-0.5 rounded-full ${isLimitReached ? 'bg-amber-100 text-amber-800' : 'bg-[#00A1AC]/10 text-[#00A1AC]'}`}>
-                {services.length} / {maxServices} Used
+              <span className={`text-sm font-black px-2.5 py-0.5 rounded-full ${
+                isAdvancedOrPro 
+                  ? 'bg-emerald-100 text-emerald-800 flex items-center gap-1' 
+                  : isLimitReached 
+                    ? 'bg-amber-100 text-amber-800' 
+                    : 'bg-[#00A1AC]/10 text-[#00A1AC]'
+              }`}>
+                {isAdvancedOrPro ? `${services.length} Active (Unlimited ∞)` : `${services.length} / 5 Used`}
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1 font-medium">
-              {isLimitReached 
-                ? "Basic Plan limit reached (5/5 services). Upgrade to Advanced for unlimited services." 
-                : `You can add ${maxServices - services.length} more services on your current Basic Plan.`}
+              {isAdvancedOrPro 
+                ? "✨ Advanced Plan unlocked: You have unlimited consultation services and treatments with instant slot synchronization."
+                : isLimitReached 
+                  ? "Basic Plan limit reached (5/5 services). Upgrade to Advanced for unlimited services." 
+                  : `You can add ${5 - services.length} more services on your current Basic Plan.`}
             </p>
           </div>
-          {isLimitReached && (
+          {!isAdvancedOrPro && isLimitReached && (
             <Link 
               href="/dashboard/subscription" 
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md transition-all active:scale-95 shrink-0"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00A1AC] hover:bg-[#008790] text-white font-bold text-xs shadow-md transition-all active:scale-95 shrink-0"
             >
-              <Lock className="w-3.5 h-3.5" /> Upgrade to Advanced <ArrowUpRight className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5" /> Upgrade to Advanced <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           )}
         </div>
         {/* Progress Bar */}
         <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
           <div 
-            className={`h-full transition-all duration-500 rounded-full ${isLimitReached ? 'bg-amber-500' : 'bg-[#00A1AC]'}`}
-            style={{ width: `${usagePercent}%` }}
+            className={`h-full transition-all duration-500 rounded-full ${
+              isAdvancedOrPro ? 'bg-emerald-500' : isLimitReached ? 'bg-amber-500' : 'bg-[#00A1AC]'
+            }`}
+            style={{ width: `${isAdvancedOrPro ? 100 : usagePercent}%` }}
           />
         </div>
       </div>
@@ -152,11 +164,15 @@ export default function ServicesPage() {
           <h2 className="text-lg font-black text-[#0f172a] flex items-center gap-2 tracking-tight">
             <Sparkles className="w-5 h-5 text-[#00A1AC]" /> Add New Offering
           </h2>
-          {isLimitReached && (
+          {isAdvancedOrPro ? (
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> Unlimited Services Active
+            </span>
+          ) : isLimitReached ? (
             <span className="text-xs font-bold text-amber-700 bg-amber-100 border border-amber-200 px-3 py-1 rounded-full flex items-center gap-1">
               <Lock className="w-3 h-3" /> Capped at 5 Services
             </span>
-          )}
+          ) : null}
         </div>
 
         <form onSubmit={addService} className="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
@@ -218,7 +234,7 @@ export default function ServicesPage() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-black text-[#0f172a] tracking-tight">Active Consultation Services</h2>
           <span className="text-xs font-black text-[#00A1AC] bg-[#00A1AC]/10 px-3 py-1 rounded-full border border-[#00A1AC]/20">
-            {services.length} / {maxServices} Services
+            {services.length} Total Services
           </span>
         </div>
         
