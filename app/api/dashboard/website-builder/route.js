@@ -69,16 +69,12 @@ async function handleSaveWebsiteBuilder(req) {
 
     // 1. Strict Color Validation
     const mappedTheme = getThemeConfig(requestedColor);
-    let finalColor = requestedColor;
-    if (!tierConfig.allowedColors.includes(mappedTheme.id.toLowerCase())) {
-      finalColor = 'teal'; // Fallback to basic allowed color
-    }
+    const finalColorHex = mappedTheme.primary || "#00A1AC";
+    const finalColorId = mappedTheme.id || "teal";
 
     // 2. Strict Shape Validation
-    let finalShape = requestedShape;
-    if (!tierConfig.allowedShapes.includes(requestedShape.toLowerCase())) {
-      finalShape = 'curved'; // Fallback to basic allowed shape
-    }
+    const finalShape = requestedShape || "soft";
+    const finalShapeClass = requestedShape === "pill" ? "rounded-full" : requestedShape === "sharp" ? "rounded-none" : "rounded-2xl";
 
     // 3. Strict Template Validation
     let finalTemplate = templateId || "template-1";
@@ -97,7 +93,11 @@ async function handleSaveWebsiteBuilder(req) {
       { 
         profilePhoto: photoUrl, 
         image: photoUrl, 
-        avatarUrl: photoUrl 
+        avatarUrl: photoUrl,
+        themeColor: finalColorId,
+        primaryColor: finalColorHex,
+        buttonShape: finalShape,
+        buttonStyle: finalShapeClass
       },
       { new: true, upsert: true }
     );
@@ -116,10 +116,10 @@ async function handleSaveWebsiteBuilder(req) {
       clinicId: clinicId,
       doctorPhoto: photoUrl,
       clinicLogo: logoUrl,
-      primaryColor: finalColor,
-      themeColor: finalColor,
+      primaryColor: finalColorHex,
+      themeColor: finalColorId,
       buttonShape: finalShape,
-      buttonStyle: finalShape,
+      buttonStyle: finalShapeClass,
       templateId: finalTemplate,
       fontStyle: fontStyle || "Plus Jakarta Sans",
       hideBranding: finalHideBranding,
@@ -193,8 +193,8 @@ export async function GET(req) {
         templateId: "template-1",
         doctorPhoto: currentPhoto,
         clinicLogo: currentLogo,
-        primaryColor: "#00A1AC",
-        themeColor: "#00A1AC",
+        primaryColor: "#0A8692",
+        themeColor: "teal",
         fontStyle: "Plus Jakarta Sans",
         hideBranding: false,
         videoBioUrl: "",
@@ -202,9 +202,18 @@ export async function GET(req) {
         showSections: { about: true, services: true, timings: true, contact: true }
       });
       await websiteConfig.save();
-    } else if (websiteConfig && currentPhoto && !websiteConfig.doctorPhoto) {
-      websiteConfig.doctorPhoto = currentPhoto;
-      await websiteConfig.save();
+    } else if (websiteConfig) {
+      let shouldSave = false;
+      if (currentPhoto && !websiteConfig.doctorPhoto) {
+        websiteConfig.doctorPhoto = currentPhoto;
+        shouldSave = true;
+      }
+      if (websiteConfig.themeColor === "blue" || websiteConfig.primaryColor === "#3B82F6" || !websiteConfig.themeColor) {
+        websiteConfig.themeColor = "teal";
+        websiteConfig.primaryColor = "#0A8692";
+        shouldSave = true;
+      }
+      if (shouldSave) await websiteConfig.save();
     }
 
     return NextResponse.json({ 

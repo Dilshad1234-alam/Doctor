@@ -9,7 +9,11 @@ const AppointmentSchema = new mongoose.Schema({
   doctorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "DoctorProfile",
-    required: true,
+    required: false,
+  },
+  tokenNumber: {
+    type: Number,
+    default: 1,
   },
   patientName: {
     type: String,
@@ -43,8 +47,25 @@ const AppointmentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"],
+    enum: ["WAITING", "IN_CONSULTATION", "COMPLETED", "CANCELLED", "PENDING", "CONFIRMED"],
+    default: "WAITING",
+  },
+  paymentStatus: {
+    type: String,
+    enum: ["PENDING", "PAID_CASH", "PAID_UPI", "PAID_ONLINE"],
     default: "PENDING",
+  },
+  paymentMethod: {
+    type: String,
+    default: "Cash",
+  },
+  clinicalNotes: {
+    type: String,
+    default: "",
+  },
+  isWalkIn: {
+    type: Boolean,
+    default: false,
   }
 }, { timestamps: true });
 

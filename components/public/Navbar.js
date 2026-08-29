@@ -1,1 +1,160 @@
-export { default } from "../../frontend/components/clinic/PublicNavbar.js";
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
+import { 
+  HeartPulse, Calendar, ShieldCheck, Menu, X, Crown, Stethoscope
+} from "lucide-react";
+import { getThemeConfig, getButtonShapeClass } from "../../lib/themeColors";
+
+export default function PublicNavbar({
+  clinic,
+  doctor,
+  planId = "BASIC",
+  navbarType = "basic",
+  themeColor = "teal",
+  activeTheme,
+  buttonShapeClass,
+  slug = ""
+}) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const theme = activeTheme || getThemeConfig(themeColor);
+  const shape = buttonShapeClass || getButtonShapeClass(doctor?.buttonShape || "rounded-2xl");
+
+  const rawDocName = doctor?.fullName || doctor?.name || "Alam";
+  const cleanDocName = rawDocName.replace(/^Dr\.?\s*/i, "");
+  const clinicTitle = doctor?.clinicName || clinic?.name || "Alam Dental Clinic";
+  const specialization = doctor?.specialization || doctor?.specialty || "Dentist & Oral Surgeon";
+
+  const isPremium = planId === "PREMIUM" || planId === "ENTERPRISE" || navbarType === "premium";
+  const isAdvanced = planId === "ADVANCED" || planId === "PRO" || navbarType === "advanced" || isPremium;
+
+  // Center Navigation Links
+  const navLinks = [
+    { name: "Home", href: "#home" },
+    { name: "Services & Fees", href: "#services" },
+    { name: "OPD Timings", href: "#schedule" },
+    { name: "Contact", href: "#contact" }
+  ];
+
+  return (
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-900 shadow-xs w-full px-4 sm:px-8 lg:px-12">
+      <div className="w-full flex items-center justify-between h-20 gap-4">
+        
+        {/* 1. Left Side: Logo & Clinic Info (Far Left) */}
+        <div className="flex items-center justify-start flex-1 min-w-0">
+          <Link href={`/${slug}`} className="flex items-center gap-3 group shrink-0">
+            {(isAdvanced || isPremium) && clinic?.logo ? (
+              <img 
+                src={clinic.logo} 
+                alt={clinicTitle} 
+                className="h-11 w-11 rounded-2xl object-cover border border-slate-200 shadow-sm group-hover:scale-105 transition-transform" 
+              />
+            ) : (
+              <div 
+                style={{ backgroundColor: theme.primary }}
+                className="w-11 h-11 rounded-2xl flex items-center justify-center font-black shadow-md group-hover:scale-105 transition-transform text-white"
+              >
+                <Stethoscope className="w-6 h-6" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-black text-base sm:text-lg tracking-tight text-slate-900 truncate">
+                  {clinicTitle}
+                </span>
+                {isPremium ? (
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-700 border border-amber-400/40 flex items-center gap-1 shrink-0">
+                    <Crown className="w-3 h-3 text-amber-600" /> VIP Clinic
+                  </span>
+                ) : isAdvanced ? (
+                  <span 
+                    style={{ backgroundColor: `${theme.primary}15`, color: theme.primary, borderColor: `${theme.primary}30` }}
+                    className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full border flex items-center gap-1 shrink-0"
+                  >
+                    <ShieldCheck className="w-3 h-3" /> Verified
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-xs font-semibold text-slate-500 truncate">
+                Dr. {cleanDocName} • {specialization}
+              </p>
+            </div>
+          </Link>
+        </div>
+
+        {/* 2. Center: Navigation Links (Exact Center) */}
+        <nav className="hidden md:flex items-center justify-center gap-8 text-xs font-bold text-slate-600 flex-1 whitespace-nowrap">
+          {navLinks.map(link => (
+            <a 
+              key={link.name} 
+              href={link.href} 
+              className="hover:text-slate-900 transition-colors"
+            >
+              {link.name}
+            </a>
+          ))}
+        </nav>
+
+        {/* 3. Right Side: Book Appointment CTA (Far Right) */}
+        <div className="hidden md:flex items-center justify-end flex-1 shrink-0">
+          <Link
+            href={`/${slug}/book`}
+            style={{ backgroundColor: theme.primary }}
+            className={`px-6 py-2.5 ${shape} font-black transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2 text-white shadow-sm text-xs whitespace-nowrap`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Book Appointment</span>
+          </Link>
+        </div>
+
+        {/* Mobile Menu Button */}
+        <div className="md:hidden flex items-center gap-2">
+          <Link
+            href={`/${slug}/book`}
+            style={{ backgroundColor: theme.primary }}
+            className={`px-3.5 py-2 text-white ${shape} font-bold text-xs shadow-md`}
+          >
+            Book Slot
+          </Link>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50"
+            aria-label="Toggle Navigation"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+
+      </div>
+
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-slate-200 px-6 py-5 space-y-4 bg-white text-slate-900 animate-in slide-in-from-top-3">
+          <div className="flex flex-col gap-3 text-xs font-bold">
+            {navLinks.map(link => (
+              <a 
+                key={link.name} 
+                href={link.href} 
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-2 border-b border-slate-100 hover:text-slate-900"
+              >
+                {link.name}
+              </a>
+            ))}
+            <Link 
+              href={`/${slug}/book`}
+              onClick={() => setMobileMenuOpen(false)}
+              style={{ backgroundColor: theme.primary }}
+              className={`w-full text-center text-white text-xs font-black py-2.5 ${shape} shadow-md mt-2 flex items-center justify-center gap-1.5`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Book Appointment</span>
+            </Link>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}

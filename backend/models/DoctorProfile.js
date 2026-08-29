@@ -66,6 +66,14 @@ const DoctorProfileSchema = new mongoose.Schema(
       type: String,
       default: "Solo Practitioner",
     },
+    shifts: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+    opdAvailability: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
   },
   { timestamps: true }
 );

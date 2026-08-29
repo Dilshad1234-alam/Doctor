@@ -83,6 +83,38 @@ export async function POST(req) {
   }
 }
 
+export async function PATCH(req) {
+  try {
+    const { clinic } = await authenticateAndGetClinic();
+    const body = await req.json();
+    const { serviceId, isActive, name, price, durationMins } = body;
+
+    if (!serviceId) {
+      return NextResponse.json({ success: false, error: "Missing serviceId" }, { status: 400 });
+    }
+
+    const updateFields = {};
+    if (isActive !== undefined) updateFields.isActive = Boolean(isActive);
+    if (name !== undefined) updateFields.name = name;
+    if (price !== undefined) updateFields.price = Number(price);
+    if (durationMins !== undefined) updateFields.durationMins = Number(durationMins);
+
+    const service = await Service.findOneAndUpdate(
+      { _id: serviceId, clinicId: clinic._id },
+      { $set: updateFields },
+      { new: true }
+    );
+
+    if (!service) {
+      return NextResponse.json({ success: false, error: "Service not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, service }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(req) {
   try {
     const { clinic } = await authenticateAndGetClinic();

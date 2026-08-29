@@ -58,8 +58,24 @@ export default async function DedicatedBookPage(props) {
     $or: [{ clinicId: clinic._id }, ...(clinic.ownerId ? [{ doctorId: clinic.ownerId }] : [])] 
   }).lean();
 
+  // Dynamic Brand Palette Configuration
+  const colorMap = {
+    teal: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
+    teal_cyan: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
+    blue: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
+    emerald: { primary: '#059669', light: '#ECFDF5', border: '#A7F3D0', ring: 'rgba(5,150,105,0.15)' },
+    navy: { primary: '#1E293B', light: '#F1F5F9', border: '#CBD5E1', ring: 'rgba(30,41,59,0.15)' },
+    rose: { primary: '#E11D48', light: '#FFF1F2', border: '#FECDD3', ring: 'rgba(225,29,72,0.15)' },
+    indigo: { primary: '#4F46E5', light: '#EEF2FF', border: '#C7D2FE', ring: 'rgba(79,70,229,0.15)' },
+    gold: { primary: '#D97706', light: '#FFFBEB', border: '#FDE68A', ring: 'rgba(217,119,6,0.15)' }
+  };
+
+  const activeThemeKey = websiteConfig?.themeColor || doctor?.websiteConfig?.themeColor || 'teal';
+  const defaultTheme = { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' };
+  const theme = colorMap[activeThemeKey] || defaultTheme;
+
+  const buttonShape = websiteConfig?.buttonShape || websiteConfig?.buttonStyle || doctor?.websiteConfig?.buttonShape || 'rounded-xl';
   const cleanDoctorName = `Dr. ${doctor?.fullName?.replace(/^Dr\.?\s*/i, "") || "Doctor"}`;
-  const primaryColor = websiteConfig?.primaryColor || "#00A1AC";
   const effectiveLogo = websiteConfig?.clinicLogo || clinic?.logo;
 
   return (
@@ -75,17 +91,17 @@ export default async function DedicatedBookPage(props) {
             <img src={effectiveLogo} alt="Logo" className="w-10 h-10 rounded-2xl object-contain p-1 border border-slate-200 bg-white shadow-sm group-hover:scale-105 transition-transform" />
           ) : (
             <div 
-              className="w-10 h-10 rounded-2xl flex items-center justify-center font-black text-white text-base shadow-md group-hover:scale-105 transition-transform"
-              style={{ backgroundColor: primaryColor }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-base shadow-sm group-hover:scale-105 transition-transform"
+              style={{ backgroundColor: theme.primary }}
             >
               {clinic.name.charAt(0)}
             </div>
           )}
           <div>
-            <h1 className="text-slate-900 font-black text-base sm:text-lg tracking-tight leading-tight group-hover:text-[#00A1AC] transition-colors">
+            <h1 className="text-slate-900 font-black text-base sm:text-lg tracking-tight leading-tight group-hover:opacity-80 transition-colors">
               {clinic.name}
             </h1>
-            <p className="text-xs text-[#00A1AC] font-bold flex items-center gap-1">
+            <p style={{ color: theme.primary }} className="text-xs font-bold flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               {cleanDoctorName} • Confirmed OPD Booking
             </p>
@@ -94,7 +110,7 @@ export default async function DedicatedBookPage(props) {
 
         <Link 
           href={`/${slug}`} 
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#00A1AC] text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:opacity-80 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Clinic
         </Link>
@@ -103,7 +119,10 @@ export default async function DedicatedBookPage(props) {
       {/* Main Dedicated Booking Wizard Container */}
       <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 my-auto py-10">
         <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-50 border border-teal-200 text-[#00A1AC] text-xs font-bold uppercase tracking-wider">
+          <div 
+            style={{ color: theme.primary, backgroundColor: theme.light, borderColor: theme.border }} 
+            className="px-4 py-1.5 rounded-full text-xs font-bold border inline-flex items-center gap-2 uppercase tracking-wider shadow-2xs"
+          >
             <ShieldCheck className="w-4 h-4" />
             <span>CONFIRMED OPD RESERVATION</span>
           </div>

@@ -6,6 +6,10 @@ import DoctorProfile from "../../../../backend/models/DoctorProfile.js";
 import WebsiteConfig from "../../../../backend/models/WebsiteConfig.js";
 import { verifyToken } from "../../../../backend/utils/jwt.js";
 
+import Subscription from "../../../../backend/models/Subscription.js";
+
+export const dynamic = "force-dynamic";
+
 async function authenticateAndGetIds() {
   await connectDB();
   const cookieStore = await cookies();
@@ -28,7 +32,24 @@ export async function GET() {
                           await DoctorProfile.findOne({ userId: userId }).lean();
     const websiteConfig = await WebsiteConfig.findOne({ clinicId: clinic._id }).lean();
     
-    return NextResponse.json({ success: true, clinic, doctorProfile, websiteConfig }, { status: 200 });
+    const subscription = await Subscription.findOne({
+      $or: [{ userId: userId }, { clinicId: clinic._id }, { doctorId: userId }]
+    }).lean();
+
+    const planId = (subscription?.planId || "BASIC").toUpperCase();
+    const isAdvanced = planId === "ADVANCED" || planId === "PRO" || planId === "PREMIUM";
+    const isPremium = planId === "PREMIUM";
+
+    return NextResponse.json({ 
+      success: true, 
+      clinic, 
+      doctorProfile, 
+      websiteConfig,
+      subscription,
+      planId,
+      isAdvanced,
+      isPremium
+    }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 401 });
   }
@@ -40,6 +61,7 @@ export async function PUT(req) {
     const body = await req.json();
     const { 
       clinicName, phone, address, city, logo, clinicLogo,
+      googleMapsUrl, whatsAppNotifications, whatsAppWebhookUrl,
       doctorName, qualification, specialization, experienceYrs, 
       profilePhoto, doctorPhoto, bio 
     } = body;
@@ -47,31 +69,31 @@ export async function PUT(req) {
     const chosenLogo = clinicLogo !== undefined ? clinicLogo : (logo !== undefined ? logo : undefined);
     const chosenPhoto = profilePhoto !== undefined ? profilePhoto : (doctorPhoto !== undefined ? doctorPhoto : undefined);
     
-    const clinicUpdate = { 
-      name: clinicName, 
-      phone, 
-      address, 
-      city 
-    };
-    if (chosenLogo !== undefined) {
-      clinicUpdate.logo = chosenLogo;
-    }
+    const clinicUpdate = {};
+    if (clinicName !== undefined) clinicUpdate.name = clinicName;
+    if (phone !== undefined) clinicUpdate.phone = phone;
+    if (address !== undefined) clinicUpdate.address = address;
+    if (city !== undefined) clinicUpdate.city = city;
+    if (chosenLogo !== undefined) clinicUpdate.logo = chosenLogo;
+    if (googleMapsUrl !== undefined) clinicUpdate.googleMapsUrl = googleMapsUrl;
+    if (whatsAppNotifications !== undefined) clinicUpdate.whatsAppNotifications = Boolean(whatsAppNotifications);
+    if (whatsAppWebhookUrl !== undefined) clinicUpdate.whatsAppWebhookUrl = whatsAppWebhookUrl;
 
     const clinic = await Clinic.findOneAndUpdate(
       { ownerId: userId },
-      clinicUpdate,
+      { $set: clinicUpdate },
       { new: true }
     );
     if (!clinic) return NextResponse.json({ success: false, error: "Clinic not found" }, { status: 404 });
 
     const doctorUpdate = { 
-      fullName: doctorName, 
-      qualification, 
-      specialization, 
-      experienceYrs: Number(experienceYrs) || 0,
       clinicId: clinic._id,
       userId: userId
     };
+    if (doctorName !== undefined) doctorUpdate.fullName = doctorName;
+    if (qualification !== undefined) doctorUpdate.qualification = qualification;
+    if (specialization !== undefined) doctorUpdate.specialization = specialization;
+    if (experienceYrs !== undefined) doctorUpdate.experienceYrs = Number(experienceYrs) || 0;
     if (bio !== undefined) doctorUpdate.bio = bio;
     if (chosenPhoto !== undefined) {
       doctorUpdate.profilePhoto = chosenPhoto;
@@ -80,7 +102,7 @@ export async function PUT(req) {
 
     const updatedDoctor = await DoctorProfile.findOneAndUpdate(
       { $or: [{ clinicId: clinic._id }, { userId: userId }] },
-      doctorUpdate,
+      { $set: doctorUpdate },
       { new: true, upsert: true }
     );
 

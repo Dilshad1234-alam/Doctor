@@ -53,6 +53,22 @@ const ClinicSchema = new mongoose.Schema({
     type: String,
     default: "Single Doctor Clinic",
   },
+  googleMapsUrl: {
+    type: String,
+    default: "",
+  },
+  whatsAppNotifications: {
+    type: Boolean,
+    default: true,
+  },
+  whatsAppWebhookUrl: {
+    type: String,
+    default: "",
+  },
+  emergencyClosed: {
+    type: Boolean,
+    default: false,
+  },
 }, { timestamps: true });
 
 export default mongoose.models.Clinic || mongoose.model("Clinic", ClinicSchema);

@@ -6,13 +6,30 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   CheckCircle2, Clock, Calendar, User, Phone, MapPin, 
   ArrowRight, ArrowLeft, Loader2, Sparkles, AlertCircle, Share2, Printer,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, ShieldCheck
 } from 'lucide-react';
 
 function BookingWizard({ clinic, doctor, services, availability, slug, embedded, websiteConfig }) {
   const searchParams = useSearchParams();
-  const primaryColor = websiteConfig?.primaryColor || clinic?.websiteConfig?.primaryColor || '#0f766e';
-  const buttonStyle = websiteConfig?.buttonStyle || clinic?.websiteConfig?.buttonStyle || 'rounded-xl';
+
+  // Dynamic Brand Color Extraction
+  const colorMap = {
+    teal: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
+    teal_cyan: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
+    blue: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
+    emerald: { primary: '#059669', light: '#ECFDF5', border: '#A7F3D0', ring: 'rgba(5,150,105,0.15)' },
+    navy: { primary: '#1E293B', light: '#F1F5F9', border: '#CBD5E1', ring: 'rgba(30,41,59,0.15)' },
+    rose: { primary: '#E11D48', light: '#FFF1F2', border: '#FECDD3', ring: 'rgba(225,29,72,0.15)' },
+    indigo: { primary: '#4F46E5', light: '#EEF2FF', border: '#C7D2FE', ring: 'rgba(79,70,229,0.15)' },
+    gold: { primary: '#D97706', light: '#FFFBEB', border: '#FDE68A', ring: 'rgba(217,119,6,0.15)' }
+  };
+
+  const activeThemeKey = websiteConfig?.themeColor || clinic?.websiteConfig?.themeColor || doctor?.websiteConfig?.themeColor || 'teal';
+  const defaultTheme = { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' };
+  const theme = colorMap[activeThemeKey] || defaultTheme;
+
+  const primaryColor = theme.primary;
+  const buttonStyle = websiteConfig?.buttonShape || websiteConfig?.buttonStyle || clinic?.websiteConfig?.buttonShape || clinic?.websiteConfig?.buttonStyle || 'rounded-xl';
   const cleanDoctorName = `Dr. ${doctor?.fullName?.replace(/^Dr\.?\s*/i, "") || "Doctor"}`;
   const initialServiceId = searchParams.get("serviceId");
   
@@ -74,7 +91,6 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                 slots: json.slots || [],
                 isClosed: Boolean(json.isClosed)
               };
-              // If it matches current selectedDate and availableSlots is empty, sync it
               if (selectedDate) {
                 const curY = selectedDate.getFullYear();
                 const curM = String(selectedDate.getMonth() + 1).padStart(2, '0');
@@ -105,7 +121,6 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
     const d = String(date.getDate()).padStart(2, '0');
     const dateStr = `${y}-${m}-${d}`;
 
-    // 1. Check instant cache first
     if (slotsCacheRef.current[dateStr]) {
       const cached = slotsCacheRef.current[dateStr];
       setAvailableSlots(cached.slots);
@@ -150,7 +165,6 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
     if (!selectedDateVal || !slotTimeString) return false;
     const now = new Date();
     
-    // Format selectedDate to YYYY-MM-DD
     let selectedDateStr = "";
     if (selectedDateVal instanceof Date) {
       const y = selectedDateVal.getFullYear();
@@ -168,13 +182,9 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
     const d = String(now.getDate()).padStart(2, '0');
     const todayStr = `${y}-${m}-${d}`;
 
-    // If selected date is in the future, all slots are valid
     if (selectedDateStr > todayStr) return false;
-    // If selected date is in the past, all slots are disabled/hidden
     if (selectedDateStr < todayStr) return true;
 
-    // If selected date is TODAY, compare slot time with current time
-    // Example slotTimeString: "09:30 AM", "02:15 PM"
     const parts = slotTimeString.trim().split(' ');
     if (parts.length < 2) return false;
     const time = parts[0];
@@ -187,7 +197,6 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
     const slotDateTime = new Date();
     slotDateTime.setHours(hours, minutes, 0, 0);
 
-    // Return true if slot time is earlier than or equal to current time
     return slotDateTime <= now;
   };
 
@@ -260,7 +269,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
     return isNaN(dateObj.getTime()) ? String(d) : dateObj.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   };
 
-  // Lightweight poll every 5 seconds when in Step 4 to detect Doctor Approval
+  // Fast poll every 2.5 seconds when in Step 4 to detect Doctor Confirmation / Rejection
   useEffect(() => {
     if (step !== 4 || !bookingResult?._id) return;
 
@@ -273,13 +282,13 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
           setBookingResult(prev => ({ 
             ...prev, 
             ...data.appointment, 
-            status: data.appointment.status || data.status 
+            status: (data.appointment.status || data.status || "PENDING").toUpperCase() 
           }));
         }
       } catch (err) {
         console.error("Polling status error:", err);
       }
-    }, 5000);
+    }, 2500);
 
     return () => {
       isSubscribed = false;
@@ -289,64 +298,86 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
 
   const { morning, evening } = groupSlots(availableSlots);
 
-  // Render Step 4 (Approval Workflow Screen)
+  // Render Step 4 (Real-Time Live Confirmation & Approval Workflow Screen)
   if (step === 4 && bookingResult) {
     const formattedConfirmedDate = formatDate(bookingResult.appointmentDate || bookingResult.date || selectedDate);
-    const tokenNumber = bookingResult.tokenNumber || (bookingResult._id ? bookingResult._id.slice(-4).toUpperCase() : "101");
+    const tokenNumber = bookingResult.tokenNumber || (bookingResult._id ? bookingResult._id.slice(-4).toUpperCase() : "04");
     const currentStatus = (bookingResult.status || "PENDING").toUpperCase();
-    const isApproved = currentStatus === "CONFIRMED";
-    const isCancelled = currentStatus === "CANCELLED";
+    const isConfirmed = currentStatus === "CONFIRMED" || currentStatus === "IN_CONSULTATION" || currentStatus === "COMPLETED";
+    const isRejected = currentStatus === "REJECTED" || currentStatus === "CANCELLED";
 
     return (
       <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 animate-in fade-in zoom-in-95 duration-300">
         <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
           
-          {/* Header Card according to Status */}
+          {/* Header Card according to 3 Real-time States */}
           <div 
             className="text-white p-6 sm:p-8 text-center transition-all duration-500" 
             style={{ 
-              backgroundColor: isApproved ? primaryColor : isCancelled ? "#e11d48" : "#d97706" 
+              backgroundColor: isConfirmed ? theme.primary : isRejected ? "#e11d48" : "#d97706" 
             }}
           >
             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-              {isApproved ? (
-                <CheckCircle2 className="w-8 h-8" style={{ color: primaryColor }} />
-              ) : isCancelled ? (
-                <AlertCircle className="w-8 h-8 text-rose-600" />
+              {isConfirmed ? (
+                <ShieldCheck className="w-9 h-9" style={{ color: theme.primary }} />
+              ) : isRejected ? (
+                <AlertCircle className="w-9 h-9 text-rose-600" />
               ) : (
-                <Clock className="w-8 h-8 text-amber-600 animate-pulse" />
+                <Clock className="w-9 h-9 text-amber-600 animate-pulse" />
               )}
             </div>
 
-            {isApproved ? (
+            {/* STATE B: CONFIRMED */}
+            {isConfirmed ? (
               <>
                 <div className="inline-block bg-white/20 text-white border border-white/30 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase mb-2">
-                  ✓ Doctor Approved
+                  🛡️ APPOINTMENT CONFIRMED
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black mb-1.5">Appointment Confirmed!</h2>
-                <p className="text-white/95 text-sm font-medium">
-                  Your token number is <span className={`text-white font-bold px-2.5 py-0.5 bg-black/20 ${buttonStyle}`}>#{tokenNumber}</span>
+                <h2 className="text-2xl sm:text-3xl font-black mb-1.5">Your Appointment is Booked!</h2>
+                <p className="text-white/95 text-sm font-medium max-w-md mx-auto">
+                  Your OPD consultation slot and token have been successfully reserved with <strong className="underline">{cleanDoctorName}</strong>.
                 </p>
+                <div className="mt-3 inline-flex items-center gap-2 bg-white/25 px-4 py-1.5 rounded-full border border-white/40 text-xs font-black">
+                  <span>Token #{tokenNumber}</span>
+                  <span>•</span>
+                  <span>{bookingResult.timeSlot || selectedSlot}</span>
+                </div>
               </>
-            ) : isCancelled ? (
+            ) : isRejected ? (
+              /* STATE C: REJECTED / SLOTS FULL */
               <>
                 <div className="inline-block bg-white/20 text-white border border-white/30 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase mb-2">
-                  ✕ Request Declined
+                  ⚠️ SLOT UNAVAILABLE
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black mb-1.5">Appointment Cancelled</h2>
-                <p className="text-white/90 text-sm font-medium">
-                  {cleanDoctorName} is unable to accept this booking. Please choose another date or time slot.
+                <h2 className="text-2xl sm:text-3xl font-black mb-1.5">Doctor Not Available / Slots Completed</h2>
+                <p className="text-white/90 text-sm font-medium max-w-md mx-auto">
+                  Doctor is not available or today&apos;s slots are full. Please book a slot for the next day.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const curIdx = nextDays.findIndex(d => d.toDateString() === selectedDate?.toDateString());
+                    const nextDay = nextDays[curIdx + 1] || nextDays[1] || nextDays[0];
+                    if (nextDay) {
+                      fetchSlots(nextDay);
+                    }
+                    setStep(2);
+                  }}
+                  className="mt-4 px-5 py-2.5 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 cursor-pointer"
+                >
+                  📅 Book Next Day Slot
+                </button>
               </>
             ) : (
+              /* STATE A: AWAITING APPROVAL */
               <>
                 <div className="inline-flex items-center gap-1.5 bg-white/20 text-white border border-white/30 px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase mb-2">
                   <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
-                  <span>Awaiting Doctor Approval</span>
+                  <span>AWAITING DOCTOR APPROVAL</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black mb-1.5">Appointment Request Submitted!</h2>
                 <p className="text-white/95 text-sm font-medium max-w-md mx-auto">
-                  Your booking request has been sent to <strong className="underline">{cleanDoctorName}</strong>. It will be confirmed shortly.
+                  Your booking request has been sent to <strong className="underline">{cleanDoctorName}</strong>. Checking for updates in real-time...
                 </p>
               </>
             )}
@@ -368,32 +399,19 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                 <p className="font-bold text-slate-900">{formattedConfirmedDate}</p>
               </div>
               <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Requested Slot</p>
-                <p className="font-bold text-slate-900">{bookingResult.timeSlot}</p>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Time Slot</p>
+                <p className="font-bold text-slate-900">{bookingResult.timeSlot || selectedSlot}</p>
               </div>
             </div>
 
-            {/* Real-Time Status Notification Banner */}
-            {!isApproved && !isCancelled && (
+            {/* Real-Time Live Status Banner */}
+            {!isConfirmed && !isRejected && (
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between text-xs text-amber-800 font-medium">
                 <div className="flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-amber-600 shrink-0" />
-                  <span>Checking for approval updates in real-time...</span>
+                  <span>Checking doctor response in real-time (every 2.5s)...</span>
                 </div>
                 <span className="font-bold bg-amber-200/60 px-2 py-0.5 rounded-full text-[10px]">Auto-refreshing</span>
-              </div>
-            )}
-
-            {isCancelled && (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className={`w-full py-3 ${buttonStyle} text-white font-bold text-sm shadow-md transition-all`}
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  Select Another Slot →
-                </button>
               </div>
             )}
 
@@ -402,7 +420,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
               <Link 
                 href={`/${slug}`} 
                 className="w-full inline-block text-center py-2 font-bold text-sm hover:underline transition-all" 
-                style={{ color: primaryColor }}
+                style={{ color: theme.primary }}
               >
                 ← Back to Clinic Home
               </Link>
@@ -419,18 +437,36 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
       {/* Stepper Header */}
       <div className="flex items-center justify-between mb-4 relative max-w-md mx-auto px-4">
         <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-1 bg-slate-200 z-0 rounded-full"></div>
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 h-1 z-0 rounded-full transition-all duration-500" style={{ backgroundColor: primaryColor, width: `${(step - 1) * 45}%` }}></div>
+        <div 
+          className="absolute left-4 top-1/2 -translate-y-1/2 h-1 z-0 rounded-full transition-all duration-500" 
+          style={{ backgroundColor: theme.primary, width: `${(step - 1) * 45}%` }}
+        ></div>
         
         <div className="relative z-10 flex flex-col items-center bg-white px-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 ${step >= 1 ? 'text-white shadow-sm' : 'bg-slate-100 border-white text-slate-400'}`} style={step >= 1 ? { backgroundColor: primaryColor, borderColor: `${primaryColor}40` } : {}}>1</div>
+          <div 
+            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-all ${step >= 1 ? 'text-white shadow-sm' : 'bg-slate-100 border-white text-slate-400'}`} 
+            style={step >= 1 ? { backgroundColor: theme.primary, borderColor: theme.border } : {}}
+          >
+            1
+          </div>
           <span className="text-[11px] font-bold text-slate-600 mt-1">Service</span>
         </div>
         <div className="relative z-10 flex flex-col items-center bg-white px-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 ${step >= 2 ? 'text-white shadow-sm' : 'bg-slate-100 border-white text-slate-400'}`} style={step >= 2 ? { backgroundColor: primaryColor, borderColor: `${primaryColor}40` } : {}}>2</div>
+          <div 
+            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-all ${step >= 2 ? 'text-white shadow-sm' : 'bg-slate-100 border-white text-slate-400'}`} 
+            style={step >= 2 ? { backgroundColor: theme.primary, borderColor: theme.border } : {}}
+          >
+            2
+          </div>
           <span className="text-[11px] font-bold text-slate-600 mt-1">Date & Time</span>
         </div>
         <div className="relative z-10 flex flex-col items-center bg-white px-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 ${step >= 3 ? 'text-white shadow-sm' : 'bg-slate-100 border-white text-slate-400'}`} style={step >= 3 ? { backgroundColor: primaryColor, borderColor: `${primaryColor}40` } : {}}>3</div>
+          <div 
+            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 transition-all ${step >= 3 ? 'text-white shadow-sm' : 'bg-slate-100 border-white text-slate-400'}`} 
+            style={step >= 3 ? { backgroundColor: theme.primary, borderColor: theme.border } : {}}
+          >
+            3
+          </div>
           <span className="text-[11px] font-bold text-slate-600 mt-1">Details</span>
         </div>
       </div>
@@ -445,36 +481,50 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-3">Select Service</h2>
               <div className="space-y-2.5">
-                {services.map(service => (
-                  <div 
-                    key={service._id} 
-                    onClick={() => setSelectedService(service)}
-                    className={`cursor-pointer rounded-2xl p-4 border-2 transition-all ${selectedService?._id === service._id ? 'shadow-md' : 'border-slate-200 bg-white hover:border-slate-300'}`} 
-                    style={selectedService?._id === service._id ? { borderColor: primaryColor, backgroundColor: `${primaryColor}08` } : {}}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div className="flex gap-3 items-center">
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedService?._id === service._id ? '' : 'border-slate-300'}`} style={selectedService?._id === service._id ? { borderColor: primaryColor } : {}}>
-                          {selectedService?._id === service._id && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }}></div>}
+                {services.map(service => {
+                  const isSelected = selectedService?._id === service._id;
+                  return (
+                    <div 
+                      key={service._id} 
+                      onClick={() => setSelectedService(service)}
+                      className={`cursor-pointer rounded-2xl p-4 border-2 transition-all ${
+                        isSelected 
+                          ? 'shadow-md ring-1' 
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`} 
+                      style={isSelected ? { 
+                        borderColor: theme.primary, 
+                        backgroundColor: theme.light + '40',
+                        boxShadow: `0 0 0 1px ${theme.primary}` 
+                      } : {}}
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex gap-3 items-center">
+                          <div 
+                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? '' : 'border-slate-300'}`} 
+                            style={isSelected ? { borderColor: theme.primary } : {}}
+                          >
+                            {isSelected && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.primary }}></div>}
+                          </div>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">{service.name}</h3>
+                            <span className="text-xs font-semibold text-slate-500">{service.durationMins || 15} Mins Consultation</span>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-base font-bold text-slate-900">{service.name}</h3>
-                          <span className="text-xs font-semibold text-slate-500">{service.durationMins} Mins Consultation</span>
-                        </div>
+                        <span className="text-lg font-black" style={{ color: theme.primary }}>₹{service.price}</span>
                       </div>
-                      <span className="text-lg font-black" style={{ color: primaryColor }}>₹{service.price}</span>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="mt-5 flex justify-end">
                 <button 
                   onClick={() => setStep(2)} 
                   disabled={!selectedService} 
-                  className={`flex items-center gap-2 text-white font-bold px-7 py-2.5 ${buttonStyle} disabled:opacity-50 transition-all shadow-md text-sm active:scale-95`} 
-                  style={{ backgroundColor: primaryColor }}
+                  className="rounded-2xl shadow-[0_4px_14px_rgba(0,161,172,0.3)] bg-[#00A1AC] hover:bg-[#008C96] text-white px-6 py-3 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer" 
                 >
-                  Continue <ArrowRight className="w-4 h-4" />
+                  <span>Continue</span>
+                  <span className="text-sm font-black leading-none">→</span>
                 </button>
               </div>
             </div>
@@ -527,7 +577,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                             ? 'text-white shadow-md scale-105 ring-2 ring-offset-1' 
                             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/80 shadow-xs'
                         }`} 
-                        style={isSelected ? { backgroundColor: primaryColor, borderColor: primaryColor, ringColor: primaryColor } : {}}
+                        style={isSelected ? { backgroundColor: theme.primary, borderColor: theme.primary } : {}}
                       >
                         <span className={`text-[9px] font-bold uppercase tracking-wider ${isSelected ? 'text-white/90' : 'text-slate-400'}`}>{month}</span>
                         <span className="text-base sm:text-lg font-black my-0.5 leading-none">{dateNum}</span>
@@ -543,11 +593,11 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                 <div className="animate-in fade-in duration-300">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" style={{ color: primaryColor }} /> Available Slots
+                      <Clock className="w-3.5 h-3.5" style={{ color: theme.primary }} /> Available Slots
                     </h3>
                     {slotsLoading && (
                       <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: primaryColor }} />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: theme.primary }} />
                         <span>Updating...</span>
                       </div>
                     )}
@@ -603,7 +653,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                                       ? "text-white font-bold shadow-md scale-[1.02]"
                                       : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50 cursor-pointer font-semibold"
                                   }`}
-                                  style={isSelected && !isPast ? { backgroundColor: primaryColor, borderColor: primaryColor } : {}}
+                                  style={isSelected && !isPast ? { backgroundColor: theme.primary, borderColor: theme.primary } : {}}
                                 >
                                   {s}
                                 </button>
@@ -635,7 +685,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                                       ? "text-white font-bold shadow-md scale-[1.02]"
                                       : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50 cursor-pointer font-semibold"
                                   }`}
-                                  style={isSelected && !isPast ? { backgroundColor: primaryColor, borderColor: primaryColor } : {}}
+                                  style={isSelected && !isPast ? { backgroundColor: theme.primary, borderColor: theme.primary } : {}}
                                 >
                                   {s}
                                 </button>
@@ -650,17 +700,17 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
               )}
 
               {/* Action Buttons Row */}
-              <div className="mt-4 flex justify-between items-center">
-                <button onClick={() => setStep(1)} className="font-bold text-xs text-slate-500 hover:text-slate-900 transition-colors">
+              <div className="mt-5 flex justify-between items-center">
+                <button onClick={() => setStep(1)} className="font-bold text-xs text-slate-500 hover:text-slate-900 transition-colors cursor-pointer">
                   ← Back
                 </button>
                 <button 
                   onClick={() => setStep(3)} 
                   disabled={!selectedSlot} 
-                  className={`flex items-center gap-2 text-white font-bold px-7 py-2.5 ${buttonStyle} disabled:opacity-50 transition-all shadow-md text-sm active:scale-95`} 
-                  style={{ backgroundColor: primaryColor }}
+                  className="rounded-2xl shadow-[0_4px_14px_rgba(0,161,172,0.3)] bg-[#00A1AC] hover:bg-[#008C96] text-white px-6 py-3 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer" 
                 >
-                  Continue <ArrowRight className="w-4 h-4" />
+                  <span>Continue</span>
+                  <span className="text-sm font-black leading-none">→</span>
                 </button>
               </div>
             </div>
@@ -673,7 +723,13 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
-                  <input type="text" value={patientDetails.name} onChange={e => setPatientDetails({...patientDetails, name: e.target.value})} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-200 outline-none transition-all font-medium text-sm text-slate-900 bg-white" placeholder="e.g. John Doe" />
+                  <input 
+                    type="text" 
+                    value={patientDetails.name} 
+                    onChange={e => setPatientDetails({...patientDetails, name: e.target.value})} 
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all font-medium text-sm text-slate-900 bg-white" 
+                    placeholder="e.g. John Doe" 
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -681,44 +737,87 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                     <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-slate-400">+91</span>
-                      <input type="tel" value={patientDetails.phone} onChange={e => setPatientDetails({...patientDetails, phone: e.target.value})} className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-200 outline-none transition-all font-medium text-sm text-slate-900 bg-white" placeholder="9876543210" />
+                      <input 
+                        type="tel" 
+                        value={patientDetails.phone} 
+                        onChange={e => setPatientDetails({...patientDetails, phone: e.target.value})} 
+                        className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all font-medium text-sm text-slate-900 bg-white" 
+                        placeholder="9876543210" 
+                      />
                     </div>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">Email (Optional)</label>
-                    <input type="email" value={patientDetails.email} onChange={e => setPatientDetails({...patientDetails, email: e.target.value})} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-200 outline-none transition-all font-medium text-sm text-slate-900 bg-white" placeholder="e.g. you@example.com" />
+                    <input 
+                      type="email" 
+                      value={patientDetails.email} 
+                      onChange={e => setPatientDetails({...patientDetails, email: e.target.value})} 
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all font-medium text-sm text-slate-900 bg-white" 
+                      placeholder="e.g. you@example.com" 
+                    />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-start">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">Age</label>
-                    <input type="number" value={patientDetails.age} onChange={e => setPatientDetails({...patientDetails, age: e.target.value})} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-200 outline-none transition-all font-medium text-sm text-slate-900 bg-white" placeholder="Years" />
+                    <input 
+                      type="number" 
+                      value={patientDetails.age} 
+                      onChange={e => setPatientDetails({...patientDetails, age: e.target.value})} 
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all font-medium text-sm text-slate-900 bg-white" 
+                      placeholder="Years" 
+                    />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Gender</label>
-                    <select value={patientDetails.gender} onChange={e => setPatientDetails({...patientDetails, gender: e.target.value})} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-200 outline-none transition-all font-medium text-sm text-slate-900 bg-white">
-                      <option value="">Select</option>
-                      <option value="Male">Male</option>
-                      <option value="Female">Female</option>
-                      <option value="Other">Other</option>
-                    </select>
+
+                  {/* Gender Selector: Modern Segmented Pills */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-slate-700 mb-0.5">Gender</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['Male', 'Female', 'Other'].map((g) => {
+                        const isSelected = (patientDetails.gender || 'Male') === g;
+                        return (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => setPatientDetails({ ...patientDetails, gender: g })}
+                            className={`py-2.5 px-2 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
+                              isSelected
+                                ? 'bg-[#00A1AC] text-white border-[#00A1AC] shadow-sm shadow-[#00A1AC]/25'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            {g}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
               </div>
 
-              <div className="mt-4 flex justify-between items-center">
+              <div className="mt-5 flex justify-between items-center">
                 <button onClick={() => setStep(2)} className="font-bold text-xs text-slate-500 hover:text-slate-900 transition-colors">
                   ← Back
                 </button>
                 <button 
+                  type="submit"
                   onClick={handleBook} 
                   disabled={isBooking} 
-                  className={`flex items-center gap-2 text-white font-extrabold px-7 py-3 ${buttonStyle} hover:opacity-95 disabled:opacity-70 transition-all shadow-md text-sm active:scale-95`} 
-                  style={{ backgroundColor: primaryColor }}
+                  className="rounded-2xl shadow-[0_4px_14px_rgba(0,161,172,0.3)] bg-[#00A1AC] hover:bg-[#008C96] text-white px-6 py-3 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-70 cursor-pointer"
                 >
-                  {isBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Confirm & Book • ₹{selectedService?.price}
+                  {isBooking ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Confirming...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Confirm &amp; Book • ₹{selectedService?.price || selectedService?.fee || 500}</span>
+                      <span className="text-sm font-black leading-none">→</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -730,14 +829,14 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
         <div className="w-full lg:w-[320px] shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200/80 pt-4 lg:pt-0 lg:pl-6 bg-slate-50/60 p-4 sm:p-5 rounded-2xl flex flex-col justify-between">
           <div className="space-y-4">
             <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-2">
-              <Calendar className="w-4 h-4" style={{ color: primaryColor }} /> Booking Summary
+              <Calendar className="w-4 h-4" style={{ color: theme.primary }} /> Booking Summary
             </h3>
 
             <div className="space-y-3 text-xs">
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Clinic</p>
                 <div className="flex items-start gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: primaryColor }} />
+                  <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: theme.primary }} />
                   <p className="font-bold text-slate-900">{clinic.name}</p>
                 </div>
               </div>
@@ -745,7 +844,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Doctor</p>
                 <div className="flex items-start gap-1.5">
-                  <User className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: primaryColor }} />
+                  <User className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: theme.primary }} />
                   <p className="font-bold text-slate-900">{cleanDoctorName}</p>
                 </div>
               </div>
@@ -761,7 +860,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                   {selectedDate && selectedSlot && (
                     <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Schedule</p>
-                      <p className={`font-bold px-2 py-1 ${buttonStyle} inline-block text-xs`} style={{ color: primaryColor, backgroundColor: `${primaryColor}15` }}>
+                      <p className={`font-bold px-2 py-1 ${buttonStyle} inline-block text-xs`} style={{ color: theme.primary, backgroundColor: `${theme.primary}15` }}>
                         {selectedDate.toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric'})} at {selectedSlot}
                       </p>
                     </div>
@@ -774,7 +873,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
           <div className="pt-3 border-t border-slate-200 mt-4">
             <div className="flex justify-between items-center mb-3">
               <span className="font-bold text-xs text-slate-500">Total Fee</span>
-              <span className="text-xl font-black" style={{ color: primaryColor }}>₹{selectedService?.price || 0}</span>
+              <span className="text-xl font-black" style={{ color: theme.primary }}>₹{selectedService?.price || 0}</span>
             </div>
 
             <div className="bg-white rounded-xl p-2.5 border border-slate-200 flex items-center gap-2.5">
