@@ -55,8 +55,7 @@ export default function Sidebar({
   };
 
   const initials = doctorInfo.name ? doctorInfo.name.replace(/^Dr\.?\s*/i, "").slice(0, 2).toUpperCase() : "DR";
-
-  const tierLabel = isPremium ? "VIP Tier" : isAdvanced ? "Advanced" : "Basic Tier";
+  const currentTier = (planId || "BASIC").toUpperCase();
 
   return (
     <>
@@ -84,15 +83,13 @@ export default function Sidebar({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-black text-xl text-white tracking-tight">DocPulse</span>
-                  <span className={`text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full border ${
-                    isPremium 
-                      ? 'bg-amber-400/20 text-amber-300 border-amber-400/40' 
-                      : isAdvanced 
-                      ? 'bg-teal-400/20 text-teal-200 border-teal-400/40' 
-                      : 'bg-slate-700/50 text-slate-300 border-slate-600'
-                  }`}>
-                    {tierLabel}
-                  </span>
+                  {currentTier === 'PREMIUM' || currentTier === 'ENTERPRISE' ? (
+                    <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">PREMIUM VIP</span>
+                  ) : currentTier === 'ADVANCED' || currentTier === 'PRO' ? (
+                    <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">ADVANCED</span>
+                  ) : (
+                    <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-slate-700/60 text-slate-300 border border-slate-600">BASIC TIER</span>
+                  )}
                 </div>
                 <p className="text-[11px] text-slate-300 font-medium">Doctor Suite</p>
               </div>
@@ -188,8 +185,9 @@ export default function Sidebar({
               <div className="min-w-0">
                 <p className="text-xs font-black text-white truncate">{doctorInfo.name}</p>
                 <p className="text-[10px] text-slate-300 truncate">{doctorInfo.email}</p>
-                <span className="inline-block text-[9px] font-black text-[#00A1AC] uppercase mt-0.5">
-                  {isPremium ? "VIP Doctor" : isAdvanced ? "Advanced Doctor" : "Verified Doctor"}
+                <span className="inline-flex items-center gap-1 text-[9px] font-black text-[#00A1AC] uppercase mt-0.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${currentTier === 'PREMIUM' || currentTier === 'ENTERPRISE' ? 'bg-purple-500' : currentTier === 'ADVANCED' || currentTier === 'PRO' ? 'bg-teal-500' : 'bg-slate-500'}`}></span>
+                  {currentTier} DOCTOR
                 </span>
               </div>
             </div>

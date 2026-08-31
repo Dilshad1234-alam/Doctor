@@ -15,9 +15,14 @@ export default function PublicNavbar({
   themeColor = "teal",
   activeTheme,
   buttonShapeClass,
-  slug = ""
+  slug = "",
+  activeTopTab,
+  setActiveTopTab
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeHash, setActiveHash] = useState("home");
+
+  // On mount or scroll, we could track activeHash, but for now we'll update it on click.
 
   const theme = activeTheme || getThemeConfig(themeColor);
   const shape = buttonShapeClass || getButtonShapeClass(doctor?.buttonShape || "rounded-2xl");
@@ -33,10 +38,33 @@ export default function PublicNavbar({
   // Center Navigation Links
   const navLinks = [
     { name: "Home", href: "#home" },
-    { name: "Services & Fees", href: "#services" },
+    { name: "About", href: "#about" },
+    { name: "Services", href: "#services" },
     { name: "OPD Timings", href: "#schedule" },
     { name: "Contact", href: "#contact" }
   ];
+
+  const handleScroll = (e, href) => {
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const targetId = href.replace("#", "");
+      setActiveHash(targetId);
+      
+      const elem = document.getElementById(targetId);
+      if (elem) {
+        const offset = 80; // height of the sticky navbar
+        const bodyRect = document.body.getBoundingClientRect().top;
+        const elementRect = elem.getBoundingClientRect().top;
+        const elementPosition = elementRect - bodyRect;
+        const offsetPosition = elementPosition - offset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth"
+        });
+      }
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-900 shadow-xs w-full px-4 sm:px-8 lg:px-12">
@@ -45,7 +73,7 @@ export default function PublicNavbar({
         {/* 1. Left Side: Logo & Clinic Info (Far Left) */}
         <div className="flex items-center justify-start flex-1 min-w-0">
           <Link href={`/${slug}`} className="flex items-center gap-3 group shrink-0">
-            {(isAdvanced || isPremium) && clinic?.logo ? (
+            {clinic?.logo ? (
               <img 
                 src={clinic.logo} 
                 alt={clinicTitle} 
@@ -86,15 +114,22 @@ export default function PublicNavbar({
 
         {/* 2. Center: Navigation Links (Exact Center) */}
         <nav className="hidden md:flex items-center justify-center gap-8 text-xs font-bold text-slate-600 flex-1 whitespace-nowrap">
-          {navLinks.map(link => (
-            <a 
-              key={link.name} 
-              href={link.href} 
-              className="hover:text-slate-900 transition-colors"
-            >
-              {link.name}
-            </a>
-          ))}
+          {navLinks.map(link => {
+            const targetId = link.href.replace("#", "");
+            const isActive = activeHash === targetId;
+            
+            return (
+              <a 
+                key={link.name} 
+                href={link.href} 
+                onClick={(e) => handleScroll(e, link.href)}
+                className={`hover:text-slate-900 transition-colors cursor-pointer ${isActive ? 'text-slate-900 border-b-2 font-black pb-1' : ''}`}
+                style={isActive ? { borderColor: theme.primary, color: theme.primary } : {}}
+              >
+                {link.name}
+              </a>
+            );
+          })}
         </nav>
 
         {/* 3. Right Side: Book Appointment CTA (Far Right) */}
@@ -133,16 +168,25 @@ export default function PublicNavbar({
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 px-6 py-5 space-y-4 bg-white text-slate-900 animate-in slide-in-from-top-3">
           <div className="flex flex-col gap-3 text-xs font-bold">
-            {navLinks.map(link => (
-              <a 
-                key={link.name} 
-                href={link.href} 
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-2 border-b border-slate-100 hover:text-slate-900"
-              >
-                {link.name}
-              </a>
-            ))}
+            {navLinks.map(link => {
+              const targetId = link.href.replace("#", "");
+              const isActive = activeHash === targetId;
+              
+              return (
+                <a 
+                  key={link.name} 
+                  href={link.href} 
+                  onClick={(e) => {
+                    setMobileMenuOpen(false);
+                    handleScroll(e, link.href);
+                  }}
+                  className={`py-2 border-b hover:text-slate-900 ${isActive ? 'border-slate-800 text-slate-900 font-black' : 'border-slate-100 text-slate-600'}`}
+                  style={isActive ? { color: theme.primary, borderColor: theme.primary } : {}}
+                >
+                  {link.name}
+                </a>
+              );
+            })}
             <Link 
               href={`/${slug}/book`}
               onClick={() => setMobileMenuOpen(false)}

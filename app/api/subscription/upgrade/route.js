@@ -79,7 +79,7 @@ export async function POST(req) {
     if (!userId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const targetPlan = (body.planId || "ADVANCED").toUpperCase();
+    const targetPlan = (body.newPlan || body.planId || "ADVANCED").toUpperCase();
     const planConfig = PLAN_CONFIG[targetPlan] || (targetPlan === "PREMIUM" ? PLAN_CONFIG.PREMIUM : PLAN_CONFIG.PRO);
 
     let clinic = await Clinic.findOne({ ownerId: userId });

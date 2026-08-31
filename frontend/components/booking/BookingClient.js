@@ -9,27 +9,13 @@ import {
   ChevronLeft, ChevronRight, ShieldCheck
 } from 'lucide-react';
 
-function BookingWizard({ clinic, doctor, services, availability, slug, embedded, websiteConfig }) {
+function BookingWizard({ clinic, doctor, services, availability, slug, embedded, websiteConfig, passedTheme, passedButtonShapeClass }) {
   const searchParams = useSearchParams();
 
-  // Dynamic Brand Color Extraction
-  const colorMap = {
-    teal: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
-    teal_cyan: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
-    blue: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
-    emerald: { primary: '#059669', light: '#ECFDF5', border: '#A7F3D0', ring: 'rgba(5,150,105,0.15)' },
-    navy: { primary: '#1E293B', light: '#F1F5F9', border: '#CBD5E1', ring: 'rgba(30,41,59,0.15)' },
-    rose: { primary: '#E11D48', light: '#FFF1F2', border: '#FECDD3', ring: 'rgba(225,29,72,0.15)' },
-    indigo: { primary: '#4F46E5', light: '#EEF2FF', border: '#C7D2FE', ring: 'rgba(79,70,229,0.15)' },
-    gold: { primary: '#D97706', light: '#FFFBEB', border: '#FDE68A', ring: 'rgba(217,119,6,0.15)' }
-  };
-
-  const activeThemeKey = websiteConfig?.themeColor || clinic?.websiteConfig?.themeColor || doctor?.websiteConfig?.themeColor || 'teal';
   const defaultTheme = { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' };
-  const theme = colorMap[activeThemeKey] || defaultTheme;
-
+  const theme = passedTheme || defaultTheme;
   const primaryColor = theme.primary;
-  const buttonStyle = websiteConfig?.buttonShape || websiteConfig?.buttonStyle || clinic?.websiteConfig?.buttonShape || clinic?.websiteConfig?.buttonStyle || 'rounded-xl';
+  const buttonStyle = passedButtonShapeClass || 'rounded-xl';
   const cleanDoctorName = `Dr. ${doctor?.fullName?.replace(/^Dr\.?\s*/i, "") || "Doctor"}`;
   const initialServiceId = searchParams.get("serviceId");
   
@@ -43,7 +29,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
   const [slotsLoading, setSlotsLoading] = useState(false);
   
   const [patientDetails, setPatientDetails] = useState({
-    name: '', phone: '', email: '', age: '', gender: ''
+    name: '', phone: '', email: '', age: '', gender: 'Male'
   });
   
   const [isBooking, setIsBooking] = useState(false);
@@ -432,10 +418,26 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 bg-white rounded-3xl shadow-xl border border-slate-150">
+    <div className="w-full h-full flex flex-col">
+      {/* Dynamic Header - Only shown during selection steps */}
+      {step !== 4 && (
+        <div className="my-2 text-center shrink-0 animate-in fade-in duration-300">
+          <div 
+            style={{ color: theme.primary, backgroundColor: theme.light, borderColor: theme.border }} 
+            className="text-[10px] py-0.5 px-2.5 inline-flex items-center gap-1.5 uppercase font-bold rounded-full border tracking-wider shadow-sm"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>CONFIRMED OPD RESERVATION</span>
+          </div>
+          <h2 className="text-xl md:text-2xl font-black text-slate-900 mt-1">Select Your Consultation Slot</h2>
+          <p className="text-xs text-slate-500 mt-0.5 font-medium mb-4">
+            Direct 1-on-1 consultation with {cleanDoctorName}. Guaranteed zero wait time.
+          </p>
+        </div>
+      )}
       
       {/* Stepper Header */}
-      <div className="flex items-center justify-between mb-4 relative max-w-md mx-auto px-4">
+      <div className="flex items-center justify-between py-1 mb-2 relative max-w-md mx-auto px-4 shrink-0 w-full">
         <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-1 bg-slate-200 z-0 rounded-full"></div>
         <div 
           className="absolute left-4 top-1/2 -translate-y-1/2 h-1 z-0 rounded-full transition-all duration-500" 
@@ -472,22 +474,22 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
       </div>
 
       {/* 2-Column Content Layout */}
-      <div className="flex flex-col lg:flex-row gap-6 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden mt-4">
         
         {/* Left Area - Step Selector */}
-        <div className="flex-1 min-w-0">
+        <div className="md:col-span-7 flex flex-col h-full overflow-hidden">
           
           {step === 1 && (
-            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-3">Select Service</h2>
-              <div className="space-y-2.5">
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col h-full overflow-hidden">
+              <h2 className="text-lg font-black text-slate-900 mb-4 shrink-0">Select Service</h2>
+              <div className="flex-1 overflow-y-auto pr-2 space-y-3" style={{ scrollbarWidth: 'thin', scrollbarColor: `${theme.primary}40 transparent` }}>
                 {services.map(service => {
                   const isSelected = selectedService?._id === service._id;
                   return (
                     <div 
                       key={service._id} 
                       onClick={() => setSelectedService(service)}
-                      className={`cursor-pointer rounded-2xl p-4 border-2 transition-all ${
+                      className={`cursor-pointer rounded-xl p-2.5 border transition-all ${
                         isSelected 
                           ? 'shadow-md ring-1' 
                           : 'border-slate-200 bg-white hover:border-slate-300'
@@ -499,29 +501,30 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                       } : {}}
                     >
                       <div className="flex justify-between items-center">
-                        <div className="flex gap-3 items-center">
+                        <div className="flex gap-2 items-center">
                           <div 
-                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? '' : 'border-slate-300'}`} 
+                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${isSelected ? '' : 'border-slate-300'}`} 
                             style={isSelected ? { borderColor: theme.primary } : {}}
                           >
                             {isSelected && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.primary }}></div>}
                           </div>
                           <div>
-                            <h3 className="text-base font-bold text-slate-900">{service.name}</h3>
-                            <span className="text-xs font-semibold text-slate-500">{service.durationMins || 15} Mins Consultation</span>
+                            <h3 className="text-xs font-bold text-slate-900 leading-tight">{service.name}</h3>
+                            <span className="text-[11px] font-medium text-slate-400 block mt-0.5">{service.durationMins || 15} Mins Consultation</span>
                           </div>
                         </div>
-                        <span className="text-lg font-black" style={{ color: theme.primary }}>₹{service.price}</span>
+                        <span className="text-sm font-bold shrink-0" style={{ color: theme.primary }}>₹{service.price}</span>
                       </div>
                     </div>
                   );
                 })}
               </div>
-              <div className="mt-5 flex justify-end">
+              <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end shrink-0">
                 <button 
                   onClick={() => setStep(2)} 
                   disabled={!selectedService} 
-                  className="rounded-2xl shadow-[0_4px_14px_rgba(0,161,172,0.3)] bg-[#00A1AC] hover:bg-[#008C96] text-white px-6 py-3 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer" 
+                  className="rounded-xl shadow-md text-white px-5 py-2.5 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer" 
+                  style={{ backgroundColor: theme.primary }}
                 >
                   <span>Continue</span>
                   <span className="text-sm font-black leading-none">→</span>
@@ -531,10 +534,11 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
           )}
 
           {step === 2 && (
-            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-2">Choose Date & Time</h2>
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col h-full overflow-hidden">
+              <h2 className="text-lg font-black text-slate-900 mb-4 shrink-0">Choose Date & Time</h2>
               
-              {/* Date Picker Row */}
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4" style={{ scrollbarWidth: 'thin', scrollbarColor: `${theme.primary}40 transparent` }}>
+                {/* Date Picker Row */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Select Date</h3>
@@ -605,15 +609,27 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                   
                   {isClosed || (availableSlots.length > 0 && !availableSlots.some(s => !isSlotInPast(selectedDate, s))) || (availableSlots.length === 0 && !slotsLoading) ? (
                     <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 text-center shadow-sm space-y-3 animate-in fade-in duration-200">
-                      <div className="flex items-center justify-center gap-2 text-amber-800 font-bold text-sm">
-                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
-                        <span>⚠️ Today&apos;s booking slots are completely full. Please choose the next available day.</span>
-                      </div>
-                      <p className="text-xs text-amber-700/90 font-medium">
-                        {isClosed 
-                          ? "Clinic is closed on this day." 
-                          : "All appointment slots for this date have either passed or are fully booked."}
-                      </p>
+                      {isClosed ? (
+                        <>
+                          <div className="flex items-center justify-center gap-2 text-amber-800 font-bold text-sm">
+                            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                            <span>Holiday / Clinic is Closed 🛑</span>
+                          </div>
+                          <p className="text-xs text-amber-700/90 font-medium">
+                            The clinic is closed on this day. Please choose the next available working day.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-center gap-2 text-amber-800 font-bold text-sm">
+                            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                            <span>⚠️ Slots are completely full</span>
+                          </div>
+                          <p className="text-xs text-amber-700/90 font-medium">
+                            All appointment slots for this date have either passed or are fully booked.
+                          </p>
+                        </>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
@@ -626,14 +642,15 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                         }}
                         className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs px-6 py-2.5 rounded-full shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer"
                       >
-                        <span>Book for Tomorrow (Next Available Date) →</span>
+                        <span>Book for Next Available Date →</span>
                       </button>
                     </div>
                   ) : (
                     <div className={`bg-slate-50/70 rounded-2xl border border-slate-200/80 p-3 sm:p-4 space-y-3 transition-opacity duration-200 ${slotsLoading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                      {morning.length > 0 && (
-                        <div>
-                          <h4 className="text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Morning</h4>
+                      {/* Morning Section */}
+                      <div>
+                        <h4 className="text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Morning</h4>
+                        {morning.length > 0 ? (
                           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 my-1.5">
                             {morning.map(s => {
                               const isPast = isSlotInPast(selectedDate, s);
@@ -660,12 +677,17 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                               );
                             })}
                           </div>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="py-3 px-4 bg-slate-100/50 rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-500 font-medium italic">
+                            No morning slots available for this date.
+                          </div>
+                        )}
+                      </div>
 
-                      {evening.length > 0 && (
-                        <div>
-                          <h4 className="text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Afternoon / Evening</h4>
+                      {/* Evening Section */}
+                      <div>
+                        <h4 className="text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Afternoon / Evening</h4>
+                        {evening.length > 0 ? (
                           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 my-1.5">
                             {evening.map(s => {
                               const isPast = isSlotInPast(selectedDate, s);
@@ -692,22 +714,28 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                               );
                             })}
                           </div>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="py-3 px-4 bg-slate-100/50 rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-500 font-medium italic">
+                            No afternoon/evening slots available for this date.
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
               )}
+              </div>
 
               {/* Action Buttons Row */}
-              <div className="mt-5 flex justify-between items-center">
+              <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center shrink-0">
                 <button onClick={() => setStep(1)} className="font-bold text-xs text-slate-500 hover:text-slate-900 transition-colors cursor-pointer">
                   ← Back
                 </button>
                 <button 
                   onClick={() => setStep(3)} 
                   disabled={!selectedSlot} 
-                  className="rounded-2xl shadow-[0_4px_14px_rgba(0,161,172,0.3)] bg-[#00A1AC] hover:bg-[#008C96] text-white px-6 py-3 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer" 
+                  className="rounded-xl shadow-md text-white px-5 py-2.5 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer" 
+                  style={{ backgroundColor: theme.primary }}
                 >
                   <span>Continue</span>
                   <span className="text-sm font-black leading-none">→</span>
@@ -717,9 +745,10 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
           )}
 
           {step === 3 && (
-            <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-3">Patient Details</h2>
-              <div className="bg-slate-50/50 rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-3.5">
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col h-full overflow-hidden">
+              <h2 className="text-lg font-black text-slate-900 mb-4 shrink-0">Patient Details</h2>
+              <div className="flex-1 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin', scrollbarColor: `${theme.primary}40 transparent` }}>
+                <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-200/80 space-y-4">
                 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
@@ -727,7 +756,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                     type="text" 
                     value={patientDetails.name} 
                     onChange={e => setPatientDetails({...patientDetails, name: e.target.value})} 
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all font-medium text-sm text-slate-900 bg-white" 
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all font-medium text-sm text-slate-900 bg-white" 
                     placeholder="e.g. John Doe" 
                   />
                 </div>
@@ -741,7 +770,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                         type="tel" 
                         value={patientDetails.phone} 
                         onChange={e => setPatientDetails({...patientDetails, phone: e.target.value})} 
-                        className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all font-medium text-sm text-slate-900 bg-white" 
+                        className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all font-medium text-sm text-slate-900 bg-white" 
                         placeholder="9876543210" 
                       />
                     </div>
@@ -752,7 +781,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                       type="email" 
                       value={patientDetails.email} 
                       onChange={e => setPatientDetails({...patientDetails, email: e.target.value})} 
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all font-medium text-sm text-slate-900 bg-white" 
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all font-medium text-sm text-slate-900 bg-white" 
                       placeholder="e.g. you@example.com" 
                     />
                   </div>
@@ -765,7 +794,7 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                       type="number" 
                       value={patientDetails.age} 
                       onChange={e => setPatientDetails({...patientDetails, age: e.target.value})} 
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00A1AC]/20 focus:border-[#00A1AC] transition-all font-medium text-sm text-slate-900 bg-white" 
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:border-slate-400 transition-all font-medium text-sm text-slate-900 bg-white" 
                       placeholder="Years" 
                     />
                   </div>
@@ -783,9 +812,10 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                             onClick={() => setPatientDetails({ ...patientDetails, gender: g })}
                             className={`py-2.5 px-2 text-xs font-bold rounded-xl border transition-all cursor-pointer text-center ${
                               isSelected
-                                ? 'bg-[#00A1AC] text-white border-[#00A1AC] shadow-sm shadow-[#00A1AC]/25'
+                                ? 'text-white shadow-sm'
                                 : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                             }`}
+                            style={isSelected ? { backgroundColor: theme.primary, borderColor: theme.primary } : {}}
                           >
                             {g}
                           </button>
@@ -796,8 +826,9 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                 </div>
 
               </div>
+              </div>
 
-              <div className="mt-5 flex justify-between items-center">
+              <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center shrink-0">
                 <button onClick={() => setStep(2)} className="font-bold text-xs text-slate-500 hover:text-slate-900 transition-colors">
                   ← Back
                 </button>
@@ -805,7 +836,8 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                   type="submit"
                   onClick={handleBook} 
                   disabled={isBooking} 
-                  className="rounded-2xl shadow-[0_4px_14px_rgba(0,161,172,0.3)] bg-[#00A1AC] hover:bg-[#008C96] text-white px-6 py-3 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-70 cursor-pointer"
+                  className="rounded-xl shadow-md text-white px-5 py-2.5 font-bold text-xs flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95 disabled:opacity-70 cursor-pointer"
+                  style={{ backgroundColor: theme.primary }}
                 >
                   {isBooking ? (
                     <>
@@ -826,9 +858,9 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
         </div>
 
         {/* Right Area - Sticky Summary */}
-        <div className="w-full lg:w-[320px] shrink-0 border-t lg:border-t-0 lg:border-l border-slate-200/80 pt-4 lg:pt-0 lg:pl-6 bg-slate-50/60 p-4 sm:p-5 rounded-2xl flex flex-col justify-between">
+        <div className="md:col-span-5 bg-slate-50/60 rounded-2xl p-4 sm:p-6 border border-slate-100 flex flex-col self-start sticky top-24">
           <div className="space-y-4">
-            <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-2">
+            <h3 className="text-base font-black text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
               <Calendar className="w-4 h-4" style={{ color: theme.primary }} /> Booking Summary
             </h3>
 
@@ -870,17 +902,17 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-200 mt-4">
+          <div className="pt-4 border-t border-slate-200 mt-6">
             <div className="flex justify-between items-center mb-3">
               <span className="font-bold text-xs text-slate-500">Total Fee</span>
               <span className="text-xl font-black" style={{ color: theme.primary }}>₹{selectedService?.price || 0}</span>
             </div>
 
-            <div className="bg-white rounded-xl p-2.5 border border-slate-200 flex items-center gap-2.5">
-              <Phone className="w-6 h-6 p-1 rounded-full bg-slate-100 text-slate-600 shrink-0" />
+            <div className="bg-white rounded-xl p-3 border border-slate-200 flex items-center gap-3">
+              <Phone className="w-6 h-6 p-1.5 rounded-full bg-slate-100 text-slate-600 shrink-0" />
               <div>
                 <p className="text-[10px] font-bold text-slate-400">Clinic Helpline</p>
-                <p className="font-bold text-xs text-slate-900">{clinic.phone}</p>
+                <p className="font-bold text-xs text-slate-900 leading-tight">{clinic.phone}</p>
               </div>
             </div>
           </div>

@@ -24,6 +24,14 @@ const WebsiteConfigSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    headline: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
     themeColor: {
       type: String,
       default: "#00A1AC",
@@ -44,6 +52,10 @@ const WebsiteConfigSchema = new mongoose.Schema(
       type: String,
       default: "curved",
     },
+    previewMode: {
+      type: String,
+      default: "light",
+    },
     hideBranding: {
       type: Boolean,
       default: false,
@@ -62,6 +74,18 @@ const WebsiteConfigSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    enableWhatsappChat: {
+      type: Boolean,
+      default: true,
+    },
+    emergencyDayOff: {
+      type: Boolean,
+      default: false,
+    },
+    enableMaps: {
+      type: Boolean,
+      default: false,
+    },
     publishedUrl: {
       type: String,
       default: "",
@@ -70,4 +94,8 @@ const WebsiteConfigSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.models.WebsiteConfig || mongoose.model("WebsiteConfig", WebsiteConfigSchema);
+if (mongoose.models.WebsiteConfig) {
+  delete mongoose.models.WebsiteConfig;
+}
+
+export default mongoose.model("WebsiteConfig", WebsiteConfigSchema);

@@ -8,6 +8,9 @@ import WebsiteConfig from '../../backend/models/WebsiteConfig.js';
 import Subscription from '../../backend/models/Subscription.js';
 import PublicNavbar from '../../components/public/Navbar.js';
 import PublicFooter from '../../components/public/Footer.js';
+import MinimalSolo from '../../components/public/templates/MinimalSolo.js';
+import OceanicPro from '../../components/public/templates/OceanicPro.js';
+import CareGrid from '../../components/public/templates/CareGrid.js';
 import { SPECIALTY_PRESETS, getSpecialtyPreset, detectSpecialtyFromText } from '../../lib/specialtyPresets.js';
 import { getPlanTier } from '../../lib/planLimits.js';
 import { getThemeConfig, getButtonShapeClass } from '../../lib/themeColors.js';
@@ -17,6 +20,7 @@ import {
   AlertTriangle, Stethoscope, PhoneCall
 } from 'lucide-react';
 import Link from 'next/link';
+import LiveSyncWatcher from './LiveSyncWatcher.js';
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -40,8 +44,8 @@ export async function generateMetadata(props) {
   };
 }
 
-// Dynamic Shift Parser: If disabled or '00:00 - 00:00', renders CLOSED. Else formats 12hr AM/PM
-function formatShiftDisplay(dayShift) {
+// Dynamic Shift Parser: If disabled or '00:00 - 00:00', returns closed state. Else parses 12hr AM/PM
+function parseShiftDisplay(dayShift) {
   if (
     !dayShift ||
     dayShift.isEnabled === false ||
@@ -51,7 +55,7 @@ function formatShiftDisplay(dayShift) {
     (dayShift.morningStart === '00:00' && dayShift.morningEnd === '00:00') ||
     dayShift.morningStart === dayShift.morningEnd
   ) {
-    return <span className="px-2 py-0.5 rounded text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100">CLOSED</span>;
+    return { closed: true };
   }
 
   // Convert 24hr to 12hr AM/PM format
@@ -66,14 +70,17 @@ function formatShiftDisplay(dayShift) {
     return `${hour.toString().padStart(2, '0')}:${parts[1]} ${ampm}`;
   };
 
-  const formattedStart = formatTime(dayShift.morningStart);
-  const formattedEnd = formatTime(dayShift.morningEnd);
+  const mStart = formatTime(dayShift.morningStart);
+  const mEnd = formatTime(dayShift.morningEnd);
+  const eStart = formatTime(dayShift.eveningStart);
+  const eEnd = formatTime(dayShift.eveningEnd);
 
-  if (!formattedStart || !formattedEnd) {
-    return <span className="px-2 py-0.5 rounded text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100">CLOSED</span>;
-  }
+  const hasMorning = Boolean(mStart && mEnd);
+  const hasEvening = Boolean(eStart && eEnd && dayShift.eveningStart !== '00:00' && dayShift.eveningStart !== dayShift.eveningEnd);
 
-  return `${formattedStart} – ${formattedEnd}`;
+  if (!hasMorning && !hasEvening) return { closed: true };
+
+  return { closed: false, mStart, mEnd, eStart, eEnd, hasMorning, hasEvening };
 }
 
 async function getClinicData(slug) {
@@ -127,10 +134,17 @@ export default async function PublicClinicPage(props) {
   }
 
   const { clinic, doctor, services, availability, websiteConfig, subscription } = data;
-  const planId = (subscription?.planId || "BASIC").toUpperCase();
-  const tier = getPlanTier(planId);
-  const isPremium = tier.isPremium;
-  const isAdvanced = tier.isAdvanced;
+  const currentTier = (subscription?.planId || "BASIC").toUpperCase();
+  const tier = getPlanTier(currentTier);
+  const isBasic = currentTier === "BASIC";
+  const isAdvanced = currentTier === "ADVANCED";
+  const isPremium = currentTier === "PREMIUM" || currentTier === "ENTERPRISE" || currentTier === "PRO";
+  const isAdvancedOrHigher = isAdvanced || isPremium;
+  const isWhatsappEnabled = !isBasic && websiteConfig?.enableWhatsappChat !== false;
+  const isEmergencyActive = Boolean(websiteConfig?.emergencyDayOff);
+  
+  // Base Container class enforcement
+  const containerClass = isBasic ? "max-w-6xl mx-auto px-4 md:px-6" : "w-full mx-auto px-4 sm:px-8 lg:px-12 xl:px-16";
 
   const rawDocName = doctor?.fullName || doctor?.name || 'Alam';
   const cleanDocName = rawDocName.startsWith('Dr.') ? rawDocName : `Dr. ${rawDocName}`;
@@ -139,15 +153,31 @@ export default async function PublicClinicPage(props) {
   const detectedSpecialtyKey = doctor?.specialty || detectSpecialtyFromText(`${doctor?.specialization || ''} ${clinic?.name || ''} ${clinic?.category || ''}`);
   const specialtyPreset = getSpecialtyPreset(detectedSpecialtyKey);
 
-  // Active theme and button shape mapping
-  const activeTheme = getThemeConfig(websiteConfig?.primaryColor || websiteConfig?.themeColor || specialtyPreset?.color || 'teal');
-  const buttonShapeClass = getButtonShapeClass(websiteConfig?.buttonShape || websiteConfig?.buttonStyle || 'rounded-2xl');
+  // Extract the saved config with safe fallbacks
+  const config = websiteConfig || {};
+  const themeColor = config.primaryColor || config.themeColor || '#0A8692';
+  const isDarkMode = isBasic ? false : (config.previewMode === 'dark' || config.mockupTheme === 'dark');
+  const isSerif = isBasic ? false : (config.fontStyle === 'serif' || config.typography === 'executive-serif');
+  const buttonRadius = config.buttonStyle || 
+    (config.buttonShape === 'pill' ? 'rounded-full' : 
+     config.buttonShape === 'sharp' ? 'rounded-none' : 
+     'rounded-2xl');
+
+  // Active theme mapping (kept for backward compatibility where activeTheme.primary is used)
+  const activeTheme = getThemeConfig(config.themeColor || specialtyPreset?.color || 'teal');
+  // Override activeTheme primary if a custom hex was provided
+  activeTheme.primary = themeColor;
+  
+  const buttonShapeClass = buttonRadius;
 
   // Dynamic Content with Dashboard Fallbacks
   const displayHeadline = websiteConfig?.headline || doctor?.headline || specialtyPreset.headline;
-  const displayBio = doctor?.bio || websiteConfig?.bio || specialtyPreset.description;
+  const displayBio = websiteConfig?.bio || doctor?.bio || specialtyPreset.description;
   const displayDegree = doctor?.qualification || doctor?.degree || 'BDS, MDS - Oral Surgery';
-  const displayExperience = doctor?.experienceYrs || doctor?.experience || doctor?.yearsOfExperience || '10+ Years Experience';
+  let displayExperience = doctor?.experienceYrs || doctor?.experience || doctor?.yearsOfExperience || '10+ Years Experience';
+  if (typeof displayExperience === 'number' || /^\d+$/.test(String(displayExperience).trim())) {
+    displayExperience = `${displayExperience}+ Years Experience`;
+  }
   const displaySpecialization = doctor?.specialization || doctor?.specialty || specialtyPreset.defaultSpecialization;
   const displayDoctorPhoto = websiteConfig?.doctorPhoto || doctor?.profilePhoto || doctor?.image || doctor?.avatarUrl || '';
   const clinicAddress = doctor?.address ? `${doctor.address}, ${doctor?.city || 'Patna'}` : (clinic?.address ? `${clinic.address}, ${clinic?.city || 'Patna'}` : 'Sultanganj, Patna');
@@ -155,7 +185,7 @@ export default async function PublicClinicPage(props) {
 
   // Active services: Basic capped to 5 services, Advanced/Premium uncapped
   const activeServices = services.filter(s => s.isActive !== false);
-  const displayServices = tier.isBasic ? activeServices.slice(0, 5) : activeServices;
+  const displayServices = isBasic ? activeServices.slice(0, 5) : activeServices;
   const fallbackServices = displayServices.length > 0 ? displayServices : specialtyPreset.services;
 
   // Day configuration: Monday first (1), Sunday last (0)
@@ -185,169 +215,56 @@ export default async function PublicClinicPage(props) {
         resolvedShifts[key] = {
           isEnabled: isOpen,
           morningStart: a.morningStartTime || a.startTime || "",
-          morningEnd: a.morningEndTime || a.endTime || ""
+          morningEnd: a.morningEndTime || a.endTime || "",
+          eveningStart: a.eveningStartTime || "",
+          eveningEnd: a.eveningEndTime || ""
         };
       }
     }
   }
 
   return (
-    <div className="min-h-screen font-sans bg-[#f8fafc] text-slate-900">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-[#f8fafc] text-slate-900'} ${isSerif ? 'font-serif' : 'font-sans'}`}>
+      <LiveSyncWatcher />
       
-      {/* 1. Standard Dynamic Public Navbar */}
-      <PublicNavbar
-        clinic={clinic}
-        doctor={doctor}
-        planId={planId}
-        navbarType={tier.navbarType}
-        slug={slug}
-        activeTheme={activeTheme}
-        buttonShapeClass={buttonShapeClass}
-      />
-
-      {/* Emergency Closed Alert Banner */}
-      {clinic.emergencyClosed && (
-        <div className="bg-rose-600 text-white px-4 py-3 text-center text-xs font-black tracking-wide shadow-md flex items-center justify-center gap-2 sticky top-20 z-40">
-          <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
-          <span>🚨 OPD CLOSED TODAY FOR EMERGENCY DUTY. Online appointments temporarily paused.</span>
+      {/* Emergency Notice Banner */}
+      {isEmergencyActive && (
+        <div className="bg-amber-500 text-slate-950 px-4 py-2 text-center text-xs font-bold flex items-center justify-center gap-2 shadow-xs">
+          <span>⚠️ Urgent Clinic Notice:</span>
+          <span>OPD is temporarily paused for emergency maintenance today. Online bookings are on hold.</span>
         </div>
       )}
 
-      {/* 2. Hero & About Section (#home & #about) */}
-      <section id="home" className="relative overflow-hidden py-16 sm:py-24 border-b border-slate-200 bg-gradient-to-b from-slate-50 via-white to-slate-50">
-        <div id="about" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            {/* Left Hero Text */}
-            <div className="lg:col-span-7 space-y-6">
-              
-              {/* Specialty & Degree Badges */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <span 
-                  style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary, borderColor: `${activeTheme.primary}30` }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider border"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  {specialtyPreset.name}
-                </span>
-
-                {displayDegree && (
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                    {displayDegree}
-                  </span>
-                )}
-
-                {displayExperience && (
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    🩺 {displayExperience}
-                  </span>
-                )}
-              </div>
-
-              {/* Headline */}
-              <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight text-slate-900">
-                {displayHeadline}
-              </h1>
-
-              {/* Bio */}
-              <p className="text-sm sm:text-base leading-relaxed font-medium text-slate-600">
-                {displayBio}
-              </p>
-
-              {/* Trust Badges */}
-              {specialtyPreset.badges && (
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  {specialtyPreset.badges.map((badge, idx) => (
-                    <div 
-                      key={idx} 
-                      className="flex items-center gap-2 text-xs font-bold p-2.5 rounded-2xl border bg-white border-slate-200 text-slate-700 shadow-xs"
-                    >
-                      <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: activeTheme.primary }} />
-                      <span className="truncate">{badge}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* CTA Buttons */}
-              <div className="flex items-center gap-4 pt-4 flex-wrap">
-                <Link
-                  href={`/${slug}/book`}
-                  style={{ backgroundColor: activeTheme.primary }}
-                  className={`px-8 py-4 ${buttonShapeClass} font-black text-sm transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2.5 text-white`}
-                >
-                  <Calendar className="w-5 h-5" />
-                  <span>Book Confirmed OPD Slot</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-
-                {clinicPhone && (
-                  <a
-                    href={`tel:${clinicPhone}`}
-                    className={`px-6 py-4 ${buttonShapeClass} font-bold text-xs transition-all border bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm flex items-center gap-2`}
-                  >
-                    <Phone className="w-4 h-4" style={{ color: activeTheme.primary }} />
-                    <span>Call Clinic ({clinicPhone})</span>
-                  </a>
-                )}
-              </div>
-
-            </div>
-
-            {/* Right Hero Image / Doctor Card */}
-            <div className="lg:col-span-5">
-              <div className="p-6 sm:p-8 rounded-3xl border border-slate-200 bg-white shadow-xl relative">
-                {/* Doctor Photo or Avatar */}
-                <div className="relative aspect-square rounded-2xl overflow-hidden mb-6 bg-slate-100 flex items-center justify-center border border-slate-200">
-                  {(isAdvanced || isPremium) && displayDoctorPhoto ? (
-                    <img
-                      src={displayDoctorPhoto}
-                      alt={cleanDocName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div 
-                      style={{ background: `linear-gradient(135deg, ${activeTheme.primary}, #044E54)` }}
-                      className="w-full h-full flex flex-col items-center justify-center text-white p-6 text-center"
-                    >
-                      <Stethoscope className="w-16 h-16 mb-2 opacity-80" />
-                      <p className="font-black text-xl">{cleanDocName}</p>
-                      <p className="text-xs text-teal-100 mt-1">{displaySpecialization}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Doctor Details */}
-                <div className="space-y-1.5 text-center sm:text-left">
-                  <h3 className="text-xl font-black text-slate-900">
-                    {cleanDocName}
-                  </h3>
-                  <p className="text-xs font-bold" style={{ color: activeTheme.primary }}>
-                    {displaySpecialization}
-                  </p>
-                  <p className="text-xs text-slate-500 font-medium">
-                    {clinic.name || 'Alam Dental Clinic'} • {clinicAddress}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </section>
+      {(() => {
+        const templateProps = {
+          clinic, doctor, websiteConfig, currentTier, tier, slug,
+          activeTheme, buttonShapeClass, isDarkMode, containerClass, specialtyPreset
+        };
+        
+        switch (config.templateId) {
+          case 'oceanic-pro':
+            return <OceanicPro {...templateProps} />;
+          case 'care-grid':
+            return <CareGrid {...templateProps} />;
+          case 'minimal-solo':
+          case 'clean-clinic':
+          default:
+            return <MinimalSolo {...templateProps} />;
+        }
+      })()}
 
       {/* 3. Services & Fees Section (#services) */}
-      <section id="services" className="py-16 sm:py-24 border-b border-slate-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <section id="services" className={`py-12 sm:py-16 border-b ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
+        <div className={`${containerClass} space-y-12`}>
           
           <div className="text-center space-y-3 max-w-2xl mx-auto">
             <span 
               style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary, borderColor: `${activeTheme.primary}30` }}
-              className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border"
+              className="inline-block mb-4 text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border"
             >
               Services &amp; Rate Catalog
             </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900">
+            <h2 className={`text-2xl sm:text-4xl font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
               Clinical Consultation &amp; Treatments
             </h2>
             <p className="text-xs sm:text-sm font-medium text-slate-500">
@@ -359,11 +276,11 @@ export default async function PublicClinicPage(props) {
             {fallbackServices.map((srv, idx) => (
               <div
                 key={idx}
-                className="p-6 rounded-3xl border border-slate-200 bg-slate-50 flex flex-col justify-between space-y-4 transition-all hover:shadow-lg hover:border-slate-300"
+                className={`p-8 min-h-[220px] rounded-3xl border flex flex-col justify-between space-y-4 transition-all hover:shadow-lg ${isDarkMode ? 'bg-slate-900 border-slate-800 hover:border-slate-700' : 'border-slate-200 bg-slate-50 hover:border-slate-300'}`}
               >
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-black text-slate-900">
+                    <span className={`text-base font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
                       {srv.name}
                     </span>
                     <span className="text-lg font-black" style={{ color: activeTheme.primary }}>
@@ -397,13 +314,13 @@ export default async function PublicClinicPage(props) {
       </section>
 
       {/* 4. OPD Schedule Section (#schedule - Live Synced with Doctor Dashboard Shifts) */}
-      <section id="schedule" className="py-16 sm:py-24 border-b border-slate-200 bg-slate-50/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      <section id="schedule" className={`py-12 sm:py-16 border-b ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-50/80'}`}>
+        <div className={`${containerClass} space-y-12`}>
           
           <div className="text-center space-y-3 max-w-2xl mx-auto">
             <span 
               style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary, borderColor: `${activeTheme.primary}30` }}
-              className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border"
+              className="inline-block mb-4 text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border"
             >
               Doctor Shift Timings
             </span>
@@ -415,101 +332,137 @@ export default async function PublicClinicPage(props) {
             </p>
           </div>
 
-          {/* Symmetrical 2-Card Layout */}
-          <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          {/* Premium Symmetrical 2-Card Layout */}
+          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
             
-            {/* Left Card: Clinic Consultation Info & Token Guarantee */}
-            <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div 
-                    style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary }}
-                    className="w-11 h-11 rounded-xl flex items-center justify-center font-bold"
-                  >
-                    <Clock className="w-5 h-5" />
+            {/* Left Card: Premium CTA Card */}
+            <div 
+              style={{ background: `linear-gradient(135deg, ${activeTheme.primary}, #0f172a)` }}
+              className="lg:col-span-5 rounded-3xl p-8 sm:p-10 shadow-2xl flex flex-col justify-between relative overflow-hidden text-white"
+            >
+              {/* Decorative background icon */}
+              <Clock className="absolute -bottom-12 -right-8 w-64 h-64 text-white opacity-5 pointer-events-none" />
+              
+              <div className="space-y-6 relative z-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-bold border border-white/20 shadow-inner">
+                    <Clock className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">{clinic?.name || 'Alam Dental Clinic'}</h3>
-                    <p className="text-xs text-slate-500">Direct Patient Walk-in &amp; Online Slots</p>
+                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">{clinic?.name || 'Alam Dental Clinic'}</h3>
+                    <p className="text-sm text-white/80 font-medium">Walk-in &amp; Online Slots Available</p>
                   </div>
                 </div>
 
-                <div className="space-y-2.5 text-xs text-slate-600 font-medium pt-2 border-t border-slate-100">
+                <div className="space-y-4 pt-6 border-t border-white/10">
                   {clinicAddress && (
-                    <div className="flex items-start gap-2.5">
-                      <MapPin className="w-4 h-4 shrink-0 mt-0.5" style={{ color: activeTheme.primary }} />
-                      <span className="leading-relaxed">{clinicAddress}</span>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                        <MapPin className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-sm font-medium leading-relaxed text-white/90 pt-1.5">{clinicAddress}</span>
                     </div>
                   )}
                   {clinicPhone && (
-                    <div className="flex items-center gap-2.5">
-                      <Phone className="w-4 h-4 shrink-0" style={{ color: activeTheme.primary }} />
-                      <span className="font-bold text-slate-800">{clinicPhone}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                        <Phone className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-base font-bold text-white pt-1">{clinicPhone}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Token Guarantee Card */}
-                <div 
-                  style={{ backgroundColor: `${activeTheme.primary}10`, borderColor: `${activeTheme.primary}25` }}
-                  className="border rounded-xl p-3.5 my-4"
-                >
-                  <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: activeTheme.primary }}>
-                    ⚡ Instant Digital Token Confirmation
+                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 mt-4">
+                  <div className="flex items-center gap-2 text-sm font-black text-white">
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                    Instant Digital Token Confirmation
                   </div>
-                  <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
-                    Skip reception queues. Book online to reserve your direct clinical consultation slot.
+                  <p className="text-xs text-white/80 mt-2 leading-relaxed font-medium">
+                    Skip the reception queues. Book online to reserve your direct clinical consultation slot immediately.
                   </p>
                 </div>
               </div>
 
               <a
                 href="#services"
-                style={{ backgroundColor: activeTheme.primary }}
-                className={`w-full py-3.5 ${buttonShapeClass} font-bold text-xs transition-all shadow-sm hover:opacity-95 flex items-center justify-center gap-2 text-white mt-4 cursor-pointer`}
+                className={`w-full py-4 ${buttonShapeClass} font-black text-sm transition-all flex items-center justify-center gap-2 bg-white text-slate-900 hover:bg-slate-100 shadow-xl mt-8 relative z-10`}
+                style={{ color: activeTheme.primary }}
               >
-                <span>Schedule Consultation →</span>
+                <span>Schedule Consultation Now</span>
+                <ArrowRight className="w-4 h-4" />
               </a>
             </div>
 
             {/* Right Card: Dynamic Day-by-Day Timings Table mapped to doctor.shifts */}
-            <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm flex flex-col justify-between">
+            <div className={`lg:col-span-7 rounded-3xl border p-8 sm:p-10 shadow-lg flex flex-col justify-between ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'}`}>
               <div>
-                <div className="pb-3 border-b border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    CONSULTING DAYS
-                  </span>
-                  <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: activeTheme.primary }}>
-                    <span className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: activeTheme.primary }}></span>
-                    <span>Today is {todayDayName}</span>
-                  </span>
+                {/* Header Row */}
+                <div className="pb-4 mb-2 border-b border-slate-100 flex items-center justify-between">
+                  <div className="w-[30%]">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      CONSULTING DAYS
+                    </span>
+                  </div>
+                  <div className="w-[70%] flex items-center justify-end gap-10 sm:gap-16 pr-2 sm:pr-8">
+                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest text-center w-32">
+                      MORNING SHIFT
+                    </span>
+                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest text-center w-32">
+                      EVENING SHIFT
+                    </span>
+                  </div>
                 </div>
 
-                <div className="divide-y divide-slate-100 mt-1">
+                <div className="divide-y divide-slate-100/80">
                   {dayRows.map((day) => {
                     const isToday = day.dayOfWeek === todayDayIndex;
                     const dayShift = resolvedShifts?.[day.id];
+                    const parsedShift = parseShiftDisplay(dayShift);
+                    
                     return (
                       <div
                         key={day.id}
-                        className={`py-2.5 flex items-center justify-between transition-colors ${
-                          isToday ? 'font-bold' : ''
+                        className={`py-3.5 flex items-center justify-between transition-colors ${
+                          isToday ? 'bg-slate-50/50 rounded-xl px-3 -mx-3' : ''
                         }`}
                       >
-                        <div className="flex items-center gap-2">
+                        {/* Day Column */}
+                        <div className="w-[30%] flex items-center gap-2">
                           {isToday && (
-                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeTheme.primary }}></span>
+                            <span className="w-1.5 h-1.5 rounded-full shadow-xs" style={{ backgroundColor: activeTheme.primary }}></span>
                           )}
-                          <span className={`text-xs ${isToday ? 'font-bold' : 'text-slate-700'}`} style={isToday ? { color: activeTheme.primary } : {}}>
+                          <span className={`text-xs ${isToday ? 'font-black' : 'text-slate-700 font-semibold'}`} style={isToday ? { color: activeTheme.primary } : {}}>
                             {day.name}
-                            {isToday && <span className="ml-1 text-[10px] uppercase font-bold" style={{ color: activeTheme.primary }}>(TODAY)</span>}
+                            {isToday && <span className="ml-1.5 text-[9px] uppercase font-black" style={{ color: activeTheme.primary }}>(TODAY)</span>}
                           </span>
                         </div>
 
-                        <div>
-                          <span className="font-semibold text-slate-700 text-xs">
-                            {formatShiftDisplay(dayShift)}
-                          </span>
+                        {/* Timing Columns */}
+                        <div className="w-[70%] flex items-center justify-end gap-10 sm:gap-16 pr-2 sm:pr-8">
+                          {parsedShift.closed ? (
+                            <div className="w-full flex justify-end">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider text-rose-600 bg-rose-50 border border-rose-100 shadow-xs mr-4">CLOSED {day.name.toUpperCase()}</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="w-32 text-center flex justify-center">
+                                {parsedShift.hasMorning ? (
+                                  <span className={`text-[11px] font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{parsedShift.mStart} <span className="text-slate-300 font-normal mx-0.5">-</span> {parsedShift.mEnd}</span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider text-rose-500 bg-rose-50 border border-rose-100 shadow-xs">CLOSED</span>
+                                )}
+                              </div>
+                              <div className="w-32 text-center flex justify-center">
+                                {parsedShift.hasEvening ? (
+                                  <span className={`text-[11px] font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{parsedShift.eStart} <span className="text-slate-300 font-normal mx-0.5">-</span> {parsedShift.eEnd}</span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider text-rose-500 bg-rose-50 border border-rose-100 shadow-xs">CLOSED</span>
+                                )}
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
@@ -524,101 +477,248 @@ export default async function PublicClinicPage(props) {
       </section>
 
       {/* 5. Clean Balanced 2-Card Contact Section (#contact) */}
-      <section id="contact" className="py-16 sm:py-24 border-b border-slate-200 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          
-          <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span 
-              style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary, borderColor: `${activeTheme.primary}30` }}
-              className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border"
-            >
-              Direct Contact &amp; Location
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900">
-              Visit or Contact Our Clinic
-            </h2>
-            <p className="text-xs sm:text-sm font-medium text-slate-500">
-              Walk-in consultations, confirmed digital token appointments, and direct assistance.
-            </p>
-          </div>
+      {isAdvancedOrHigher && websiteConfig?.enableMaps ? (
+        <section id="contact" className={`py-12 sm:py-16 border-b ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
+          <div className={`${containerClass} space-y-12`}>
+            <div className="text-center space-y-3 max-w-2xl mx-auto">
+              <span 
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-4 border"
+                style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary, borderColor: `${activeTheme.primary}30` }}
+              >
+                Clinic Location & Direct Reach
+              </span>
+              <h2 className={`text-2xl sm:text-4xl font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                Visit or Connect with Our Clinic
+              </h2>
+              <p className="text-xs sm:text-sm font-medium text-slate-500">
+                Walk-in consultations, confirmed digital token appointments, and direct GPS navigation.
+              </p>
+            </div>
 
-          {/* Balanced 2-Column Grid */}
-          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 items-stretch">
+              
+              {/* Left Column: Contact Channels (5 Cols) */}
+              <div className="lg:col-span-5 flex flex-col gap-4 md:gap-6">
+                
+                {/* Card 1: Clinic Address & Navigation */}
+                <div className={`rounded-3xl border p-8 shadow-lg flex flex-col justify-between h-full relative overflow-hidden ${isDarkMode ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200/60'}`}>
+                  {/* Subtle Background Accent */}
+                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 blur-3xl -mr-10 -mt-10 pointer-events-none" style={{ backgroundColor: activeTheme.primary }}></div>
+                  
+                  <div className="relative z-10">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5 shadow-sm" style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary }}>
+                      <MapPin className="w-7 h-7" />
+                    </div>
+                    <h3 className={`text-lg font-black mb-1.5 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>Clinic Physical Address</h3>
+                    <p className={`text-base font-black leading-snug ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{clinicAddress}</p>
+                    <p className={`text-sm mt-2 font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Direct in-person consultations during active OPD shifts.</p>
+                  </div>
+                  
+                  <div className={`pt-5 mt-6 border-t flex items-center justify-between relative z-10 ${isDarkMode ? 'border-slate-800/80' : 'border-slate-100'}`}>
+                    <span className="text-[11px] font-black uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Verified Location
+                    </span>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(clinicAddress)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-black flex items-center gap-1 hover:underline transition-all px-4 py-2 rounded-xl"
+                      style={{ color: activeTheme.primary, backgroundColor: `${activeTheme.primary}10` }}
+                    >
+                      <span>Get Directions</span>
+                      <span>↗</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Card 2 & 3: Reception Helpline & WhatsApp Channel */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                  
+                  {/* Card 2: Reception Telephone */}
+                  <div className={`rounded-3xl border p-6 shadow-lg flex flex-col justify-between relative overflow-hidden ${isDarkMode ? 'bg-slate-900/80 border-slate-700/50' : 'bg-white border-slate-200/60'}`}>
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary }}>
+                          <Phone className="w-4 h-4" />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reception Line</span>
+                      </div>
+                      <p className={`text-base font-black truncate mb-3 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                        {clinicPhone}
+                      </p>
+                    </div>
+                    <a 
+                      href={`tel:${clinicPhone}`}
+                      className="text-xs font-black inline-flex items-center gap-1 hover:underline transition-all mt-1"
+                      style={{ color: activeTheme.primary }}
+                    >
+                      Call Directly →
+                    </a>
+                  </div>
+
+                  {/* Card 3: WhatsApp Channel */}
+                  <div className={`rounded-3xl border p-6 shadow-lg flex flex-col justify-between relative overflow-hidden ${isDarkMode ? 'bg-slate-900/80 border-slate-700/50' : 'bg-[#25D366]/5 border-[#25D366]/20'}`}>
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-[#25D366]/10 text-[#25D366] flex items-center justify-center shrink-0">
+                          <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.89-5.451 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.983z"/>
+                          </svg>
+                        </div>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">WhatsApp OPD</span>
+                      </div>
+                      <p className={`text-base font-black truncate mb-3 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>Direct Desk</p>
+                    </div>
+                    <a 
+                      href={`https://wa.me/${clinicPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello Dr. ${cleanDocName}, I need OPD directions and appointment assistance.`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-black text-[#25D366] hover:text-[#20bd5a] inline-flex items-center gap-1 transition-all mt-1"
+                    >
+                      Chat Live ↗
+                    </a>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Right Column: Embedded Interactive Google Map (7 Cols) */}
+              <div className={`lg:col-span-7 rounded-3xl border p-4 shadow-sm flex flex-col min-h-[450px] lg:min-h-full ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'}`}>
+                <div className={`relative w-full h-full min-h-[400px] lg:min-h-full rounded-2xl overflow-hidden border ${isDarkMode ? 'border-slate-800' : 'border-slate-100'}`}>
+                  <iframe
+                    title="Clinic Google Maps Location"
+                    width="100%"
+                    height="100%"
+                    className="absolute inset-0 w-full h-full border-0"
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(clinicAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                  />
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section id="contact" className={`py-12 sm:py-16 border-b ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>
+          <div className={`${containerClass} space-y-12`}>
             
-            {/* CARD 1: Clinic Location & Directions */}
-            <div className="p-6 bg-white rounded-2xl border border-slate-200/80 shadow-sm transition-all flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div 
-                    style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary }}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center font-bold"
-                  >
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900">Clinic Address</h3>
-                </div>
-                <div>
-                  <p className="font-bold text-slate-900 text-sm">
-                    {doctor?.address || 'Sultanganj'}, {doctor?.city || 'Patna'}
-                  </p>
-                  <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
-                    Direct Walk-ins &amp; In-Person OPD Consultation available during shift hours.
-                  </p>
-                </div>
-              </div>
-              <a
-                href={doctor?.googleMapsUrl || "https://maps.google.com"}
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: activeTheme.primary }}
-                className="inline-flex items-center gap-1 text-xs font-bold hover:underline mt-4"
+            <div className="text-center space-y-3 max-w-2xl mx-auto">
+              <span 
+                style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary, borderColor: `${activeTheme.primary}30` }}
+                className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full border"
               >
-                ↗ Open in Google Maps
-              </a>
+                Direct Contact &amp; Location
+              </span>
+              <h2 className={`text-2xl sm:text-4xl font-black ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                Visit or Contact Our Clinic
+              </h2>
+              <p className="text-xs sm:text-sm font-medium text-slate-500">
+                Walk-in consultations, confirmed digital token appointments, and direct assistance.
+              </p>
             </div>
 
-            {/* CARD 2: Direct Telephone Helpline */}
-            <div className="p-6 bg-white rounded-2xl border border-slate-200/80 shadow-sm transition-all flex flex-col justify-between space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div 
-                    style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary }}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center font-bold"
-                  >
-                    <PhoneCall className="w-5 h-5" />
+            {/* Balanced 2-Column Grid */}
+            <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* CARD 1: Clinic Location & Directions */}
+              <div className={`p-6 rounded-2xl border shadow-sm transition-all flex flex-col justify-between space-y-4 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'}`}>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary }}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center font-bold"
+                    >
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <h3 className={`text-base font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>Clinic Address</h3>
                   </div>
-                  <h3 className="text-base font-bold text-slate-900">Telephone Helpline</h3>
+                  <div>
+                    <p className={`font-bold text-sm ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                      {doctor?.address || 'Sultanganj'}, {doctor?.city || 'Patna'}
+                    </p>
+                    <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                      Direct Walk-ins &amp; In-Person OPD Consultation available during shift hours.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-black text-slate-900 text-base">
-                    {doctor?.phone || '1234567898'}
-                  </p>
-                  <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
-                    Direct clinic line for instant slot confirmation and general inquiries.
-                  </p>
-                </div>
+                {isPremium && doctor?.googleMapsUrl ? (
+                  <a
+                    href={doctor.googleMapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: activeTheme.primary }}
+                    className="inline-flex items-center gap-1 text-xs font-bold hover:underline mt-4"
+                  >
+                    ↗ Open in Google Maps
+                  </a>
+                ) : (
+                  <span className="text-[11px] font-semibold text-slate-400 mt-4 block">📍 Verified Physical Clinic Location</span>
+                )}
               </div>
-              <a
-                href={"tel:" + (doctor?.phone || "1234567898")}
-                style={{ color: activeTheme.primary }}
-                className="inline-flex items-center gap-1 text-xs font-bold hover:underline mt-4"
-              >
-                📞 Call Clinic Directly
-              </a>
+
+              {/* CARD 2: Direct Telephone Helpline */}
+              <div className={`p-6 rounded-2xl border shadow-sm transition-all flex flex-col justify-between space-y-4 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200/80'}`}>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary }}
+                      className="w-10 h-10 rounded-xl flex items-center justify-center font-bold"
+                    >
+                      <PhoneCall className="w-5 h-5" />
+                    </div>
+                    <h3 className={`text-base font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>Telephone Helpline</h3>
+                  </div>
+                  <div>
+                    <p className={`font-black text-base ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                      {clinicPhone}
+                    </p>
+                    <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                      Direct clinic line for instant slot confirmation and general inquiries.
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={"tel:" + clinicPhone}
+                  style={{ color: activeTheme.primary }}
+                  className="inline-flex items-center gap-1 text-xs font-bold hover:underline mt-4"
+                >
+                  📞 Call Clinic Directly
+                </a>
+              </div>
+
             </div>
 
           </div>
-
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 6. Refined & Balanced Minimal Footer */}
       <PublicFooter
         clinic={clinic}
         doctor={doctor}
         websiteConfig={websiteConfig}
-        planId={planId}
+        planId={currentTier}
+        specialtyPreset={specialtyPreset}
       />
+
+      {isAdvancedOrHigher && isWhatsappEnabled && clinicPhone && (
+        <a
+          href={`https://wa.me/${clinicPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello Dr. ${cleanDocName}, I want to inquire about clinical consultation.`)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-200 group cursor-pointer"
+        >
+          <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.89-5.451 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.983z"/>
+          </svg>
+          <span className="text-xs font-bold tracking-wide hidden md:inline-block">Chat on WhatsApp</span>
+        </a>
+      )}
 
     </div>
   );

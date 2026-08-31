@@ -7,6 +7,8 @@ import DoctorProfile from "../../../backend/models/DoctorProfile.js";
 import Availability from "../../../backend/models/Availability.js";
 import WebsiteConfig from "../../../backend/models/WebsiteConfig.js";
 import BookingClientWrapper from "../../../frontend/components/booking/BookingClient.js";
+import { getSpecialtyPreset, detectSpecialtyFromText } from "../../../lib/specialtyPresets.js";
+import { getThemeConfig, getButtonShapeClass } from "../../../lib/themeColors.js";
 
 export const dynamic = "force-dynamic";
 
@@ -58,31 +60,33 @@ export default async function DedicatedBookPage(props) {
     $or: [{ clinicId: clinic._id }, ...(clinic.ownerId ? [{ doctorId: clinic.ownerId }] : [])] 
   }).lean();
 
-  // Dynamic Brand Palette Configuration
-  const colorMap = {
-    teal: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
-    teal_cyan: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
-    blue: { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' },
-    emerald: { primary: '#059669', light: '#ECFDF5', border: '#A7F3D0', ring: 'rgba(5,150,105,0.15)' },
-    navy: { primary: '#1E293B', light: '#F1F5F9', border: '#CBD5E1', ring: 'rgba(30,41,59,0.15)' },
-    rose: { primary: '#E11D48', light: '#FFF1F2', border: '#FECDD3', ring: 'rgba(225,29,72,0.15)' },
-    indigo: { primary: '#4F46E5', light: '#EEF2FF', border: '#C7D2FE', ring: 'rgba(79,70,229,0.15)' },
-    gold: { primary: '#D97706', light: '#FFFBEB', border: '#FDE68A', ring: 'rgba(217,119,6,0.15)' }
-  };
+  const detectedSpecialtyKey = doctor?.specialty || detectSpecialtyFromText(`${doctor?.specialization || ''} ${clinic?.name || ''} ${clinic?.category || ''}`);
+  const specialtyPreset = getSpecialtyPreset(detectedSpecialtyKey);
 
-  const activeThemeKey = websiteConfig?.themeColor || doctor?.websiteConfig?.themeColor || 'teal';
-  const defaultTheme = { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' };
-  const theme = colorMap[activeThemeKey] || defaultTheme;
+  const themeColorSource = websiteConfig?.primaryColor || websiteConfig?.themeColor || clinic?.websiteConfig?.themeColor || doctor?.websiteConfig?.themeColor || specialtyPreset?.color || 'teal';
+  
+  let theme;
+  if (themeColorSource.startsWith('#')) {
+    theme = {
+      primary: themeColorSource,
+      light: `${themeColorSource}15`,
+      border: `${themeColorSource}30`,
+      ring: `${themeColorSource}20`
+    };
+  } else {
+    theme = getThemeConfig(themeColorSource);
+  }
 
-  const buttonShape = websiteConfig?.buttonShape || websiteConfig?.buttonStyle || doctor?.websiteConfig?.buttonShape || 'rounded-xl';
+  const buttonShape = websiteConfig?.buttonShape || websiteConfig?.buttonStyle || doctor?.websiteConfig?.buttonShape || 'rounded-2xl';
+  const buttonShapeClass = getButtonShapeClass(buttonShape);
   const cleanDoctorName = `Dr. ${doctor?.fullName?.replace(/^Dr\.?\s*/i, "") || "Doctor"}`;
   const effectiveLogo = websiteConfig?.clinicLogo || clinic?.logo;
 
   return (
-    <div className="min-h-screen w-full bg-[#F8FAFC] text-slate-900 font-sans flex flex-col justify-between p-0 m-0 overflow-x-hidden selection:bg-[#00A1AC] selection:text-white">
+    <div className="h-screen max-h-screen bg-[#F8FAFC] flex flex-col overflow-hidden text-slate-900 font-sans w-full">
       
       {/* Luxury Sticky Top Navbar */}
-      <header className="w-full bg-white/90 backdrop-blur-md border-b border-slate-100 px-6 sm:px-12 lg:px-20 py-3.5 flex items-center justify-between shadow-sm sticky top-0 z-50">
+      <header className="h-14 px-6 border-b border-slate-200 bg-white/90 backdrop-blur-md flex items-center justify-between shrink-0 shadow-sm w-full z-50 sticky top-0">
         <Link 
           href={`/${slug}`} 
           className="flex items-center gap-3 group transition-all"
@@ -110,29 +114,16 @@ export default async function DedicatedBookPage(props) {
 
         <Link 
           href={`/${slug}`} 
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 hover:opacity-80 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Clinic
+          <ArrowLeft className="w-3.5 h-3.5" /> Back
         </Link>
       </header>
 
       {/* Main Dedicated Booking Wizard Container */}
-      <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 my-auto py-10">
-        <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
-          <div 
-            style={{ color: theme.primary, backgroundColor: theme.light, borderColor: theme.border }} 
-            className="px-4 py-1.5 rounded-full text-xs font-bold border inline-flex items-center gap-2 uppercase tracking-wider shadow-2xs"
-          >
-            <ShieldCheck className="w-4 h-4" />
-            <span>CONFIRMED OPD RESERVATION</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900">Select Your Consultation Slot</h2>
-          <p className="text-slate-500 text-xs sm:text-sm font-medium">
-            Direct 1-on-1 consultation with {cleanDoctorName}. Guaranteed zero wait time.
-          </p>
-        </div>
+      <main className="flex-1 max-w-5xl w-full mx-auto p-4 flex flex-col overflow-hidden">
 
-        <div className="bg-white border border-slate-200 rounded-3xl shadow-xl p-4 sm:p-8 overflow-hidden">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl p-4 sm:p-6 lg:p-8 flex-1 flex flex-col min-h-0 overflow-hidden mb-2 mt-2">
           <BookingClientWrapper 
             clinic={JSON.parse(JSON.stringify(clinic))} 
             doctor={JSON.parse(JSON.stringify({ ...doctor, fullName: cleanDoctorName }))} 
@@ -141,15 +132,17 @@ export default async function DedicatedBookPage(props) {
             websiteConfig={JSON.parse(JSON.stringify(websiteConfig || {}))}
             slug={slug} 
             embedded={true}
+            passedTheme={theme}
+            passedButtonShapeClass={buttonShapeClass}
           />
         </div>
       </main>
 
       {/* Clean Luxury Footer */}
-      <footer className="w-full py-5 px-6 sm:px-12 lg:px-20 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2 bg-white">
-        <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Verified Healthcare Provider • Confirmed Slot Reservation</span>
+      <footer className="w-full py-2 px-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between text-[10px] text-slate-500 gap-2 shrink-0 bg-white">
+        <div className="flex items-center gap-1 text-emerald-700 font-bold">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Verified Healthcare Provider</span>
         </div>
         <p className="font-medium">© {new Date().getFullYear()} {clinic.name}. All rights reserved.</p>
       </footer>

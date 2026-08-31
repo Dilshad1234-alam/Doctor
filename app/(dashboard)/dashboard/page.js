@@ -19,6 +19,7 @@ export default function DashboardOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
+  const [currentPlan, setCurrentPlan] = useState("BASIC");
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
@@ -66,6 +67,12 @@ export default function DashboardOverviewPage() {
 
     updateTime();
     const interval = setInterval(updateTime, 30000);
+    
+    if (typeof window !== "undefined") {
+      const localPlan = localStorage.getItem("user_plan");
+      if (localPlan) setCurrentPlan(localPlan.toUpperCase());
+    }
+    
     return () => clearInterval(interval);
   }, []);
 
@@ -85,6 +92,13 @@ export default function DashboardOverviewPage() {
           return;
         }
         setData(json);
+        if (json.subscription?.planId) {
+          const plan = json.subscription.planId.toUpperCase();
+          setCurrentPlan(plan);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("user_plan", plan);
+          }
+        }
       }
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
@@ -153,7 +167,7 @@ export default function DashboardOverviewPage() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-xs font-bold border border-white/30 uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5 text-white" /> Doctor Suite • {currentTime}
+              <Sparkles className="w-3.5 h-3.5 text-white" /> Doctor Suite • {currentTime} • {currentPlan === 'PREMIUM' || currentPlan === 'ENTERPRISE' ? 'VIP' : currentPlan}
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
               Good {greetingTime}, {displayGreeting}
@@ -438,7 +452,7 @@ export default function DashboardOverviewPage() {
             </div>
             <div>
               <h3 className="font-black text-white text-base group-hover:text-teal-200 transition-colors">
-                Subscription & Plan Tier
+                {currentPlan === 'PREMIUM' || currentPlan === 'ENTERPRISE' ? 'Premium VIP (₹1,499)' : currentPlan === 'ADVANCED' || currentPlan === 'PRO' ? 'Advanced Clinic (₹999)' : 'Basic OPD (₹499)'}
               </h3>
               <p className="text-xs text-slate-300 font-medium mt-1 leading-relaxed">
                 Active plan status, quota limits, invoice history, and VIP support desk priority upgrades.

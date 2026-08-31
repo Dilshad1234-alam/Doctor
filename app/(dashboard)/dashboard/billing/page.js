@@ -7,6 +7,7 @@ import {
   Crown, Video, BarChart3, Download, Shield
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PLAN_CONFIG } from "../../../../lib/planLimits.js";
 
 export default function BillingPage() {
@@ -35,6 +36,8 @@ export default function BillingPage() {
     fetchSubscription();
   }, []);
 
+  const router = useRouter();
+
   const handleUpgrade = async (planKey) => {
     setProcessingPayment(true);
     try {
@@ -43,17 +46,24 @@ export default function BillingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           planId: planKey,
+          newPlan: planKey,
           billingCycle: selectedCycle
         })
       });
       const json = await res.json();
       if (json.success) {
         setSub(json.subscription);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("user_plan", planKey.toUpperCase());
+        }
         setPaymentSuccess(true);
         setTimeout(() => {
           setCheckoutModal(null);
           setPaymentSuccess(false);
-        }, 2000);
+          alert(`${planKey.toUpperCase()} Plan Activated Successfully!`);
+          router.push("/dashboard");
+          router.refresh();
+        }, 1000);
       } else {
         alert("Failed to upgrade: " + json.error);
       }

@@ -23,6 +23,16 @@ export default function DashboardLayout({ children }) {
   });
 
   useEffect(() => {
+    // Instant sync from localStorage for zero-latency updates
+    if (typeof window !== "undefined") {
+      const localPlan = localStorage.getItem("user_plan");
+      if (localPlan) {
+        setPlanId(localPlan);
+        setIsPremium(localPlan === "PREMIUM" || localPlan === "ENTERPRISE");
+        setIsAdvanced(localPlan === "ADVANCED" || localPlan === "PRO" || localPlan === "PREMIUM" || localPlan === "ENTERPRISE");
+      }
+    }
+
     const fetchUserAndSub = async () => {
       try {
         const [meRes, subRes] = await Promise.all([
@@ -47,7 +57,12 @@ export default function DashboardLayout({ children }) {
         if (subJson.success) {
           if (subJson.isPremium) setIsPremium(true);
           if (subJson.isAdvanced) setIsAdvanced(true);
-          if (subJson.planId) setPlanId(subJson.planId);
+          if (subJson.planId) {
+            setPlanId(subJson.planId);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("user_plan", subJson.planId);
+            }
+          }
         }
       } catch (e) {
         console.error(e);

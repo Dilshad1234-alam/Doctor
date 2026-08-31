@@ -7,6 +7,7 @@ import WebsiteConfig from "../../../../backend/models/WebsiteConfig";
 import DoctorProfile from "../../../../backend/models/DoctorProfile";
 import Subscription from "../../../../backend/models/Subscription";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 import { getPlanTier } from "../../../../lib/planLimits";
 import { getThemeConfig } from "../../../../lib/themeColors";
@@ -83,9 +84,15 @@ async function handleSaveWebsiteBuilder(req) {
     }
 
     // 4. Feature Gating
-    const finalCustomDomain = tierConfig.features.customDomain ? (customDomain || "") : "";
-    const finalHideBranding = tierConfig.features.whiteLabel ? Boolean(hideBranding) : false;
-    const finalVideoBioUrl = tierConfig.features.videoBio ? (videoBioUrl || "") : "";
+    const features = tierConfig?.features || {
+      customDomain: tierConfig?.allowCustomDomain || false,
+      whiteLabel: tierConfig?.whiteLabel || false,
+      videoBio: tierConfig?.videoBioSupport || false
+    };
+
+    const finalCustomDomain = Boolean(features?.customDomain) ? (customDomain || "") : "";
+    const finalHideBranding = Boolean(features?.whiteLabel) ? Boolean(hideBranding) : false;
+    const finalVideoBioUrl = Boolean(features?.videoBio) ? (videoBioUrl || "") : "";
 
     // 1. Sync & Permanently Save in DoctorProfile model
     await DoctorProfile.findOneAndUpdate(
@@ -126,7 +133,10 @@ async function handleSaveWebsiteBuilder(req) {
       videoBioUrl: finalVideoBioUrl,
       showSections: showSections || { about: true, services: true, timings: true, contact: true },
       isPublished: true,
-      publishedUrl: clinic?.slug ? `/${clinic.slug}` : ""
+      publishedUrl: clinic?.slug ? `/${clinic.slug}` : "",
+      previewMode: body.previewMode || body.websiteConfig?.mockupTheme || "light",
+      enableWhatsappChat: body.websiteConfig?.enableWhatsappChat !== undefined ? body.websiteConfig.enableWhatsappChat : (body.enableWhatsApp !== undefined ? body.enableWhatsApp : true),
+      emergencyDayOff: body.websiteConfig?.emergencyDayOff !== undefined ? body.websiteConfig.emergencyDayOff : (body.enableEmergencyBanner !== undefined ? body.enableEmergencyBanner : false),
     };
 
     const websiteConfig = await WebsiteConfig.findOneAndUpdate(
@@ -138,6 +148,11 @@ async function handleSaveWebsiteBuilder(req) {
     const updatedDoctor = await DoctorProfile.findOne({ 
       $or: [{ userId: userId }, ...(clinic ? [{ clinicId: clinic._id }] : [])] 
     });
+
+    if (clinic?.slug) {
+      revalidatePath(`/${clinic.slug}`);
+      revalidatePath(`/${clinic.slug}/book`);
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -216,6 +231,9 @@ export async function GET(req) {
       if (shouldSave) await websiteConfig.save();
     }
 
+    const services = await dbConnect().then(() => require("../../../../backend/models/Service").default.find({ clinicId: clinic?._id, isActive: true }).lean()).catch(() => []);
+    const availability = await dbConnect().then(() => require("../../../../backend/models/Availability").default.find({ clinicId: clinic?._id }).sort({ dayOfWeek: 1 }).lean()).catch(() => []);
+
     return NextResponse.json({ 
       success: true, 
       clinic, 
@@ -225,7 +243,9 @@ export async function GET(req) {
       customDomain: clinic?.customDomain || "",
       isAdvanced,
       isPremium,
-      subscription 
+      subscription,
+      services,
+      availability
     });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

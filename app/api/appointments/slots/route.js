@@ -75,23 +75,35 @@ export async function GET(req) {
       }
     }
 
-    const startTimeStr = availability.startTime || "09:00";
-    const endTimeStr = availability.endTime || "17:00";
+    const mStartStr = availability.morningStartTime || availability.startTime || "09:00";
+    const mEndStr = availability.morningEndTime || "13:00";
+    const eStartStr = availability.eveningStartTime || "17:00";
+    const eEndStr = availability.eveningEndTime || availability.endTime || "21:00";
 
-    const [startHour, startMin] = startTimeStr.split(":").map(Number);
-    const [endHour, endMin] = endTimeStr.split(":").map(Number);
+    const generateSlotsForShift = (startStr, endStr) => {
+      if (!startStr || !endStr) return [];
+      const [startHour, startMin] = startStr.split(":").map(Number);
+      const [endHour, endMin] = endStr.split(":").map(Number);
+      if (isNaN(startHour) || isNaN(endHour)) return [];
+      
+      let currentMins = startHour * 60 + (startMin || 0);
+      const endMins = endHour * 60 + (endMin || 0);
+      const shiftSlots = [];
+      
+      while (currentMins + durationMins <= endMins) {
+        const h = Math.floor(currentMins / 60);
+        const m = currentMins % 60;
+        shiftSlots.push(formatTo12Hour(h, m));
+        currentMins += durationMins;
+      }
+      return shiftSlots;
+    };
 
-    let currentMins = startHour * 60 + (startMin || 0);
-    const endMins = endHour * 60 + (endMin || 0);
+    const morningGenerated = generateSlotsForShift(mStartStr, mEndStr);
+    const eveningGenerated = generateSlotsForShift(eStartStr, eEndStr);
 
-    const generatedSlots = [];
-    while (currentMins + durationMins <= endMins) {
-      const h = Math.floor(currentMins / 60);
-      const m = currentMins % 60;
-      const formatted12 = formatTo12Hour(h, m);
-      generatedSlots.push(formatted12);
-      currentMins += durationMins;
-    }
+    // Combine and deduplicate
+    const generatedSlots = [...new Set([...morningGenerated, ...eveningGenerated])];
 
     // Fetch confirmed/active appointments for this clinic and date to exclude booked slots
     const startOfDay = new Date(year, month - 1, day, 0, 0, 0, 0);

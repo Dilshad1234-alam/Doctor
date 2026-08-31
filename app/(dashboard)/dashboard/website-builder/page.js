@@ -9,8 +9,13 @@ import {
   Settings2, MapPin, Clock, Shield, Search, CheckCircle, Moon, Sun, Type, Stethoscope
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { THEME_COLOR_MAP, getThemeConfig } from "../../../../lib/themeColors.js";
 import { SPECIALTY_PRESETS, getSpecialtyPreset } from "../../../../lib/specialtyPresets.js";
+import PublicFooter from "../../../../components/public/Footer";
+import MinimalSolo from "../../../../components/public/templates/MinimalSolo";
+import OceanicPro from "../../../../components/public/templates/OceanicPro";
+import CareGrid from "../../../../components/public/templates/CareGrid";
 
 const TEMPLATE_PRESETS = [
   // BASIC TIER (2 Templates unlocked)
@@ -48,6 +53,7 @@ const COLOR_PALETTES = [
 ];
 
 export default function WebsiteBuilderPage() {
+  const router = useRouter();
   const [config, setConfig] = useState({
     templateId: "template-1",
     doctorPhoto: "",
@@ -86,6 +92,7 @@ export default function WebsiteBuilderPage() {
 
   // 3-Plan Live Simulator Mode: 'BASIC' | 'ADVANCED' | 'PREMIUM'
   const [simulatedPlan, setSimulatedPlan] = useState("BASIC");
+  const [activeTopTab, setActiveTopTab] = useState("home");
 
   const syncConfigFromServer = async () => {
     try {
@@ -122,7 +129,9 @@ export default function WebsiteBuilderPage() {
             headline: json.websiteConfig.headline || preset?.headline || "Modern, Painless Dental Care & Precision Smile Aesthetics",
             bio: json.websiteConfig.bio || preset?.description || "State-of-the-art clinical solutions with computerized painless anesthesia and zero wait tokens.",
             hideBranding: prem ? Boolean(json.websiteConfig.hideBranding) : false,
-            videoBioUrl: json.websiteConfig.videoBioUrl || ""
+            videoBioUrl: json.websiteConfig.videoBioUrl || "",
+            enableWhatsApp: json.websiteConfig.enableWhatsappChat !== undefined ? json.websiteConfig.enableWhatsappChat : true,
+            enableEmergencyBanner: json.websiteConfig.emergencyDayOff !== undefined ? json.websiteConfig.emergencyDayOff : false,
           }));
         } else {
           setConfig(prev => ({
@@ -152,20 +161,44 @@ export default function WebsiteBuilderPage() {
   const savePayload = async (payloadToSave) => {
     setSaving(true);
     try {
-      const selectedColor = payloadToSave?.primaryColor || payloadToSave?.themeColor || config.primaryColor || config.themeColor || "#0A8692";
+      const selectedColorHex = payloadToSave?.primaryColor || payloadToSave?.themeColor || config.primaryColor || config.themeColor || "#0A8692";
+      const selectedTheme = payloadToSave?.themeColor || config.themeColor || "teal";
+      const selectedTemplate = isAdvanced ? (payloadToSave?.templateId || config.templateId || "template-1") : "template-1";
+      const selectedButtonStyle = payloadToSave?.buttonStyle !== undefined ? payloadToSave.buttonStyle : (config.buttonStyle || "rounded-2xl");
+      const selectedTypography = payloadToSave?.fontStyle || config.fontStyle || "sans";
+      const selectedMockupTheme = payloadToSave?.previewMode || config.previewMode || "light";
+
+      const enableWhatsappChat = payloadToSave?.enableWhatsApp !== undefined ? payloadToSave.enableWhatsApp : config.enableWhatsApp;
+      const emergencyNoticeActive = payloadToSave?.enableEmergencyBanner !== undefined ? payloadToSave.enableEmergencyBanner : config.enableEmergencyBanner;
+
       const payload = {
         ...config,
         ...payloadToSave,
         customDomain: payloadToSave?.customDomain !== undefined ? payloadToSave.customDomain : customDomain,
-        templateId: isAdvanced ? (payloadToSave?.templateId || config.templateId || "template-1") : "template-1",
+        templateId: selectedTemplate,
         doctorPhoto: payloadToSave?.doctorPhoto !== undefined ? payloadToSave.doctorPhoto : (config.doctorPhoto || ""),
         clinicLogo: payloadToSave?.clinicLogo !== undefined ? payloadToSave.clinicLogo : (config.clinicLogo || ""),
-        themeColor: selectedColor,
-        primaryColor: selectedColor,
-        buttonStyle: payloadToSave?.buttonStyle !== undefined ? payloadToSave.buttonStyle : (config.buttonStyle || "rounded-2xl"),
+        themeColor: selectedTheme,
+        primaryColor: selectedColorHex,
+        buttonStyle: selectedButtonStyle,
         hideBranding: isPremium ? (payloadToSave?.hideBranding !== undefined ? payloadToSave.hideBranding : config.hideBranding) : false,
-        videoBioUrl: payloadToSave?.videoBioUrl !== undefined ? payloadToSave.videoBioUrl : (config.videoBioUrl || "")
+        videoBioUrl: payloadToSave?.videoBioUrl !== undefined ? payloadToSave.videoBioUrl : (config.videoBioUrl || ""),
+        websiteConfig: {
+          themeColor: selectedColorHex,
+          buttonStyle: selectedButtonStyle,
+          typography: selectedTypography,
+          mockupTheme: selectedMockupTheme,
+          template: selectedTemplate,
+          enableWhatsappChat: Boolean(enableWhatsappChat),
+          emergencyDayOff: Boolean(emergencyNoticeActive)
+        }
       };
+
+      // Save to localStorage for immediate client-side sync
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`docpulse_website_config_${slug || 'default'}`, JSON.stringify(payload.websiteConfig));
+        window.dispatchEvent(new Event('storage'));
+      }
 
       const res = await fetch("/api/dashboard/website-builder", {
         method: "PUT",
@@ -177,10 +210,12 @@ export default function WebsiteBuilderPage() {
         setSavedSuccess(true);
         if (json.doctor) setDoctor(json.doctor);
         if (json.clinic) setClinic(json.clinic);
+        router.refresh();
         setTimeout(() => setSavedSuccess(false), 3000);
       }
     } catch (err) {
       console.error(err);
+      alert(err.message || "Failed to publish changes");
     } finally {
       setSaving(false);
     }
@@ -279,14 +314,34 @@ export default function WebsiteBuilderPage() {
   const simIsAdvOrPrem = simIsAdvanced || simIsPremium;
   const isAdvancedOrHigher = isAdvanced || isPremium || simIsAdvOrPrem;
 
-  // Corner style class mapper matching 3 onboarding button styles
-  const cornerRadiusClass = config.buttonShape === "pill" || config.buttonStyle === "rounded-full"
+  // Canvas Enforcement Logic
+  const enforceBasic = !isAdvancedOrHigher;
+  
+  // Enforced config values for the canvas
+  const canvasConfig = {
+    ...config,
+    previewMode: enforceBasic ? 'light' : config.previewMode,
+    fontStyle: enforceBasic ? 'sans' : config.fontStyle,
+    enableWhatsApp: enforceBasic ? false : config.enableWhatsApp,
+    enableMaps: enforceBasic ? false : config.enableMaps,
+  };
+
+  const cornerRadiusClass = canvasConfig.buttonShape === "pill" || canvasConfig.buttonStyle === "rounded-full"
     ? "rounded-full" 
-    : config.buttonShape === "sharp" || config.buttonStyle === "rounded-none"
+    : canvasConfig.buttonShape === "sharp" || canvasConfig.buttonStyle === "rounded-none"
       ? "rounded-none" 
       : "rounded-2xl";
 
-  const fontClass = config.fontStyle === "serif" ? "font-serif" : "font-sans";
+  const fontClass = canvasConfig.fontStyle === "serif" ? "font-serif" : "font-sans";
+  const canvasServices = enforceBasic ? [
+    { title: "Comprehensive Dental Consultation", price: "₹300", desc: "Comprehensive clinical consultation with verified digital prescription.", duration: "20 mins" },
+    { title: "Root Canal Treatment (Single Sitting)", price: "₹2,500", desc: "Specialized endodontic therapy with painless computerized anesthesia.", duration: "45 mins" },
+    { title: "Teeth Cleaning & Ultrasonic Polishing", price: "₹800", desc: "Full mouth deep ultrasonic scaling and stain removal polish.", duration: "30 mins" }
+  ].slice(0, 5) : [
+    { title: "Comprehensive Dental Consultation", price: "₹300", desc: "Comprehensive clinical consultation with verified digital prescription.", duration: "20 mins" },
+    { title: "Root Canal Treatment (Single Sitting)", price: "₹2,500", desc: "Specialized endodontic therapy with painless computerized anesthesia.", duration: "45 mins" },
+    { title: "Teeth Cleaning & Ultrasonic Polishing", price: "₹800", desc: "Full mouth deep ultrasonic scaling and stain removal polish.", duration: "30 mins" }
+  ];
 
   return (
     <div className="h-[calc(100vh-65px)] flex flex-col justify-between overflow-hidden p-4 sm:p-5 bg-[#F8FAFC] font-sans text-[#0f172a]">
@@ -323,7 +378,7 @@ export default function WebsiteBuilderPage() {
         {/* Center: Active Plan Badge */}
         <div className="flex items-center gap-1.5 px-3 py-1 bg-white rounded-xl border border-slate-200 shadow-2xs shrink-0 self-start md:self-auto text-xs font-black text-slate-800">
           <span className="w-2 h-2 rounded-full bg-[#00A1AC]"></span>
-          <span>Basic OPD (₹499)</span>
+          <span>{planId === 'PREMIUM' || planId === 'ENTERPRISE' ? 'Premium VIP (₹1,499)' : planId === 'ADVANCED' || planId === 'PRO' ? 'Advanced Clinic (₹999)' : 'Basic OPD (₹499)'}</span>
         </div>
 
         {/* Right: Slug Chip + Publish Button */}
@@ -476,14 +531,17 @@ export default function WebsiteBuilderPage() {
                   </div>
                 </div>
 
-                {/* 2. Button Style (3 Onboarding Options) */}
+                {/* 2. Button Style (6 Options: 3 Basic, 3 Advanced) */}
                 <div className="space-y-2 pt-2 border-t border-slate-100">
                   <span className="font-bold text-slate-700 text-[11px]">Button Style</span>
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { id: "pill", label: "Pill (Full)", shapeClass: "rounded-full" },
                       { id: "soft", label: "Soft (XL)", shapeClass: "rounded-2xl" },
-                      { id: "sharp", label: "Sharp", shapeClass: "rounded-none" }
+                      { id: "sharp", label: "Sharp", shapeClass: "rounded-none" },
+                      { id: "block", label: "Block (Md)", shapeClass: "rounded-md", tier: "ADVANCED" },
+                      { id: "slight", label: "Slight (Sm)", shapeClass: "rounded-sm", tier: "ADVANCED" },
+                      { id: "circle", label: "Circle", shapeClass: "rounded-3xl", tier: "ADVANCED" }
                     ].map(s => {
                       const isSelected = 
                         config.buttonShape === s.id || 
@@ -491,19 +549,28 @@ export default function WebsiteBuilderPage() {
                         (s.id === "pill" && (config.buttonShape === "pill" || config.buttonStyle === "rounded-full")) ||
                         (s.id === "soft" && (config.buttonShape === "soft" || config.buttonShape === "curved" || config.buttonStyle === "rounded-2xl" || config.buttonStyle === "rounded-xl")) ||
                         (s.id === "sharp" && (config.buttonShape === "sharp" || config.buttonStyle === "rounded-none" || config.buttonStyle === "rounded-sm"));
+                      
+                      const isLocked = s.tier === "ADVANCED" && !isAdvancedOrHigher;
+                      
                       return (
                         <button
                           key={s.id}
                           type="button"
                           onClick={() => {
+                            if (isLocked) {
+                              promptUpgrade(`${s.label} button style requires an Advanced Plan.`);
+                              return;
+                            }
                             updateConfig("buttonShape", s.id);
                             updateConfig("buttonStyle", s.shapeClass);
                             savePayload({ buttonShape: s.id, buttonStyle: s.shapeClass });
                           }}
-                          className={`py-2 px-2 text-xs font-bold border transition-all cursor-pointer flex items-center justify-center ${s.shapeClass} ${
+                          className={`py-2 px-2 text-xs font-bold border transition-all flex items-center justify-center relative ${s.shapeClass} ${
                             isSelected
                               ? "shadow-xs font-black ring-1"
-                              : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                              : isLocked
+                                ? "bg-slate-50/50 text-slate-400 border-slate-200 cursor-pointer hover:border-amber-300"
+                                : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 cursor-pointer"
                           }`}
                           style={isSelected ? { 
                             borderColor: activeTheme.primary, 
@@ -513,6 +580,7 @@ export default function WebsiteBuilderPage() {
                           } : {}}
                         >
                           {s.label}
+                          {isLocked && <span className="absolute -top-1.5 -right-1.5 text-[8px] flex items-center justify-center w-3.5 h-3.5 bg-amber-100 text-amber-700 rounded-full border border-amber-200 shadow-xs">🔒</span>}
                         </button>
                       );
                     })}
@@ -693,42 +761,23 @@ export default function WebsiteBuilderPage() {
                 <div className="pt-1 border-t border-slate-100 space-y-1.5">
                   <div className="grid grid-cols-2 gap-2">
                     {/* Header 1: Doctor Photo */}
-                    <div 
-                      onClick={() => {
-                        if (!isAdvancedOrHigher) {
-                          promptUpgrade("Custom doctor photo & high-res clinic logo unlock in Advanced Plan (₹999).");
-                        }
-                      }}
-                      className={`p-2 rounded-xl border space-y-1.5 transition-all ${
-                        !isAdvancedOrHigher 
-                          ? "bg-slate-50/80 border-slate-200 cursor-pointer hover:border-amber-300" 
-                          : "bg-slate-50 border-slate-200"
-                      }`}
-                    >
+                    <div className="p-2 rounded-xl border space-y-1.5 transition-all bg-slate-50 border-slate-200">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-[10px] text-slate-700">Doctor Photo</span>
-                        {!isAdvancedOrHigher && (
-                          <span className="ml-2 text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                            🔒 Advanced
-                          </span>
-                        )}
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
-                          {isAdvancedOrHigher && config.doctorPhoto ? (
+                          {config.doctorPhoto ? (
                             <img src={config.doctorPhoto} alt="Doc" className="w-full h-full object-cover" />
                           ) : (
                             <User className="w-4 h-4 text-slate-300" />
                           )}
                         </div>
-                        <label className={`p-1.5 bg-white border border-slate-200 rounded-lg shadow-2xs ${
-                          !isAdvancedOrHigher ? "opacity-50 pointer-events-none" : "cursor-pointer hover:bg-slate-50"
-                        }`}>
+                        <label className="p-1.5 bg-white border border-slate-200 rounded-lg shadow-2xs cursor-pointer hover:bg-slate-50">
                           <Upload className="w-3 h-3 text-[#0A8692]" />
                           <input 
                             type="file" 
                             accept="image/*" 
-                            disabled={!isAdvancedOrHigher}
                             className="hidden" 
                             onChange={(e) => handleFileUpload(e, "doctorPhoto")} 
                           />
@@ -737,42 +786,23 @@ export default function WebsiteBuilderPage() {
                     </div>
 
                     {/* Header 2: Clinic Logo */}
-                    <div 
-                      onClick={() => {
-                        if (!isAdvancedOrHigher) {
-                          promptUpgrade("Custom doctor photo & high-res clinic logo unlock in Advanced Plan (₹999).");
-                        }
-                      }}
-                      className={`p-2 rounded-xl border space-y-1.5 transition-all ${
-                        !isAdvancedOrHigher 
-                          ? "bg-slate-50/80 border-slate-200 cursor-pointer hover:border-amber-300" 
-                          : "bg-slate-50 border-slate-200"
-                      }`}
-                    >
+                    <div className="p-2 rounded-xl border space-y-1.5 transition-all bg-slate-50 border-slate-200">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-[10px] text-slate-700">Clinic Logo</span>
-                        {!isAdvancedOrHigher && (
-                          <span className="ml-2 text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                            🔒 Advanced
-                          </span>
-                        )}
                       </div>
                       <div className="flex items-center gap-1.5">
                         <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 overflow-hidden flex items-center justify-center shrink-0 p-0.5">
-                          {isAdvancedOrHigher && config.clinicLogo ? (
+                          {config.clinicLogo ? (
                             <img src={config.clinicLogo} alt="Logo" className="w-full h-full object-contain" />
                           ) : (
                             <Building className="w-4 h-4 text-slate-300" />
                           )}
                         </div>
-                        <label className={`p-1.5 bg-white border border-slate-200 rounded-lg shadow-2xs ${
-                          !isAdvancedOrHigher ? "opacity-50 pointer-events-none" : "cursor-pointer hover:bg-slate-50"
-                        }`}>
+                        <label className="p-1.5 bg-white border border-slate-200 rounded-lg shadow-2xs cursor-pointer hover:bg-slate-50">
                           <Upload className="w-3 h-3 text-[#0A8692]" />
                           <input 
                             type="file" 
                             accept="image/*" 
-                            disabled={!isAdvancedOrHigher}
                             className="hidden" 
                             onChange={(e) => handleFileUpload(e, "clinicLogo")} 
                           />
@@ -780,12 +810,6 @@ export default function WebsiteBuilderPage() {
                       </div>
                     </div>
                   </div>
-
-                  {!isAdvancedOrHigher && (
-                    <p className="text-[9px] text-slate-500 italic bg-amber-50/60 p-2 rounded-lg border border-amber-200/50">
-                      Standard Stethoscope branding active. Custom doctor photo &amp; high-res clinic logo unlock in Advanced Plan (₹999).
-                    </p>
-                  )}
                 </div>
 
                 {/* Video Consultation Embed */}
@@ -884,15 +908,15 @@ export default function WebsiteBuilderPage() {
                   </label>
                 </div>
 
-                {/* 3. Google Maps Direct Nav (Locked for Basic & Advanced / Unlocked for Premium) */}
+                {/* 3. Google Maps Direct Nav (Locked for Basic / Unlocked for Advanced & Premium) */}
                 <div 
                   onClick={() => {
-                    if (!isPremium && !simIsPremium) {
-                      promptUpgrade("Direct Google Maps Navigation is unlocked in the Premium VIP Plan (₹1,499).");
+                    if (!isAdvancedOrHigher) {
+                      promptUpgrade("Direct Google Maps Navigation is unlocked in the Advanced & Premium Plans.");
                     }
                   }}
                   className={`p-3 rounded-xl border flex items-center justify-between shadow-2xs transition-all ${
-                    !isPremium && !simIsPremium ? "bg-slate-50/80 border-slate-200 cursor-pointer hover:border-purple-300" : "bg-slate-50 border-slate-200"
+                    !isAdvancedOrHigher ? "bg-slate-50/80 border-slate-200 cursor-pointer hover:border-[#00A1AC]" : "bg-slate-50 border-slate-200"
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -902,20 +926,20 @@ export default function WebsiteBuilderPage() {
                     <div>
                       <div className="flex items-center">
                         <span className="font-bold text-xs text-slate-900">Direct Google Maps Navigation</span>
-                        {!isPremium && !simIsPremium && (
-                          <span className="ml-2 text-[9px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">
-                            🔒 Premium
+                        {!isAdvancedOrHigher && (
+                          <span className="ml-2 text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                            🔒 Advanced
                           </span>
                         )}
                       </div>
                       <div className="text-[10px] text-slate-500">1-click directions on contact card</div>
                     </div>
                   </div>
-                  <label className={`relative inline-flex items-center ${!isPremium && !simIsPremium ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}>
+                  <label className={`relative inline-flex items-center ${!isAdvancedOrHigher ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}>
                     <input
                       type="checkbox"
-                      disabled={!isPremium && !simIsPremium}
-                      checked={(isPremium || simIsPremium) && config.enableMaps}
+                      disabled={!isAdvancedOrHigher}
+                      checked={isAdvancedOrHigher && config.enableMaps}
                       onChange={(e) => {
                         updateConfig("enableMaps", e.target.checked);
                         savePayload({ enableMaps: e.target.checked });
@@ -1043,11 +1067,17 @@ export default function WebsiteBuilderPage() {
           </div>
 
           {/* Mockup Screen Viewport (Scrollable inside container) */}
-          <div className={`flex-1 rounded-xl border border-slate-800/80 overflow-y-auto flex flex-col justify-between shadow-inner min-h-0 text-xs transition-colors ${
+          <div className={`flex-1 w-full overflow-y-auto max-h-[620px] scrollbar-thin scrollbar-thumb-slate-400/40 rounded-xl border border-slate-800/80 shadow-inner min-h-0 text-xs transition-colors ${
             config.previewMode === "dark" ? "bg-[#070F14] text-slate-100" : "bg-white text-slate-900"
           } ${fontClass}`}>
             
             <div>
+              {config.enableEmergencyBanner && (
+                <div className="bg-amber-500 text-slate-950 px-4 py-2 text-center text-[9px] font-bold flex items-center justify-center gap-2 shadow-xs w-full">
+                  <span>⚠️ Urgent Clinic Notice:</span>
+                  <span>OPD is temporarily paused for emergency maintenance today. Online bookings are on hold.</span>
+                </div>
+              )}
               {/* 1. Mini Mockup Navbar (Top Sticky) */}
               <div className={`px-5 py-3 border-b flex items-center justify-between sticky top-0 z-10 transition-colors ${
                 config.previewMode === "dark" ? "bg-[#070F14]/95 border-slate-800" : "bg-white/95 border-slate-100"
@@ -1069,7 +1099,7 @@ export default function WebsiteBuilderPage() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <div className="text-xs font-black text-slate-900 truncate">
+                    <div className={`text-xs font-black truncate ${config.previewMode === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
                       {clinic?.name || doctor?.clinicName || "Alam Dental Clinic"}
                     </div>
                     <div className="text-[9px] text-slate-500 font-medium truncate">
@@ -1080,10 +1110,10 @@ export default function WebsiteBuilderPage() {
 
                 {/* Center: Clean links */}
                 <div className="hidden sm:flex items-center gap-3.5 text-[10px] font-semibold text-slate-500">
-                  <span className="cursor-pointer hover:text-slate-900">Home</span>
-                  <span className="cursor-pointer hover:text-slate-900">Services &amp; Fees</span>
-                  <span className="cursor-pointer hover:text-slate-900">OPD Timings</span>
-                  <span className="cursor-pointer hover:text-slate-900">Contact</span>
+                  <span className={`cursor-pointer ${canvasConfig.previewMode === 'dark' ? 'hover:text-slate-300' : 'hover:text-slate-900'}`}>Home</span>
+                  <span className={`cursor-pointer ${canvasConfig.previewMode === 'dark' ? 'hover:text-slate-300' : 'hover:text-slate-900'}`}>About</span>
+                  <span className={`cursor-pointer ${canvasConfig.previewMode === 'dark' ? 'hover:text-slate-300' : 'hover:text-slate-900'}`}>Services &amp; Fees</span>
+                  <span className={`cursor-pointer ${canvasConfig.previewMode === 'dark' ? 'hover:text-slate-300' : 'hover:text-slate-900'}`}>OPD Timings</span>
                 </div>
                 
                 {/* Right: Compact button */}
@@ -1096,115 +1126,37 @@ export default function WebsiteBuilderPage() {
                 </button>
               </div>
 
-              {/* 2. Balanced Hero Section (Middle Viewport) */}
-              <div className="px-6 py-5 grid grid-cols-12 gap-5 items-center">
+              {(() => {
+                const templateProps = {
+                  clinic: clinic || { name: doctor?.clinicName || "Alam Dental Clinic" },
+                  doctor: doctor || { fullName: doctorName, specialty: doctorSpecialty },
+                  websiteConfig: canvasConfig,
+                  currentTier: isAdvancedOrHigher ? 'ADVANCED' : 'BASIC',
+                  tier: { navbarType: 'basic' },
+                  slug: slug,
+                  activeTheme: activeTheme,
+                  buttonShapeClass: cornerRadiusClass,
+                  isDarkMode: canvasConfig.previewMode === 'dark',
+                  containerClass: "",
+                  specialtyPreset: getSpecialtyPreset(doctorSpecialty),
+                  compact: true
+                };
                 
-                {/* LEFT CONTENT (col-span-7 flex flex-col gap-2.5) */}
-                <div className="col-span-12 md:col-span-7 flex flex-col gap-2.5">
-                  {/* Tag Row */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span 
-                      style={{ 
-                        color: activeTheme.primary, 
-                        backgroundColor: `${activeTheme.primary}15`, 
-                        borderColor: `${activeTheme.primary}30` 
-                      }} 
-                      className="px-2 py-0.5 rounded-full text-[9px] font-bold border"
-                    >
-                      ✨ {doctorSpecialty.toUpperCase()}
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">
-                      BDS, MDS
-                    </span>
-                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">
-                      🩺 5+ Yrs
-                    </span>
-                  </div>
-
-                  {/* Bold Headline */}
-                  <h1 className="text-base font-black text-slate-900 leading-tight">
-                    {config.headline || "Modern, Painless Dental Care & Precision Smile Aesthetics"}
-                  </h1>
-
-                  {/* Subtext */}
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    {config.bio || "Dedicated to providing gentle, painless dental care and complete oral health rehabilitation."}
-                  </p>
-
-                  {/* 4 Trust Pills (2x2 Compact Grid) */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {[
-                      "✓ 100% Autoclave Sterilized",
-                      "✓ Painless Anesthesia",
-                      "✓ Digital RVG X-Ray",
-                      "✓ Zero Wait Token"
-                    ].map((badge, idx) => (
-                      <div 
-                        key={idx} 
-                        className="bg-slate-50/80 border border-slate-200/60 px-2.5 py-1 rounded-lg text-[9px] font-bold text-slate-700 flex items-center gap-1 shadow-2xs"
-                      >
-                        <span>{badge}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Action Buttons Row */}
-                  <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                    <button 
-                      type="button"
-                      style={{ backgroundColor: activeTheme.primary }} 
-                      className={`px-3.5 py-1.5 text-white font-bold text-[10px] ${cornerRadiusClass} shadow-sm flex items-center gap-1 transition-all hover:scale-105 active:scale-95 cursor-pointer`}
-                    >
-                      📅 Book Confirmed OPD Slot →
-                    </button>
-                    <button 
-                      type="button"
-                      className={`px-2.5 py-1.5 bg-white border border-slate-200 text-slate-700 font-bold text-[10px] ${cornerRadiusClass} shadow-xs transition-all hover:bg-slate-50 cursor-pointer`}
-                    >
-                      📞 Call Clinic
-                    </button>
-                  </div>
-                </div>
-
-                {/* RIGHT CARD (col-span-5 flex justify-center) */}
-                <div className="col-span-12 md:col-span-5 flex justify-center">
-                  <div className="w-48 bg-white rounded-2xl border border-slate-100 shadow-lg p-3 text-center">
-                    {/* Doctor Photo or Avatar Block */}
-                    {isAdvancedOrHigher && config.doctorPhoto ? (
-                      <div className="h-32 rounded-xl overflow-hidden shadow-inner border border-slate-100">
-                        <img src={config.doctorPhoto} alt={doctorName} className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div 
-                        className="h-32 rounded-xl flex flex-col items-center justify-center text-white p-2 shadow-inner transition-all duration-300"
-                        style={{ 
-                          background: `linear-gradient(135deg, ${activeTheme.primary}, #044E54)` 
-                        }}
-                      >
-                        <Stethoscope className="w-6 h-6 mb-1 text-white" />
-                        <div className="font-black text-xs tracking-tight">{doctorName}</div>
-                        <div className="text-[9px] text-teal-100 font-medium mt-0.5">{doctorSpecialty}</div>
-                      </div>
-                    )}
-
-                    {/* Doctor Meta */}
-                    <div className="mt-2 space-y-0.5">
-                      <div className="font-bold text-[11px] text-slate-900">{doctorName}</div>
-                      <div className="text-[9px] font-semibold" style={{ color: activeTheme.primary }}>
-                        {doctorSpecialty}
-                      </div>
-                      <div className="text-[8px] text-slate-400 mt-0.5 truncate max-w-[170px] mx-auto">
-                        {clinic?.name || doctor?.clinicName || "Alam Dental Clinic"} • {clinic?.address || doctor?.address || "Sultanganj, Patna"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
+                switch (canvasConfig.templateId) {
+                  case 'oceanic-pro':
+                    return <OceanicPro {...templateProps} />;
+                  case 'care-grid':
+                    return <CareGrid {...templateProps} />;
+                  case 'minimal-solo':
+                  case 'clean-clinic':
+                  default:
+                    return <MinimalSolo {...templateProps} />;
+                }
+              })()}
 
               {/* 3. Clinical Consultation & Treatments Catalog Section */}
               <div className={`py-3.5 px-4 border-t transition-colors ${
-                config.previewMode === "dark" ? "border-slate-800 bg-[#0a1219]" : "border-slate-100 bg-slate-50/40"
+                canvasConfig.previewMode === "dark" ? "border-slate-800 bg-[#0a1219]" : "border-slate-100 bg-slate-50/40"
               }`}>
                 {/* Center Header Block */}
                 <div className="text-center max-w-sm mx-auto">
@@ -1218,7 +1170,7 @@ export default function WebsiteBuilderPage() {
                   >
                     SERVICES &amp; RATE CATALOG
                   </span>
-                  <h2 className="text-sm font-black text-slate-900 mt-1 tracking-tight">
+                  <h2 className={`text-sm font-black mt-1 tracking-tight ${canvasConfig.previewMode === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
                     Clinical Consultation &amp; Treatments
                   </h2>
                   <p className="text-[9px] text-slate-500 mt-0.5">
@@ -1226,39 +1178,20 @@ export default function WebsiteBuilderPage() {
                   </p>
                 </div>
 
-                {/* Dynamic 3-Card Services Grid */}
+                {/* Dynamic Services Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3">
-                  {[
-                    {
-                      title: "Comprehensive Dental Consultation",
-                      price: "₹300",
-                      desc: "Comprehensive clinical consultation with verified digital prescription.",
-                      duration: "20 mins"
-                    },
-                    {
-                      title: "Root Canal Treatment (Single Sitting)",
-                      price: "₹2,500",
-                      desc: "Specialized endodontic therapy with painless computerized anesthesia.",
-                      duration: "45 mins"
-                    },
-                    {
-                      title: "Teeth Cleaning & Ultrasonic Polishing",
-                      price: "₹800",
-                      desc: "Full mouth deep ultrasonic scaling and stain removal polish.",
-                      duration: "30 mins"
-                    }
-                  ].map((srv, idx) => (
+                  {canvasServices.map((srv, idx) => (
                     <div 
                       key={idx}
                       className={`p-2.5 rounded-xl border transition-all shadow-2xs hover:shadow-xs flex flex-col justify-between ${
-                        config.previewMode === "dark" 
+                        canvasConfig.previewMode === "dark" 
                           ? "bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-200" 
                           : "bg-white border-slate-200/80 hover:border-slate-300 text-slate-800"
                       }`}
                     >
                       <div>
                         <div className="flex items-start justify-between gap-1.5 mb-1">
-                          <h3 className="font-bold text-[10px] text-slate-900 leading-tight">
+                          <h3 className={`font-bold text-[10px] leading-tight ${canvasConfig.previewMode === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
                             {srv.title}
                           </h3>
                           <span 
@@ -1294,37 +1227,135 @@ export default function WebsiteBuilderPage() {
               </div>
             </div>
 
-            {/* 4. Fully Integrated Clinic Footer (Bottom of Viewport) */}
-            <div className={`w-full border-t py-3 px-5 mt-4 transition-colors ${
-              config.previewMode === "dark" ? "bg-slate-900/90 border-slate-800" : "bg-slate-50/70 border-slate-200/80"
+            {/* OPD Schedule Section */}
+            <div className={`py-4 px-5 border-t transition-colors ${
+              canvasConfig.previewMode === "dark" ? "border-slate-800 bg-slate-900" : "border-slate-100 bg-slate-50/80"
             }`}>
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[9px]">
-                {/* Left: Clinic, Doctor, Address, Tel */}
-                <div className="text-left text-slate-600">
-                  <span className="font-bold text-slate-800">{clinicTitle}</span>
-                  <span className="mx-1 text-slate-300">•</span>
-                  <span>{doctorName}</span>
-                  <span className="text-slate-500"> ({clinic?.address || doctor?.address || "Sultanganj, Patna"} • Tel: {doctor?.phone || clinic?.phone || "1234567898"})</span>
-                </div>
-
-                {/* Right: Copyright & Attribution */}
-                <div className="text-right flex items-center gap-2 shrink-0">
-                  <span className="text-slate-400">
-                    © {new Date().getFullYear()} {clinicTitle}
-                  </span>
-                  <span className="text-slate-300">•</span>
-                  {simIsPremium || config.hideBranding ? (
-                    <span className="text-[8px] text-emerald-600 font-bold flex items-center gap-0.5">
-                      <ShieldCheck className="w-2.5 h-2.5" /> 100% White-Label
-                    </span>
-                  ) : (
-                    <div className="text-[8px] text-slate-400">
-                      Powered by <span className="font-semibold text-slate-600">DocPulse CRM</span>
+              <div className="text-center max-w-sm mx-auto mb-4">
+                <span style={{ color: activeTheme.primary, backgroundColor: `${activeTheme.primary}15`, borderColor: `${activeTheme.primary}30` }} className="text-[9px] font-bold px-2 py-0.5 rounded-full border inline-block uppercase tracking-wider">
+                  Doctor Shift Timings
+                </span>
+                <h2 className={`text-sm font-black mt-1 tracking-tight ${canvasConfig.previewMode === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                  Weekly OPD Schedule
+                </h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Left CTA Card */}
+                <div style={{ background: `linear-gradient(135deg, ${activeTheme.primary}, #0f172a)` }} className={`rounded-xl p-4 shadow-lg text-white flex flex-col justify-between`}>
+                  <div>
+                    <h3 className="text-sm font-black">{clinicTitle}</h3>
+                    <p className="text-[9px] text-white/80 mt-1">Walk-in & Online Slots Available</p>
+                    <div className="bg-white/10 border border-white/20 rounded-lg p-2 mt-3">
+                      <div className="text-[10px] font-black">✨ Instant Digital Token</div>
                     </div>
-                  )}
+                  </div>
+                  <button type="button" className={`w-full py-2 mt-4 bg-white text-slate-900 text-[10px] font-bold ${cornerRadiusClass} shadow-md`} style={{ color: activeTheme.primary }}>
+                    Schedule Consultation →
+                  </button>
+                </div>
+                
+                {/* Right Timing Table */}
+                <div className={`rounded-xl border p-3 shadow-sm ${canvasConfig.previewMode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                  <div className="flex justify-between border-b border-slate-100/50 pb-2 mb-2 text-[8px] font-black uppercase text-slate-400">
+                    <span>Day</span>
+                    <div className="flex gap-4">
+                      <span className="text-amber-500">Morning</span>
+                      <span className="text-indigo-500">Evening</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-[9px]">
+                    {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((day, i) => (
+                      <div key={day} className={`flex justify-between ${i===0 ? 'font-bold' : ''}`} style={i===0 ? {color: activeTheme.primary} : {}}>
+                        <span>{day} {i===0 && '(TODAY)'}</span>
+                        <div className={`flex gap-4 opacity-90 ${canvasConfig.previewMode === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                          <span className="w-16 text-center">10:00 - 14:00</span>
+                          <span className="w-16 text-center">17:00 - 20:00</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Contact Section */}
+            <div className={`py-4 px-5 border-t transition-colors ${
+              canvasConfig.previewMode === "dark" ? "border-slate-800 bg-[#0a1219]" : "border-slate-100 bg-white"
+            }`}>
+              <div className="text-center max-w-sm mx-auto mb-4">
+                <span style={{ color: activeTheme.primary, backgroundColor: `${activeTheme.primary}15`, borderColor: `${activeTheme.primary}30` }} className="text-[9px] font-bold px-2 py-0.5 rounded-full border inline-block uppercase tracking-wider">
+                  Contact & Location
+                </span>
+                <h2 className={`text-sm font-black mt-1 tracking-tight ${canvasConfig.previewMode === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>
+                  Visit or Connect
+                </h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Address & Navigation */}
+                <div className={`p-3 rounded-xl border flex flex-col justify-between ${canvasConfig.previewMode === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                  <div>
+                    <h3 className={`text-[10px] font-black ${canvasConfig.previewMode === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>Clinic Address</h3>
+                    <p className={`text-[9px] mt-1 leading-snug ${canvasConfig.previewMode === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>{clinic?.address || doctor?.address || "Sultanganj, Patna"}</p>
+                  </div>
+                  <span className="text-[9px] font-bold inline-flex items-center gap-1 mt-3" style={{ color: activeTheme.primary }}>
+                    Get Directions ↗
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-2">
+                  <div className={`p-2 rounded-xl border flex justify-between items-center ${canvasConfig.previewMode === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+                    <div>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase">Reception Line</span>
+                      <p className={`text-[10px] font-black ${canvasConfig.previewMode === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{doctor?.phone || clinic?.phone || "1234567898"}</p>
+                    </div>
+                    <span style={{ color: activeTheme.primary }}>📞</span>
+                  </div>
+                  <div className={`p-2 rounded-xl border flex justify-between items-center ${canvasConfig.previewMode === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-[#25D366]/5 border-[#25D366]/20'}`}>
+                    <div>
+                      <span className="text-[8px] font-bold text-slate-400 uppercase">WhatsApp OPD</span>
+                      <p className={`text-[10px] font-black ${canvasConfig.previewMode === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>Direct Desk</p>
+                    </div>
+                    <span className="text-[#25D366]">💬</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Advanced Maps view visual */}
+              {isAdvancedOrHigher && canvasConfig.enableMaps && (
+                <div className={`mt-3 h-24 rounded-xl border flex items-center justify-center overflow-hidden ${canvasConfig.previewMode === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                  <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1">📍 Google Maps View (Simulated)</span>
+                </div>
+              )}
+            </div>
+
+            {/* 4. Fully Integrated Clinic Footer (Bottom of Viewport) */}
+            <div className={`w-full mt-4 transition-colors ${
+              canvasConfig.previewMode === "dark" ? "bg-slate-900/90" : "bg-slate-50/70"
+            }`}>
+              <PublicFooter 
+                clinic={clinic} 
+                doctor={{
+                  ...doctor,
+                  name: doctorName,
+                  fullName: doctorName,
+                  clinicName: clinicTitle,
+                  phone: doctor?.phone || clinic?.phone || "1234567898",
+                  address: doctor?.address || clinic?.address || "Sultanganj",
+                  city: doctor?.city || clinic?.city || "Patna"
+                }} 
+                websiteConfig={{
+                  ...config,
+                  primaryColor: activeTheme.primary
+                }} 
+                planId={simulatedPlan}
+                specialtyPreset={currentPreset}
+                compact={true}
+              />
+            </div>
+
+
 
           </div>
 
