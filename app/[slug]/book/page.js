@@ -6,6 +6,7 @@ import Service from "../../../backend/models/Service.js";
 import DoctorProfile from "../../../backend/models/DoctorProfile.js";
 import Availability from "../../../backend/models/Availability.js";
 import WebsiteConfig from "../../../backend/models/WebsiteConfig.js";
+import Appointment from "../../../backend/models/Appointment.js";
 import BookingClientWrapper from "../../../frontend/components/booking/BookingClient.js";
 import { getSpecialtyPreset, detectSpecialtyFromText } from "../../../lib/specialtyPresets.js";
 import { getThemeConfig, getButtonShapeClass } from "../../../lib/themeColors.js";
@@ -63,6 +64,16 @@ export default async function DedicatedBookPage(props) {
   const detectedSpecialtyKey = doctor?.specialty || detectSpecialtyFromText(`${doctor?.specialization || ''} ${clinic?.name || ''} ${clinic?.category || ''}`);
   const specialtyPreset = getSpecialtyPreset(detectedSpecialtyKey);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayBookedCount = await Appointment.countDocuments({
+    clinicId: clinic._id,
+    date: todayStr
+  });
+  
+  const enableDailyLimit = doctor?.enableDailyLimit || false;
+  const dailyPatientLimit = doctor?.dailyPatientLimit || 30;
+  const isQuotaFull = enableDailyLimit && todayBookedCount >= dailyPatientLimit;
+
   const themeColorSource = websiteConfig?.primaryColor || websiteConfig?.themeColor || clinic?.websiteConfig?.themeColor || doctor?.websiteConfig?.themeColor || specialtyPreset?.color || 'teal';
   
   let theme;
@@ -79,45 +90,69 @@ export default async function DedicatedBookPage(props) {
 
   const buttonShape = websiteConfig?.buttonShape || websiteConfig?.buttonStyle || doctor?.websiteConfig?.buttonShape || 'rounded-2xl';
   const buttonShapeClass = getButtonShapeClass(buttonShape);
-  const cleanDoctorName = `Dr. ${doctor?.fullName?.replace(/^Dr\.?\s*/i, "") || "Doctor"}`;
+  const rawDocName = doctor?.fullName || doctor?.name || "Alam";
+  const cleanDoctorName = rawDocName.replace(/^Dr\.?\s*/i, "");
+  const clinicTitle = doctor?.clinicName || clinic?.name || "Alam Dental Clinic";
+  const specialization = doctor?.specialization || doctor?.specialty || "Dentist & Oral Surgeon";
   const effectiveLogo = websiteConfig?.clinicLogo || clinic?.logo;
+  
+  // Checking tier for verified badge to match public navbar
+  // Usually this is available via subscription, but for the booking page we can just show the badge if it's there or just use the primary theme color badge.
+  const isVerified = true;
 
   return (
     <div className="h-screen max-h-screen bg-[#F8FAFC] flex flex-col overflow-hidden text-slate-900 font-sans w-full">
       
-      {/* Luxury Sticky Top Navbar */}
-      <header className="h-14 px-6 border-b border-slate-200 bg-white/90 backdrop-blur-md flex items-center justify-between shrink-0 shadow-sm w-full z-50 sticky top-0">
-        <Link 
-          href={`/${slug}`} 
-          className="flex items-center gap-3 group transition-all"
-        >
-          {effectiveLogo ? (
-            <img src={effectiveLogo} alt="Logo" className="w-10 h-10 rounded-2xl object-contain p-1 border border-slate-200 bg-white shadow-sm group-hover:scale-105 transition-transform" />
-          ) : (
-            <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-base shadow-sm group-hover:scale-105 transition-transform"
-              style={{ backgroundColor: theme.primary }}
-            >
-              {clinic.name.charAt(0)}
-            </div>
-          )}
-          <div>
-            <h1 className="text-slate-900 font-black text-base sm:text-lg tracking-tight leading-tight group-hover:opacity-80 transition-colors">
-              {clinic.name}
-            </h1>
-            <p style={{ color: theme.primary }} className="text-xs font-bold flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              {cleanDoctorName} • Confirmed OPD Booking
-            </p>
+      {/* Luxury Sticky Top Navbar (Matching PublicNavbar) */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-900 shadow-xs w-full px-4 sm:px-8 lg:px-12">
+        <div className="w-full flex items-center justify-between h-20 gap-4">
+          
+          {/* Left Side: Logo & Clinic Info */}
+          <div className="flex items-center justify-start flex-1 min-w-0">
+            <Link href={`/${slug}`} className="flex items-center gap-3 group shrink-0">
+              {effectiveLogo ? (
+                <img 
+                  src={effectiveLogo} 
+                  alt={clinicTitle} 
+                  className="h-11 w-11 rounded-2xl object-cover border border-slate-200 shadow-sm group-hover:scale-105 transition-transform" 
+                />
+              ) : (
+                <div 
+                  style={{ backgroundColor: theme.primary }}
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center font-black shadow-md group-hover:scale-105 transition-transform text-white"
+                >
+                  <Stethoscope className="w-6 h-6" />
+                </div>
+              )}
+              <div className="min-w-0 hidden sm:block">
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-base sm:text-lg tracking-tight text-slate-900 truncate">
+                    {clinicTitle}
+                  </span>
+                  {isVerified && (
+                    <span style={{ color: theme.primary, backgroundColor: `${theme.primary}15`, borderColor: `${theme.primary}40` }} className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border flex items-center gap-1 shrink-0">
+                      <ShieldCheck className="w-3 h-3" /> VERIFIED
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                  Dr. {cleanDoctorName} • {specialization}
+                </p>
+              </div>
+            </Link>
           </div>
-        </Link>
 
-        <Link 
-          href={`/${slug}`} 
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back
-        </Link>
+          {/* Right Side: Back Button */}
+          <div className="flex items-center justify-end">
+            <Link 
+              href={`/${slug}`} 
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold transition-all shadow-sm cursor-pointer shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back
+            </Link>
+          </div>
+          
+        </div>
       </header>
 
       {/* Main Dedicated Booking Wizard Container */}
@@ -134,6 +169,7 @@ export default async function DedicatedBookPage(props) {
             embedded={true}
             passedTheme={theme}
             passedButtonShapeClass={buttonShapeClass}
+            isQuotaFull={isQuotaFull}
           />
         </div>
       </main>

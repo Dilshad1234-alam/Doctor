@@ -280,7 +280,7 @@ export default function AppointmentsPage() {
   }, [appointments]);
 
   return (
-    <div className="p-6 sm:p-10 space-y-8 max-w-[1600px] mx-auto font-sans bg-slate-50 text-[#0f172a] min-h-screen">
+    <div className="p-4 sm:p-6 flex flex-col h-[calc(100vh-74px)] gap-4 max-w-[1600px] mx-auto font-sans bg-slate-50 text-[#0f172a] overflow-hidden">
       
       {/* Toast Notification */}
       {toast && (
@@ -295,7 +295,7 @@ export default function AppointmentsPage() {
       )}
 
       {/* 1. Header & Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
@@ -347,60 +347,92 @@ export default function AppointmentsPage() {
       </div>
 
       {/* 2. Queue KPI Metrics Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 shrink-0">
+        
         {/* Waiting in Queue */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-black uppercase tracking-wider">Waiting Queue</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+        <div className="bg-gradient-to-br from-amber-400 to-amber-500 p-5 rounded-3xl shadow-lg shadow-amber-500/20 text-white flex flex-col justify-between border border-amber-400">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 text-white">
+              <Clock className="w-5 h-5" />
+            </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-amber-600">{queueStats.waiting}</p>
-          <span className="text-[10px] text-slate-400 font-medium">In waiting area</span>
+          <div>
+            <p className="text-[11px] font-extrabold text-amber-100 uppercase tracking-wider mb-1">Waiting Queue</p>
+            <p className="text-3xl sm:text-4xl font-black text-white tracking-tight">{queueStats.waiting}</p>
+          </div>
+          <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-amber-100 font-medium">
+            <span>In waiting area</span>
+          </div>
         </div>
 
         {/* In-Consultation */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-black uppercase tracking-wider">In-Consultation</span>
-            <Stethoscope className="w-4 h-4 text-indigo-500" />
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-5 rounded-3xl shadow-lg shadow-indigo-500/20 text-white flex flex-col justify-between border border-indigo-500">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 text-white">
+              <Stethoscope className="w-5 h-5" />
+            </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-indigo-600">{queueStats.inConsultation}</p>
-          <span className="text-[10px] text-slate-400 font-medium">Currently with doctor</span>
+          <div>
+            <p className="text-[11px] font-extrabold text-indigo-100 uppercase tracking-wider mb-1">In-Consultation</p>
+            <p className="text-3xl sm:text-4xl font-black text-white tracking-tight">{queueStats.inConsultation}</p>
+          </div>
+          <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-indigo-100 font-medium">
+            <span>Currently with doctor</span>
+          </div>
         </div>
 
         {/* Completed */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-black uppercase tracking-wider">Consulted Done</span>
-            <CheckCircle2 className="w-4 h-4 text-[#00A1AC]" />
+        <div className="bg-gradient-to-br from-[#00A1AC] to-[#008790] p-5 rounded-3xl shadow-lg shadow-[#00A1AC]/20 text-white flex flex-col justify-between border border-[#00A1AC]">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 text-white">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-[#00A1AC]">{queueStats.completed}</p>
-          <span className="text-[10px] text-slate-400 font-medium">Completed visits</span>
+          <div>
+            <p className="text-[11px] font-extrabold text-teal-100 uppercase tracking-wider mb-1">Consulted Done</p>
+            <p className="text-3xl sm:text-4xl font-black text-white tracking-tight">{queueStats.completed}</p>
+          </div>
+          <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-teal-100 font-medium">
+            <span>Completed visits</span>
+          </div>
         </div>
 
         {/* Cancelled */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-black uppercase tracking-wider">Cancelled / No Show</span>
-            <XCircle className="w-4 h-4 text-rose-500" />
+        <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-5 rounded-3xl shadow-lg shadow-rose-500/20 text-white flex flex-col justify-between border border-rose-500">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 text-white">
+              <XCircle className="w-5 h-5" />
+            </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-rose-600">{queueStats.cancelled}</p>
-          <span className="text-[10px] text-slate-400 font-medium">Missed slots</span>
+          <div>
+            <p className="text-[11px] font-extrabold text-rose-100 uppercase tracking-wider mb-1">Cancelled / No Show</p>
+            <p className="text-3xl sm:text-4xl font-black text-white tracking-tight">{queueStats.cancelled}</p>
+          </div>
+          <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between text-xs text-rose-100 font-medium">
+            <span>Missed slots</span>
+          </div>
         </div>
 
         {/* Revenue Collected */}
-        <div className="bg-[#0c2e3d] text-white p-5 rounded-3xl border border-[#15465c] shadow-md space-y-2 col-span-2 sm:col-span-1">
-          <div className="flex items-center justify-between text-teal-200">
-            <span className="text-[11px] font-black uppercase tracking-wider">Settled Billing</span>
-            <DollarSign className="w-4 h-4 text-[#00A1AC]" />
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-5 rounded-3xl shadow-lg shadow-slate-900/30 text-white flex flex-col justify-between border border-slate-700 col-span-2 sm:col-span-1">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10 text-emerald-400">
+              <DollarSign className="w-5 h-5" />
+            </div>
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-white">₹{queueStats.totalCollected}</p>
-          <span className="text-[10px] text-teal-200/70 font-medium">Cash + UPI collected</span>
+          <div>
+            <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Settled Billing</p>
+            <p className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight">₹{queueStats.totalCollected}</p>
+          </div>
+          <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 font-medium">
+            <span>Cash + UPI collected</span>
+          </div>
         </div>
+        
       </div>
 
       {/* 3. Search & Filter Bar */}
-      <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         {/* Status Filter Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 hide-scrollbar">
           {[
@@ -447,20 +479,21 @@ export default function AppointmentsPage() {
       </div>
 
       {/* 4. Queue Table */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50/80 border-b border-slate-200">
-              <tr className="text-[11px] font-black uppercase text-slate-400 tracking-wider">
-                <th className="py-4 px-6 font-black">Token & Patient</th>
-                <th className="py-4 px-4 font-black">Consultation Service</th>
-                <th className="py-4 px-4 font-black">Slot / Time</th>
-                <th className="py-4 px-4 font-black">Queue Status</th>
-                <th className="py-4 px-4 font-black">Billing & Payment Mode</th>
-                <th className="py-4 px-6 font-black text-right">1-Click Transition</th>
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs flex flex-col flex-1 min-h-0 overflow-hidden">
+        {/* Scrollable body wrapper */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 z-20 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">
+              <tr className="text-[11px] font-extrabold uppercase text-slate-400 tracking-wider">
+                <th className="py-3.5 px-5">TOKEN & PATIENT</th>
+                <th className="py-3.5 px-4">CONSULTATION SERVICE</th>
+                <th className="py-3.5 px-4">SLOT / TIME</th>
+                <th className="py-3.5 px-4">QUEUE STATUS</th>
+                <th className="py-3.5 px-4">BILLING & PAYMENT MODE</th>
+                <th className="py-3.5 px-5 text-right">1-CLICK TRANSITION</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 text-sm">
               {loading && appointments.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-16 text-center text-slate-400">
@@ -481,7 +514,7 @@ export default function AppointmentsPage() {
                   const isBusy = actionLoadingId === apt._id;
 
                   return (
-                    <tr key={apt._id} className="hover:bg-slate-50/80 transition-colors group">
+                    <tr key={apt._id} className="hover:bg-slate-50/70 transition-colors h-[70px] group">
                       
                       {/* Token & Patient Name */}
                       <td className="py-4 px-6">
@@ -662,6 +695,13 @@ export default function AppointmentsPage() {
             </tbody>
           </table>
         </div>
+        
+        {/* Optional subtle footer indicator if rows > 6 */}
+        {filteredAppointments.length > 6 && (
+          <div className="py-2 px-5 bg-slate-50/80 border-t border-slate-100 text-center text-[11px] font-semibold text-slate-400">
+            Showing 6 of {filteredAppointments.length} patients • Scroll down to view all
+          </div>
+        )}
       </div>
 
       {/* 5. "+ Add Walk-in Patient" Quick Modal */}

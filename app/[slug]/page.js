@@ -6,6 +6,7 @@ import Service from '../../backend/models/Service.js';
 import Availability from '../../backend/models/Availability.js';
 import WebsiteConfig from '../../backend/models/WebsiteConfig.js';
 import Subscription from '../../backend/models/Subscription.js';
+import Appointment from '../../backend/models/Appointment.js';
 import PublicNavbar from '../../components/public/Navbar.js';
 import PublicFooter from '../../components/public/Footer.js';
 import MinimalSolo from '../../components/public/templates/MinimalSolo.js';
@@ -102,13 +103,20 @@ async function getClinicData(slug) {
     $or: [{ clinicId: clinic._id }, ...(clinic.ownerId ? [{ userId: clinic.ownerId }] : [])]
   }).lean();
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayBookedCount = await Appointment.countDocuments({
+    clinicId: clinic._id,
+    date: todayStr
+  });
+
   return JSON.parse(JSON.stringify({ 
     clinic, 
     doctor: doctor || {}, 
     services: services || [], 
     availability: availability || [], 
     websiteConfig: websiteConfig || {}, 
-    subscription: subscription || {} 
+    subscription: subscription || {},
+    todayBookedCount
   }));
 }
 
@@ -133,7 +141,7 @@ export default async function PublicClinicPage(props) {
     );
   }
 
-  const { clinic, doctor, services, availability, websiteConfig, subscription } = data;
+  const { clinic, doctor, services, availability, websiteConfig, subscription, todayBookedCount = 0 } = data;
   const currentTier = (subscription?.planId || "BASIC").toUpperCase();
   const tier = getPlanTier(currentTier);
   const isBasic = currentTier === "BASIC";
@@ -142,6 +150,11 @@ export default async function PublicClinicPage(props) {
   const isAdvancedOrHigher = isAdvanced || isPremium;
   const isWhatsappEnabled = !isBasic && websiteConfig?.enableWhatsappChat !== false;
   const isEmergencyActive = Boolean(websiteConfig?.emergencyDayOff);
+
+  const enableDailyLimit = doctor?.enableDailyLimit || false;
+  const dailyPatientLimit = doctor?.dailyPatientLimit || 30;
+  const isQuotaFull = enableDailyLimit && todayBookedCount >= dailyPatientLimit;
+  const availableSlots = enableDailyLimit ? Math.max(0, dailyPatientLimit - todayBookedCount) : null;
   
   // Base Container class enforcement
   const containerClass = isBasic ? "max-w-6xl mx-auto px-4 md:px-6" : "w-full mx-auto px-4 sm:px-8 lg:px-12 xl:px-16";
@@ -235,10 +248,26 @@ export default async function PublicClinicPage(props) {
         </div>
       )}
 
+      {isQuotaFull && !isEmergencyActive && (
+        <div className="bg-rose-600 text-white px-4 py-2 text-center text-xs font-bold flex items-center justify-center gap-2 shadow-xs">
+          <AlertTriangle className="w-4 h-4" />
+          <span>Today's OPD Quota is Full ({dailyPatientLimit}/{dailyPatientLimit} Tokens Issued).</span>
+          <span className="opacity-80">Next available tokens are for tomorrow.</span>
+        </div>
+      )}
+
+      {enableDailyLimit && !isQuotaFull && !isEmergencyActive && availableSlots <= 5 && availableSlots > 0 && (
+        <div className="bg-amber-100 text-amber-800 border-b border-amber-200 px-4 py-2 text-center text-xs font-bold flex items-center justify-center gap-2 shadow-xs">
+          <Clock className="w-4 h-4" />
+          <span>Only {availableSlots} {availableSlots === 1 ? 'token' : 'tokens'} left for today's OPD!</span>
+        </div>
+      )}
+
       {(() => {
         const templateProps = {
           clinic, doctor, websiteConfig, currentTier, tier, slug,
-          activeTheme, buttonShapeClass, isDarkMode, containerClass, specialtyPreset
+          activeTheme, buttonShapeClass, isDarkMode, containerClass, specialtyPreset,
+          isQuotaFull, availableSlots
         };
         
         switch (config.templateId) {

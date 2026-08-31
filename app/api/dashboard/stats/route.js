@@ -6,6 +6,7 @@ import Clinic from "../../../../backend/models/Clinic.js";
 import Appointment from "../../../../backend/models/Appointment.js";
 import User from "../../../../backend/models/User.js";
 import Subscription from "../../../../backend/models/Subscription.js";
+import DoctorProfile from "../../../../backend/models/DoctorProfile.js";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,13 @@ export async function GET() {
       User.findById(decoded.id).select("name email phone").lean(),
       Clinic.findOne({ ownerId: decoded.id }).lean()
     ]);
+
+    let doctorProfile = null;
+    if (clinic) {
+      doctorProfile = await DoctorProfile.findOne({ clinicId: clinic._id }).lean();
+    } else {
+      doctorProfile = await DoctorProfile.findOne({ userId: decoded.id }).lean();
+    }
 
     if (!clinic) {
       return NextResponse.json({ success: false, hasCompletedOnboarding: false }, { status: 200 });
@@ -77,7 +85,9 @@ export async function GET() {
       requiresSubscription: false,
       doctor: { 
         name: user?.name || "Doctor", 
-        email: user?.email || clinic?.email || "" 
+        email: user?.email || clinic?.email || "",
+        dailyPatientLimit: doctorProfile?.dailyPatientLimit || 30,
+        enableDailyLimit: doctorProfile?.enableDailyLimit || false
       },
       clinic: { 
         name: clinic.name, 

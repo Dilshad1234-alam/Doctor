@@ -9,7 +9,7 @@ import {
   ChevronLeft, ChevronRight, ShieldCheck
 } from 'lucide-react';
 
-function BookingWizard({ clinic, doctor, services, availability, slug, embedded, websiteConfig, passedTheme, passedButtonShapeClass }) {
+function BookingWizard({ clinic, doctor, services, availability, slug, embedded, websiteConfig, passedTheme, passedButtonShapeClass, isQuotaFull }) {
   const searchParams = useSearchParams();
 
   const defaultTheme = { primary: '#008790', light: '#E6F6F7', border: '#B2E3E6', ring: 'rgba(0,135,144,0.15)' };
@@ -49,9 +49,13 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
     });
     setNextDays(days);
     if (days.length > 0) {
-      setSelectedDate(days[0]);
+      if (isQuotaFull && days.length > 1) {
+        setSelectedDate(days[1]); // Default to tomorrow
+      } else {
+        setSelectedDate(days[0]);
+      }
     }
-  }, []);
+  }, [isQuotaFull]);
 
   // Pre-fetch slots for upcoming days in background for instantaneous switching
   useEffect(() => {
@@ -567,7 +571,9 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                   className="flex gap-2 overflow-x-auto pb-1.5 pt-0.5 px-0.5 scroll-smooth snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                 >
                   {nextDays.map((d, i) => {
-                    const isSelected = selectedDate?.toDateString() === d.toDateString();
+                    const isToday = i === 0;
+                    const isDisabled = isToday && isQuotaFull;
+                    const isSelected = !isDisabled && selectedDate?.toDateString() === d.toDateString();
                     const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
                     const dateNum = d.getDate();
                     const month = d.toLocaleDateString('en-US', { month: 'short' });
@@ -575,11 +581,14 @@ function BookingWizard({ clinic, doctor, services, availability, slug, embedded,
                       <button
                         type="button"
                         key={i} 
-                        onClick={() => fetchSlots(d)}
-                        className={`snap-center flex-shrink-0 cursor-pointer w-14 sm:w-16 py-2 rounded-2xl border flex flex-col items-center justify-center transition-all duration-200 active:scale-95 ${
-                          isSelected 
-                            ? 'text-white shadow-md scale-105 ring-2 ring-offset-1' 
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/80 shadow-xs'
+                        onClick={() => !isDisabled && fetchSlots(d)}
+                        disabled={isDisabled}
+                        className={`snap-center flex-shrink-0 w-14 sm:w-16 py-2 rounded-2xl border flex flex-col items-center justify-center transition-all duration-200 ${
+                          isDisabled 
+                            ? 'opacity-40 bg-slate-100 border-slate-200 cursor-not-allowed'
+                            : isSelected 
+                              ? 'text-white shadow-md scale-105 ring-2 ring-offset-1 cursor-pointer' 
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/80 shadow-xs cursor-pointer active:scale-95'
                         }`} 
                         style={isSelected ? { backgroundColor: theme.primary, borderColor: theme.primary } : {}}
                       >

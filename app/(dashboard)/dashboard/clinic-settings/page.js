@@ -124,7 +124,7 @@ export default function ClinicSettingsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto font-sans bg-[#F8FAFC] text-[#0f172a] space-y-4">
+    <div className="p-4 sm:p-6 flex flex-col h-[calc(100vh-74px)] max-w-7xl mx-auto font-sans bg-[#F8FAFC] text-[#0f172a] gap-4 overflow-hidden">
       
       {/* Toast Notification */}
       {toast && (
@@ -139,7 +139,7 @@ export default function ClinicSettingsPage() {
       )}
 
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-8 h-8 rounded-xl bg-[#0A8692]/10 text-[#0A8692] flex items-center justify-center shrink-0 border border-[#0A8692]/20 shadow-2xs">
             <Settings className="w-4 h-4 text-[#0A8692]" />
@@ -168,7 +168,10 @@ export default function ClinicSettingsPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent pr-2 space-y-4 pb-2">
 
         {/* 2. Top Notification Bar (Clean Glass Pill) */}
         <div 
@@ -234,26 +237,26 @@ export default function ClinicSettingsPage() {
               {/* Row 1 (2 Cols): Clinic Name | Direct Reception Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">Clinic Name *</label>
+                  <label className="block text-xs font-bold text-slate-700">Clinic Name *</label>
                   <input
                     type="text"
                     required
                     value={formData.clinicName}
                     onChange={(e) => setFormData({ ...formData, clinicName: e.target.value })}
                     placeholder="e.g. Alam Dental Clinic"
-                    className="w-full h-10 px-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] shadow-sm transition-all"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">Direct Reception Phone *</label>
+                  <label className="block text-xs font-bold text-slate-700">Direct Reception Phone *</label>
                   <input
                     type="tel"
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="e.g. +91 9876543210"
-                    className="w-full h-10 px-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] shadow-sm transition-all"
                   />
                 </div>
               </div>
@@ -261,59 +264,59 @@ export default function ClinicSettingsPage() {
               {/* Row 2 (2 Cols): Complete Clinic Address | City / Region */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">Complete Clinic Address *</label>
+                  <label className="block text-xs font-bold text-slate-700">Complete Clinic Address *</label>
                   <input
                     type="text"
                     required
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     placeholder="e.g. Shop 4, Main Market Road"
-                    className="w-full h-10 px-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] shadow-sm transition-all"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">City / Region *</label>
+                  <label className="block text-xs font-bold text-slate-700">City / Region *</label>
                   <input
                     type="text"
                     required
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     placeholder="e.g. New Delhi"
-                    className="w-full h-10 px-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] shadow-sm transition-all"
                   />
                 </div>
               </div>
 
-              {/* Row 3 (Full Width): Google Maps Location / Embed URL (Premium Locked) */}
+              {/* Row 3 (Full Width): Google Maps Location / Embed URL (Advanced Locked) */}
               <div 
-                onClick={!isPremium ? () => {
-                  setUpgradeReason("Direct Google Maps navigation & live map embed are unlocked in the Premium VIP Plan (₹1,499).");
+                onClick={!(isAdvanced || isPremium) ? () => {
+                  setUpgradeReason("Direct Google Maps navigation & live map embed are unlocked in the Advanced Plan (₹999).");
                   setShowUpgradeModal(true);
                 } : undefined}
-                className={`space-y-1 ${!isPremium ? "cursor-pointer" : ""}`}
+                className={`space-y-1.5 ${!(isAdvanced || isPremium) ? "cursor-pointer" : ""}`}
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-[#0A8692]" />
                     <span>Google Maps Location / Embed URL</span>
                   </label>
-                  {!isPremium && (
-                    <span className="text-[9px] font-bold text-purple-700 bg-purple-100/80 px-2 py-0.5 rounded-full border border-purple-200">
-                      🔒 Premium VIP
+                  {!(isAdvanced || isPremium) && (
+                    <span className="text-[9px] font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full border border-amber-200 shadow-sm">
+                      🔒 Advanced
                     </span>
                   )}
                 </div>
                 <input
                   type="text"
-                  disabled={!isPremium}
-                  placeholder={!isPremium ? "Upgrade to Premium to embed live Google Maps & 1-click directions" : "e.g. https://maps.app.goo.gl/... or https://maps.google.com/?q=..."}
-                  value={isPremium ? formData.googleMapsUrl : ""}
+                  disabled={!(isAdvanced || isPremium)}
+                  placeholder={!(isAdvanced || isPremium) ? "Upgrade to Advanced to embed live Google Maps & 1-click directions" : "e.g. https://maps.app.goo.gl/... or https://maps.google.com/?q=..."}
+                  value={(isAdvanced || isPremium) ? formData.googleMapsUrl : ""}
                   onChange={(e) => setFormData({ ...formData, googleMapsUrl: e.target.value })}
-                  className={`w-full h-10 px-3.5 rounded-xl text-xs font-medium transition-all ${
-                    !isPremium 
+                  className={`w-full px-4 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm ${
+                    !(isAdvanced || isPremium) 
                       ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-dashed border-slate-300" 
-                      : "bg-slate-50/50 border border-slate-200 text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692]"
+                      : "bg-white border border-slate-200 text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692]"
                   }`}
                 />
               </div>
@@ -333,24 +336,24 @@ export default function ClinicSettingsPage() {
               {/* Row 1 (2 Cols): Doctor Full Name | Qualifications */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">Doctor Full Name</label>
+                  <label className="block text-xs font-bold text-slate-700">Doctor Full Name</label>
                   <input
                     type="text"
                     value={formData.doctorName}
                     onChange={(e) => setFormData({ ...formData, doctorName: e.target.value })}
                     placeholder="e.g. Dr. Dilshad Alam"
-                    className="w-full h-10 px-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] shadow-sm transition-all"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">Qualifications</label>
+                  <label className="block text-xs font-bold text-slate-700">Qualifications</label>
                   <input
                     type="text"
                     placeholder="e.g. BDS, MDS (Oral Surgery)"
                     value={formData.qualification}
                     onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
-                    className="w-full h-10 px-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] shadow-sm transition-all"
                   />
                 </div>
               </div>
@@ -358,31 +361,31 @@ export default function ClinicSettingsPage() {
               {/* Row 2 (2 Cols): Clinical Specialization | Experience */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">Clinical Specialization</label>
+                  <label className="block text-xs font-bold text-slate-700">Clinical Specialization</label>
                   <input
                     type="text"
                     placeholder="e.g. Dentist & Oral Surgeon"
                     value={formData.specialization}
                     onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                    className="w-full h-10 px-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] shadow-sm transition-all"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">Experience (Years)</label>
+                  <label className="block text-xs font-bold text-slate-700">Experience (Years)</label>
                   <input
                     type="number"
                     placeholder="e.g. 8"
                     value={formData.experienceYrs}
                     onChange={(e) => setFormData({ ...formData, experienceYrs: e.target.value })}
-                    className="w-full h-10 px-3.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] transition-all"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-medium focus:bg-white focus:ring-2 focus:ring-[#0A8692]/20 focus:border-[#0A8692] shadow-sm transition-all"
                   />
                 </div>
               </div>
 
               {/* Row 3 (Full Width): Doctor Bio / Practice Note */}
               <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-slate-700">Doctor Bio / Practice Note</label>
+                <label className="block text-xs font-bold text-slate-700">Doctor Bio / Practice Note</label>
                 <textarea
                   rows={2}
                   placeholder="Brief summary of clinical expertise, painless procedures, and sterilized patient care..."
@@ -416,8 +419,10 @@ export default function ClinicSettingsPage() {
           </div>
         )}
 
+        </div>
+
         {/* 5. Action Footer Bar */}
-        <div className="px-4 py-3 bg-white rounded-xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="shrink-0 mt-4 px-4 py-3 bg-white rounded-xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-slate-400 font-medium">
             ⚡ All changes sync directly with your live clinic booking portal.
           </div>

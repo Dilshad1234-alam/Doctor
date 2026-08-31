@@ -20,7 +20,8 @@ export default function MinimalSolo({
   isDarkMode,
   containerClass,
   specialtyPreset,
-  compact = false
+  compact = false,
+  isQuotaFull = false
 }) {
 
   const rawDocName = doctor?.fullName || doctor?.name || 'Alam';
@@ -111,19 +112,19 @@ export default function MinimalSolo({
                 <div className={`flex items-center ${compact ? 'gap-2 pt-1' : 'gap-4 pt-4'} flex-wrap`}>
                   {compact ? (
                      <button
-                     style={{ backgroundColor: activeTheme.primary }}
+                     style={{ backgroundColor: isQuotaFull ? '#e11d48' : activeTheme.primary }}
                      className={`px-3.5 py-1.5 ${buttonShapeClass} font-bold text-[10px] shadow-sm flex items-center gap-1 text-white`}
                    >
-                     📅 Book Confirmed OPD Slot
+                     {isQuotaFull ? "📅 Today Full • Book Tomorrow" : "📅 Book Confirmed OPD Slot"}
                    </button>
                   ) : (
                     <Link
                       href={`/${slug}/book`}
-                      style={{ backgroundColor: activeTheme.primary }}
+                      style={{ backgroundColor: isQuotaFull ? '#e11d48' : activeTheme.primary }}
                       className={`px-8 py-4 ${buttonShapeClass} font-black text-sm transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2.5 text-white`}
                     >
                       <Calendar className="w-5 h-5" />
-                      <span>Book Confirmed OPD Slot</span>
+                      <span>{isQuotaFull ? "Today Full • Book For Tomorrow" : "Book Confirmed OPD Slot"}</span>
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   )}

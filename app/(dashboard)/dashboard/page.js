@@ -20,6 +20,7 @@ export default function DashboardOverviewPage() {
   const [copied, setCopied] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const [currentPlan, setCurrentPlan] = useState("BASIC");
+  const [isShifting, setIsShifting] = useState(false);
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
@@ -156,6 +157,47 @@ export default function DashboardOverviewPage() {
   const displayGreeting = doctorName.toLowerCase().startsWith('dr.') ? doctorName : `Dr. ${doctorName}`;
   const greetingTime = getTimeGreeting();
 
+  // Extract today's appointments
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  const todayList = (recentAppointments || []).filter(a => {
+    const d = a.date ? new Date(a.date).toISOString().split('T')[0] : todayDateStr;
+    return d === todayDateStr;
+  });
+
+  // Compute non-overlapping counts
+  const totalBookedToday = todayList.length;
+  const consultedToday = todayList.filter(a => a.status === 'COMPLETED' || a.queueStatus === 'COMPLETED').length;
+  const waitingInClinic = todayList.filter(a => a.status === 'IN_CONSULTATION' || a.queueStatus === 'WAITING' || a.status === 'CONFIRMED').length;
+  const unattendedPatients = todayList.filter(a => a.status !== 'COMPLETED' && a.queueStatus !== 'COMPLETED' && a.status !== 'CANCELLED');
+  const unattendedCount = unattendedPatients.length;
+
+  const handleShiftRemainingToTomorrow = async () => {
+    if (unattendedCount === 0) return;
+    if (!confirm(`Bache huye ${unattendedCount} patients ko kal ke liye shift karke WhatsApp message bhej dein?`)) return;
+
+    setIsShifting(true);
+    try {
+      const patientIds = unattendedPatients.map(p => p._id);
+      const res = await fetch("/api/dashboard/appointments/shift-tomorrow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientIds }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        alert(`Successfully shifted ${result.count} patients to ${result.shiftedTo} and sent WhatsApp notifications!`);
+        fetchDashboardData();
+      } else {
+        alert("Failed to shift patients.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred.");
+    } finally {
+      setIsShifting(false);
+    }
+  };
+
   return (
     <div className="p-6 sm:p-10 space-y-8 max-w-[1600px] mx-auto animate-in fade-in-50 duration-500 font-sans bg-slate-50 text-[#0f172a]">
       
@@ -204,70 +246,102 @@ export default function DashboardOverviewPage() {
         </div>
       </div>
 
-      {/* 2. 4 Hero KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      {/* 2. 5 Hero KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         
-        {/* Card 1: Today's Active Bookings */}
-        <div className="bg-[#00A1AC] p-6 rounded-3xl shadow-xl shadow-[#00A1AC]/30 text-white flex flex-col justify-between space-y-4 border border-[#00A1AC]">
+        {/* Card 1: Total Bookings Today */}
+        <div className="bg-[#0A8692] p-6 rounded-3xl shadow-xl shadow-[#0A8692]/30 text-white flex flex-col justify-between space-y-4 border border-[#0A8692]">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20">
-              <Calendar className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 text-white">
+              <Calendar className="w-6 h-6" />
             </div>
-            <span className="text-[11px] font-black text-white bg-white/20 px-2.5 py-1 rounded-full border border-white/20">
-              Live Queue
-            </span>
+            {doctor.enableDailyLimit && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-black tracking-wider bg-white/20 text-white border border-white/20 flex items-center gap-1.5">
+                {totalBookedToday >= doctor.dailyPatientLimit 
+                  ? "🔴 Daily Quota Reached" 
+                  : `🟢 ${doctor.dailyPatientLimit - totalBookedToday} Slots Available`
+                }
+              </span>
+            )}
           </div>
           <div>
-            <p className="text-xs font-bold text-teal-100 uppercase tracking-wider">Today&apos;s Active Bookings</p>
-            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight mt-1">{stats.todayAppointmentsCount}</h3>
+            <p className="text-xs font-bold text-teal-100 uppercase tracking-wider">Total Booked Today</p>
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">{totalBookedToday}</span>
+              {doctor.enableDailyLimit && (
+                <span className="text-lg font-bold text-teal-200"> / {doctor.dailyPatientLimit} Max Cap</span>
+              )}
+            </div>
           </div>
           <div className="pt-3 border-t border-white/20 flex items-center justify-between text-xs text-teal-100 font-medium">
-            <span>Queue Total</span>
-            <span className="font-bold text-white">{stats.todayAppointmentsCount} patients</span>
+            <span>All scheduled slots</span>
+            <span className="font-bold text-white">Active</span>
           </div>
         </div>
 
-        {/* Card 2: Pending Approval */}
+        {/* Card 2: Consulted Done */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-[#00A1AC]/10 rounded-2xl flex items-center justify-center border border-[#00A1AC]/20">
-              <Clock className="w-6 h-6 text-[#00A1AC]" />
+            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center border border-emerald-100 text-emerald-600">
+              <CheckCircle2 className="w-6 h-6" />
             </div>
-            <span className="text-[11px] font-black text-[#00A1AC] bg-[#00A1AC]/10 px-2.5 py-1 rounded-full border border-[#00A1AC]/20">
-              {stats.pendingCount} Waiting
+            <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-200">
+              {consultedToday} Done
             </span>
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Waiting / Pending</p>
-            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">{stats.pendingCount}</h3>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Consulted Done</p>
+            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">{consultedToday}</h3>
           </div>
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>In Waiting Area</span>
-            <span className="font-bold text-[#00A1AC]">Live Status</span>
+            <span>Patients checked by doctor</span>
           </div>
         </div>
 
-        {/* Card 3: Consulted Today */}
+        {/* Card 3: Waiting in Clinic */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-[#00A1AC]/10 rounded-2xl flex items-center justify-center border border-[#00A1AC]/20">
-              <CheckCircle2 className="w-6 h-6 text-[#00A1AC]" />
+            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 text-amber-600">
+              <Clock className="w-6 h-6" />
             </div>
-            <span className="text-[11px] font-black text-[#00A1AC] bg-[#00A1AC]/10 px-2.5 py-1 rounded-full border border-[#00A1AC]/20">
-              {stats.completedCount} Done
+            <span className="text-[11px] font-black text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full border border-amber-200">
+              {waitingInClinic} Waiting
             </span>
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Consulted Today</p>
-            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">{stats.completedCount}</h3>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Waiting / In-Clinic</p>
+            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">{waitingInClinic}</h3>
           </div>
           <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>Prescriptions & Notes</span>
-            <span className="font-bold text-[#00A1AC]">Completed</span>
+            <span>Ready for consultation</span>
           </div>
         </div>
 
-        {/* Card 4: Estimated Revenue */}
+        {/* Card 4: Unattended & Action */}
+        <div className="bg-gradient-to-br from-white to-rose-50 p-6 rounded-3xl shadow-sm border border-rose-200 text-[#0f172a] flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center border border-rose-200 text-rose-600">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <span className="text-[11px] font-black text-rose-700 bg-rose-100 px-2.5 py-1 rounded-full border border-rose-200">
+              {unattendedCount} Left
+            </span>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Unattended Left</p>
+            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">{unattendedCount}</h3>
+          </div>
+          <button 
+            onClick={handleShiftRemainingToTomorrow} 
+            disabled={unattendedCount === 0 || isShifting} 
+            className="w-full mt-2 py-2 px-3 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            {isShifting ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+            <span>📲 Shift to Kal & Notify</span>
+          </button>
+        </div>
+
+        {/* Card 5: Estimated Revenue */}
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
             <div className="w-12 h-12 bg-[#00A1AC]/10 rounded-2xl flex items-center justify-center border border-[#00A1AC]/20">

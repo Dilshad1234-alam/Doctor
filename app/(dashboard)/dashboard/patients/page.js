@@ -133,7 +133,7 @@ export default function PatientsDirectoryPage() {
   }, [patients, searchQuery]);
 
   return (
-    <div className="p-6 sm:p-10 space-y-8 max-w-[1600px] mx-auto font-sans bg-slate-50 text-[#0f172a] min-h-screen">
+    <div className="p-4 sm:p-6 flex flex-col h-[calc(100vh-74px)] gap-4 max-w-[1600px] mx-auto font-sans bg-slate-50 text-[#0f172a] overflow-hidden">
       
       {/* Toast Notification */}
       {toast && (
@@ -148,7 +148,7 @@ export default function PatientsDirectoryPage() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
@@ -178,18 +178,18 @@ export default function PatientsDirectoryPage() {
       </div>
 
       {/* Patients Table & Detail Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-hidden">
         
         {/* Left: Patient Directory Table (2 Cols) */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden lg:col-span-2 space-y-4">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs flex flex-col overflow-hidden lg:col-span-2">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-base font-black text-slate-900">Registered Patients Directory</h2>
             <span className="text-xs text-slate-400 font-bold">{filteredPatients.length} Unique Patients</span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50/80 border-b border-slate-200">
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead className="sticky top-0 z-20 bg-slate-50/95 backdrop-blur-sm border-b border-slate-200">
                 <tr className="text-[11px] font-black uppercase text-slate-400 tracking-wider">
                   <th className="py-3.5 px-6 font-black">Patient Profile</th>
                   <th className="py-3.5 px-4 font-black">Total Visits</th>
@@ -293,7 +293,7 @@ export default function PatientsDirectoryPage() {
         </div>
 
         {/* Right: Patient Timeline & History Card */}
-        <div className="space-y-6">
+        <div className="flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100 pr-2">
           {selectedPatient ? (
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5 animate-in fade-in-50">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">

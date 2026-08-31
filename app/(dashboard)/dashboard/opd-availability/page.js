@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { 
   Clock, AlertTriangle, CheckCircle2, Save, Loader2, 
   Sparkles, Power, Sun, Moon, Calendar, ShieldAlert, ArrowRight, Check, X,
-  Crown, Lock, ArrowUpRight, Activity, ShieldCheck
+  Crown, Lock, ArrowUpRight, Activity, ShieldCheck, Users
 } from "lucide-react";
 import Link from "next/link";
 
@@ -30,6 +30,10 @@ export default function OPDAvailabilityPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+
+  const [dailyPatientLimit, setDailyPatientLimit] = useState(30);
+  const [enableDailyLimit, setEnableDailyLimit] = useState(false);
+  const [savingLimit, setSavingLimit] = useState(false);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -89,10 +93,24 @@ export default function OPDAvailabilityPage() {
     }
   }, []);
 
+  const fetchLimits = useCallback(async () => {
+    try {
+      const res = await fetch("/api/dashboard/opd-settings");
+      const json = await res.json();
+      if (json.success) {
+        setDailyPatientLimit(json.dailyPatientLimit || 30);
+        setEnableDailyLimit(json.enableDailyLimit || false);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => {
     fetchSubscription();
     fetchAvailability();
-  }, [fetchAvailability]);
+    fetchLimits();
+  }, [fetchAvailability, fetchLimits]);
 
   // Tier Detection Engine
   const activePlan = planId?.toUpperCase() || "BASIC";
@@ -179,6 +197,24 @@ export default function OPDAvailabilityPage() {
       showToast(err.message, "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveLimits = async () => {
+    setSavingLimit(true);
+    try {
+      const res = await fetch("/api/dashboard/opd-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dailyPatientLimit, enableDailyLimit }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || "Save failed");
+      showToast("Daily OPD limit settings saved successfully!");
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      setSavingLimit(false);
     }
   };
 
@@ -335,6 +371,54 @@ export default function OPDAvailabilityPage() {
                 <span className="text-[9px] font-black uppercase bg-white text-rose-600 px-2 py-0.5 rounded shrink-0">
                   Live
                 </span>
+              </div>
+            )}
+          </div>
+
+          {/* Card 1.5: Daily Patient Quota & Token Cap */}
+          <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100 shrink-0">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-xs sm:text-sm font-black text-slate-900 truncate">Daily Patient Quota & Token Cap</h3>
+                  <p className="text-[11px] font-medium text-slate-500 line-clamp-2">Jab yeh quota poora ho jayega, public website par 'Today's OPD Quota Full' badge show hoga aur bache patients agle din ke liye book honge.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEnableDailyLimit(!enableDailyLimit)}
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                  enableDailyLimit ? "bg-indigo-600" : "bg-slate-300"
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  enableDailyLimit ? "translate-x-6" : "translate-x-1"
+                }`} />
+              </button>
+            </div>
+            
+            {enableDailyLimit && (
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between animate-in fade-in-50">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Max Patients / Day</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={dailyPatientLimit}
+                    onChange={(e) => setDailyPatientLimit(Number(e.target.value))}
+                    className="w-20 text-center px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <button
+                  onClick={handleSaveLimits}
+                  disabled={savingLimit}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all disabled:opacity-50"
+                >
+                  {savingLimit ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  Save Limit
+                </button>
               </div>
             )}
           </div>

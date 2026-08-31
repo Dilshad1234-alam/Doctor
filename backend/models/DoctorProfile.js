@@ -74,6 +74,14 @@ const DoctorProfileSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: {},
     },
+    dailyPatientLimit: {
+      type: Number,
+      default: 30,
+    },
+    enableDailyLimit: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
