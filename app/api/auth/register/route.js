@@ -159,71 +159,14 @@ export async function POST(req) {
       );
     }
 
-    // 5. Issue session JWT and cookies for instant frictionless redirect
-    const token = signToken({
-      id: doc._id.toString(),
-      email: doc.email,
-      provider_type: doc.provider_type,
-      role: doc.role,
-      entityType: doc.entityType,
-      category: doc.category,
-      isOnboardingCompleted: false,
-      hasCompletedOnboarding: false,
-    });
-
     const response = NextResponse.json(
       {
         success: true,
-        message: "Account created successfully",
-        redirectUrl: "/dashboard/onboarding",
-        user: {
-          id: doc._id,
-          name: doc.name || doc.adminName,
-          email: doc.email,
-          phone: doc.phone,
-          provider_type: doc.provider_type,
-          role: doc.role,
-          accountType: doc.accountType,
-          entityType: doc.entityType,
-          category: doc.category,
-          isOnboardingCompleted: false,
-          hasCompletedOnboarding: false,
-        },
+        message: "Account created successfully. Please login.",
+        redirectUrl: "/login",
       },
       { status: 201 }
     );
-
-    response.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 30 * 24 * 60 * 60,
-      path: "/",
-    });
-
-    response.cookies.set("user_role", doc.role, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 30 * 24 * 60 * 60,
-      path: "/",
-    });
-
-    response.cookies.set("provider_type", doc.provider_type, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 30 * 24 * 60 * 60,
-      path: "/",
-    });
-
-    response.cookies.set("is_onboarding_completed", "false", {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 30 * 24 * 60 * 60,
-      path: "/",
-    });
 
     return response;
   } catch (error) {

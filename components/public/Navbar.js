@@ -73,17 +73,17 @@ export default function PublicNavbar({
         
         {/* 1. Left Side: Logo & Clinic Info (Far Left) */}
         <div className={`flex items-center justify-start ${isCompact ? '' : 'flex-1'} min-w-0`}>
-          <Link href={`/${slug}`} className="flex items-center gap-3 group shrink-0">
+          <Link href={`/${slug}`} className="flex items-center gap-3 group min-w-0">
             {clinic?.logo ? (
               <img 
                 src={clinic.logo} 
                 alt={clinicTitle} 
-                className={`${isCompact ? 'h-8 w-8 rounded-xl' : 'h-11 w-11 rounded-2xl'} object-cover border border-slate-200 shadow-sm group-hover:scale-105 transition-transform`} 
+                className={`${isCompact ? 'h-8 w-8 rounded-xl' : 'h-11 w-11 rounded-2xl'} shrink-0 object-cover border border-slate-200 shadow-sm group-hover:scale-105 transition-transform`} 
               />
             ) : (
               <div 
                 style={{ backgroundColor: theme.primary }}
-                className={`${isCompact ? 'h-8 w-8 rounded-xl' : 'h-11 w-11 rounded-2xl'} flex items-center justify-center font-black shadow-md group-hover:scale-105 transition-transform text-white`}
+                className={`${isCompact ? 'h-8 w-8 rounded-xl' : 'h-11 w-11 rounded-2xl'} shrink-0 flex items-center justify-center font-black shadow-md group-hover:scale-105 transition-transform text-white`}
               >
                 <Stethoscope className={`${isCompact ? 'w-4 h-4' : 'w-6 h-6'}`} />
               </div>

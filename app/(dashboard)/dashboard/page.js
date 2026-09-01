@@ -171,6 +171,14 @@ export default function DashboardOverviewPage() {
   const unattendedPatients = todayList.filter(a => a.status !== 'COMPLETED' && a.queueStatus !== 'COMPLETED' && a.status !== 'CANCELLED');
   const unattendedCount = unattendedPatients.length;
 
+  const themeHex = doctor?.websiteConfig?.themeColor || '#0A8692';
+  const activeTemplate = doctor?.websiteConfig?.templateId || 'minimal-solo';
+  const activeServicesCount = (doctor?.services || []).filter(s => s.isActive !== false).length;
+  const isOpdOpen = doctor?.opdConfig?.isOpen !== false;
+  const totalRevenueToday = (todayList || [])
+    .filter(a => (a.status === 'COMPLETED' || a.queueStatus === 'COMPLETED') && a.paymentStatus === 'PAID')
+    .reduce((sum, a) => sum + (Number(a.fee || a.price || 0)), 0);
+
   const handleShiftRemainingToTomorrow = async () => {
     if (unattendedCount === 0) return;
     if (!confirm(`Bache huye ${unattendedCount} patients ko kal ke liye shift karke WhatsApp message bhej dein?`)) return;
@@ -246,119 +254,88 @@ export default function DashboardOverviewPage() {
         </div>
       </div>
 
-      {/* 2. 5 Hero KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-        
-        {/* Card 1: Total Bookings Today */}
-        <div className="bg-[#0A8692] p-6 rounded-3xl shadow-xl shadow-[#0A8692]/30 text-white flex flex-col justify-between space-y-4 border border-[#0A8692]">
-          <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20 text-white">
-              <Calendar className="w-6 h-6" />
-            </div>
-            {doctor.enableDailyLimit && (
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-black tracking-wider bg-white/20 text-white border border-white/20 flex items-center gap-1.5">
-                {totalBookedToday >= doctor.dailyPatientLimit 
-                  ? "🔴 Daily Quota Reached" 
-                  : `🟢 ${doctor.dailyPatientLimit - totalBookedToday} Slots Available`
-                }
-              </span>
-            )}
-          </div>
-          <div>
-            <p className="text-xs font-bold text-teal-100 uppercase tracking-wider">Total Booked Today</p>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">{totalBookedToday}</span>
-              {doctor.enableDailyLimit && (
-                <span className="text-lg font-bold text-teal-200"> / {doctor.dailyPatientLimit} Max Cap</span>
-              )}
-            </div>
-          </div>
-          <div className="pt-3 border-t border-white/20 flex items-center justify-between text-xs text-teal-100 font-medium">
-            <span>All scheduled slots</span>
-            <span className="font-bold text-white">Active</span>
-          </div>
-        </div>
+      {/* 2. Clinic Command & Customizer Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
 
-        {/* Card 2: Consulted Done */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
+        {/* Card 1: Live Website & Studio Status */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center border border-emerald-100 text-emerald-600">
-              <CheckCircle2 className="w-6 h-6" />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: themeHex }}>
+              🎨
             </div>
-            <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-200">
-              {consultedToday} Done
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+              Live & Synced
             </span>
           </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Consulted Done</p>
-            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">{consultedToday}</h3>
+          <div className="my-3">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Website Studio</span>
+            <h4 className="text-lg font-black text-slate-800 capitalize mt-0.5 truncate">{activeTemplate.replace('-', ' ')} Template</h4>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="w-3 h-3 rounded-full border border-slate-300 shadow-2xs" style={{ backgroundColor: themeHex }}></span>
+              <span className="text-xs font-semibold text-slate-500">Theme Active</span>
+            </div>
           </div>
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>Patients checked by doctor</span>
-          </div>
+          <Link className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold text-center border border-slate-200 transition-colors flex items-center justify-center gap-1.5" href="/dashboard/website-builder">
+            <span>Customize Design</span>
+            <span>→</span>
+          </Link>
         </div>
 
-        {/* Card 3: Waiting in Clinic */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
+        {/* Card 2: OPD Availability & Shift Controls */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 text-amber-600">
-              <Clock className="w-6 h-6" />
-            </div>
-            <span className="text-[11px] font-black text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full border border-amber-200">
-              {waitingInClinic} Waiting
+            <span className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-xs">⏰</span>
+            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${isOpdOpen ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+              {isOpdOpen ? 'OPD Open' : 'Emergency Off'}
             </span>
           </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Waiting / In-Clinic</p>
-            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">{waitingInClinic}</h3>
+          <div className="my-3">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">OPD Schedule</span>
+            <h4 className="text-lg font-black text-slate-800 mt-0.5">Morning & Evening</h4>
+            <p className="text-xs text-slate-500 mt-0.5">Split shift timings active</p>
           </div>
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>Ready for consultation</span>
-          </div>
+          <Link className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold text-center border border-slate-200 transition-colors flex items-center justify-center gap-1.5" href="/dashboard/opd-availability">
+            <span>Configure Shifts</span>
+            <span>→</span>
+          </Link>
         </div>
 
-        {/* Card 4: Unattended & Action */}
-        <div className="bg-gradient-to-br from-white to-rose-50 p-6 rounded-3xl shadow-sm border border-rose-200 text-[#0f172a] flex flex-col justify-between space-y-2">
+        {/* Card 3: Clinical Services & Rates */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-rose-100 rounded-2xl flex items-center justify-center border border-rose-200 text-rose-600">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-            <span className="text-[11px] font-black text-rose-700 bg-rose-100 px-2.5 py-1 rounded-full border border-rose-200">
-              {unattendedCount} Left
+            <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">🩺</span>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">
+              {activeServicesCount} Active
             </span>
           </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Unattended Left</p>
-            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">{unattendedCount}</h3>
+          <div className="my-3">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Rate Catalog</span>
+            <h4 className="text-lg font-black text-slate-800 mt-0.5">{activeServicesCount} Treatments</h4>
+            <p className="text-xs text-slate-500 mt-0.5">Instant booking prices live</p>
           </div>
-          <button 
-            onClick={handleShiftRemainingToTomorrow} 
-            disabled={unattendedCount === 0 || isShifting} 
-            className="w-full mt-2 py-2 px-3 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            {isShifting ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
-            <span>📲 Shift to Kal & Notify</span>
-          </button>
+          <Link className="w-full py-2 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold text-center border border-slate-200 transition-colors flex items-center justify-center gap-1.5" href="/dashboard/services">
+            <span>Manage Rates</span>
+            <span>→</span>
+          </Link>
         </div>
 
-        {/* Card 5: Estimated Revenue */}
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-[#0f172a] flex flex-col justify-between space-y-4">
+        {/* Card 4: Daily Settled Collection & Live Queue Shortcut */}
+        <div className="bg-[#0A8692] text-white rounded-2xl p-5 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div className="w-12 h-12 bg-[#00A1AC]/10 rounded-2xl flex items-center justify-center border border-[#00A1AC]/20">
-              <CreditCard className="w-6 h-6 text-[#00A1AC]" />
-            </div>
-            <span className="text-[11px] font-black text-[#00A1AC] bg-[#00A1AC]/10 px-2.5 py-1 rounded-full border border-[#00A1AC]/20">
-              Direct Revenue
+            <span className="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-xs">💳</span>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-white/20 text-white">
+              Direct Settled
             </span>
           </div>
-          <div>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Collected Revenue</p>
-            <h3 className="text-3xl sm:text-4xl font-black text-[#0f172a] tracking-tight mt-1">₹{stats.totalRevenue}</h3>
+          <div className="my-3">
+            <span className="text-[11px] font-bold text-teal-100 uppercase tracking-wider block">Today Collection</span>
+            <h4 className="text-2xl font-black text-white mt-0.5">₹{totalRevenueToday}</h4>
+            <p className="text-[11px] text-teal-100/90 mt-0.5">Cash + UPI settlements</p>
           </div>
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>Cash & UPI Paid</span>
-            <span className="font-bold text-[#00A1AC]">Settled</span>
-          </div>
+          <Link className="w-full py-2 px-3 rounded-xl bg-white text-teal-900 hover:bg-teal-50 text-xs font-black text-center shadow-xs transition-colors flex items-center justify-center gap-1.5" href="/dashboard/appointments">
+            <span>Open Live Queue Manager</span>
+            <span>→</span>
+          </Link>
         </div>
 
       </div>

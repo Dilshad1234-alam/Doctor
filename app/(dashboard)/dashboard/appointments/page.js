@@ -8,12 +8,14 @@ import {
   Plus, DollarSign, CreditCard, ChevronRight, Phone, Stethoscope, Tag, Eye
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const router = useRouter();
   
   // Filters
   const [activeFilter, setActiveFilter] = useState("ALL");
@@ -279,6 +281,54 @@ export default function AppointmentsPage() {
     return { waiting, inConsultation, completed, cancelled, total: appointments.length, totalCollected };
   }, [appointments]);
 
+  // Batch Reschedule Logic
+  const unconsultedPatients = (appointments || []).filter(a => 
+    (a.status === 'CONFIRMED' || a.status === 'WAITING' || a.status === 'PENDING') &&
+    a.status !== 'COMPLETED' && 
+    a.status !== 'CANCELLED'
+  );
+  const unconsultedCount = unconsultedPatients.length;
+
+  const [isRescheduling, setIsRescheduling] = useState(false);
+
+  const handleRescheduleUnattended = async () => {
+    if (unconsultedCount === 0) {
+      alert("Koi bhi pending ya confirmed patient bacha nahi hai.");
+      return;
+    }
+
+    const confirmAction = window.confirm(
+      `Kya aap bache huye ${unconsultedCount} patients ko kal ke liye shift karke unhe automated WhatsApp message bhejna chahte hain?`
+    );
+    if (!confirmAction) return;
+
+    setIsRescheduling(true);
+    try {
+      const res = await fetch('/api/dashboard/appointments/batch-reschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientIds: unconsultedPatients.map(p => p.id || p._id),
+          doctorName: 'Doctor', // Could be dynamic if doctor profile is available
+          clinicName: 'Clinic'  // Could be dynamic if clinic profile is available
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`Successfully shifted ${data.count} patients to ${data.rescheduledDate}`);
+        fetchAppointments(false);
+      } else {
+        showToast(data.message || "Failed to shift patients", "error");
+      }
+    } catch (err) {
+      console.error('Batch reschedule failed:', err);
+      showToast("Batch reschedule failed", "error");
+    } finally {
+      setIsRescheduling(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 flex flex-col h-[calc(100vh-74px)] gap-4 max-w-[1600px] mx-auto font-sans bg-slate-50 text-[#0f172a] overflow-hidden">
       
@@ -342,6 +392,21 @@ export default function AppointmentsPage() {
           >
             <Plus className="w-4 h-4" />
             <span>+ Add Walk-in Patient</span>
+          </button>
+
+          {/* Batch Reschedule Button */}
+          <button
+            type="button"
+            onClick={handleRescheduleUnattended}
+            disabled={unconsultedCount === 0 || isRescheduling}
+            className="px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm flex items-center gap-2 border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+          >
+            <span>📲</span>
+            <span>
+              {isRescheduling
+                ? 'Notifying & Shifting...'
+                : `Shift Remaining (${unconsultedCount}) to Tomorrow & Notify`}
+            </span>
           </button>
         </div>
       </div>

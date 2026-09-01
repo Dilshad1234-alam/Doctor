@@ -305,7 +305,7 @@ export default function WebsiteBuilderPage() {
   }
 
   // Active theme and styling tokens
-  const activeTheme = getThemeConfig(config.themeColor || config.primaryColor);
+  const activeTheme = getThemeConfig(config.primaryColor || config.themeColor);
   const doctorSpecialty = doctor?.specialization || doctor?.specialty || clinic?.category || "Dental Care";
   const currentPreset = getSpecialtyPreset(selectedSpecialty);
   const doctorName = doctor?.fullName ? `Dr. ${doctor.fullName.replace(/^Dr\.?\s*/i, "")}` : (doctor?.name || "Dr. Dilshad Alam");
@@ -1081,7 +1081,7 @@ export default function WebsiteBuilderPage() {
 
             {/* Live Mode Tag */}
             <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border shadow-2xs bg-slate-800 text-slate-300 border-slate-700">
-              Live Mode: Basic OPD
+              Live Mode: {isPremium ? "Premium VIP" : isAdvanced ? "Advanced Clinic" : "Basic OPD"}
             </span>
           </div>
 
@@ -1103,7 +1103,7 @@ export default function WebsiteBuilderPage() {
                   clinic={clinic}
                   doctor={doctor}
                   planId={currentPlan}
-                  navbarType="basic"
+                  navbarType={isPremium ? "premium" : isAdvanced ? "advanced" : "basic"}
                   slug={slug}
                   activeTheme={activeTheme}
                   buttonShapeClass={cornerRadiusClass}
@@ -1111,145 +1111,15 @@ export default function WebsiteBuilderPage() {
                 />
               </div>
 
-              {isBasic ? (
-                <>
-                  {/* ===================== HERO SECTION ===================== */}
-                  {canvasConfig.templateId === 'clean-clinic' || canvasConfig.templateId === 'clean_clinic' ? (
-                    /* --- TEMPLATE 2: CLEAN CLINIC (Centered Clinical Hero) --- */
-                    <section id="home" className="w-full max-w-4xl mx-auto px-4 py-8 text-center transition-all duration-200">
-                      {/* Doctor Avatar Bubble & Badges */}
-                      <div className="flex flex-col items-center justify-center mb-5">
-                        <div className="w-20 h-20 rounded-full p-1 border-2 shadow-md mb-3 bg-white" style={{ borderColor: activeTheme.primary }}>
-                          <img 
-                            src={canvasConfig.doctorPhoto || config.doctorPhoto || doctor?.avatarUrl || '/images/default-doctor.jpg'} 
-                            alt={doctorName || 'Doctor'} 
-                            className="w-full h-full object-cover rounded-full"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-3 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide" style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary }}>
-                            {doctorSpecialty || 'Dentistry & Oral Surgery'}
-                          </span>
-                          <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-700">
-                            {doctor?.experience || '5+'} Yrs Exp
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Centered Headline & Bio */}
-                      <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight mb-3 max-w-2xl mx-auto">
-                        {canvasConfig.headline || config.headline || doctor?.headline || 'Modern, Painless Dental Care & Precision Smile Aesthetics'}
-                      </h1>
-                      <p className="text-[10px] md:text-xs text-slate-600 max-w-xl mx-auto mb-6 leading-relaxed">
-                        {canvasConfig.bio || config.bio || doctor?.bio || 'Comprehensive clinical care with verified digital appointments and zero queue wait times.'}
-                      </p>
-
-                      {/* Centered Action Buttons */}
-                      <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
-                        <button 
-                          className={`px-5 py-2.5 ${cornerRadiusClass} text-white font-bold text-[10px] shadow-md transition-all hover:opacity-95`} 
-                          style={{ backgroundColor: activeTheme.primary }}
-                        >
-                          📅 Book Confirmed OPD Slot →
-                        </button>
-                        <button 
-                          className={`px-4 py-2.5 ${cornerRadiusClass} bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] transition-all`}
-                        >
-                          📞 Call Clinic
-                        </button>
-                      </div>
-
-                      {/* Centered 4-Pill Highlights Strip */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 bg-slate-50/80 p-3 rounded-2xl border border-slate-200/80 max-w-3xl mx-auto">
-                        {['Autoclave Sterilized', 'Painless Care', 'Digital RVG X-Ray', 'Zero Wait Token'].map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-center gap-1.5 text-[9px] font-bold text-slate-700">
-                            <span className="text-emerald-500 font-black">✓</span>
-                            <span className="truncate">{item}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  ) : (
-                    /* --- TEMPLATE 1: MINIMAL SOLO (Classic 2-Column Split Hero - Default Fallback) --- */
-                    <section id="home" className="w-full max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10 transition-all duration-200">
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-                        
-                        {/* Left Column: Headline, Bio & CTAs */}
-                        <div className="lg:col-span-7 space-y-4">
-                          <div className="flex flex-wrap gap-2 items-center">
-                            <span className="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider" style={{ backgroundColor: `${activeTheme.primary}15`, color: activeTheme.primary }}>
-                              {doctorSpecialty || 'Dentistry & Oral Surgery'}
-                            </span>
-                            <span className="px-2 py-1 rounded-full text-[9px] font-semibold bg-slate-100 text-slate-700">
-                              {doctor?.qualification || 'BDS, MDS'}
-                            </span>
-                            <span className="px-2 py-1 rounded-full text-[9px] font-semibold bg-emerald-50 text-emerald-700">
-                              {doctor?.experience || '5+'} Years Experience
-                            </span>
-                          </div>
-
-                          <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight leading-tight">
-                            {canvasConfig.headline || config.headline || doctor?.headline || 'Modern, Painless Dental Care & Precision Smile Aesthetics'}
-                          </h1>
-
-                          <p className="text-[10px] md:text-xs text-slate-600 leading-relaxed max-w-xl">
-                            {canvasConfig.bio || config.bio || doctor?.bio || 'Dental refers to anything relating to the teeth, gums, and overall oral cavity, including healthcare services, diagnostics, and treatments provided by a dentist.'}
-                          </p>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 py-2">
-                            {['100% Autoclave Sterilized', 'Painless Anesthesia', 'Digital RVG X-Ray', 'Zero Wait Token'].map((item, idx) => (
-                              <div key={idx} className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-50 border border-slate-200/70 text-[9px] font-bold text-slate-700">
-                                <span className="text-emerald-600 font-black">✓</span>
-                                <span>{item}</span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2 pt-2">
-                            <button 
-                              className={`px-4 py-2 ${cornerRadiusClass} text-white font-bold text-[10px] shadow-md transition-all hover:opacity-95`} 
-                              style={{ backgroundColor: activeTheme.primary }}
-                            >
-                              📅 Book Confirmed OPD Slot →
-                            </button>
-                            <button 
-                              className={`px-4 py-2 ${cornerRadiusClass} bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] transition-all`}
-                            >
-                              📞 Call Clinic
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Right Column: Doctor Photo Card */}
-                        <div className="lg:col-span-5 flex justify-center lg:justify-end">
-                          <div className="w-full max-w-[200px] bg-white rounded-3xl border border-slate-200/80 p-3 shadow-xl">
-                            <div className="relative w-full aspect-4/5 rounded-2xl overflow-hidden bg-slate-100 mb-3">
-                              <img 
-                                src={canvasConfig.doctorPhoto || config.doctorPhoto || doctor?.avatarUrl || '/images/default-doctor.jpg'} 
-                                alt={doctorName || 'Doctor'} 
-                                className="w-full h-full object-cover" 
-                              />
-                            </div>
-                            <div className="text-center pb-1">
-                              <h3 className="text-sm font-black text-slate-900">{doctorName || 'Alam'}</h3>
-                              <p className="text-[9px] font-bold mt-0.5" style={{ color: activeTheme.primary }}>{doctorSpecialty || 'Dentist & Oral Surgeon'}</p>
-                              <p className="text-[8px] text-slate-400 mt-0.5">{clinic?.name || doctor?.clinicName || 'Alam Dental Clinic'} • {doctor?.city || 'Patna'}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                      </div>
-                    </section>
-                  )}
-                </>
-              ) : (
-                (() => {
+              {/* 2. Hero & Body - always render template so Advanced templates can be previewed! */}
+              <div className="relative z-10 pointer-events-none [&_button]:pointer-events-none [&_a]:pointer-events-none -mt-4">
+                {(() => {
                   const templateProps = {
                     clinic: clinic || { name: doctor?.clinicName || "Alam Dental Clinic" },
                     doctor: doctor || { fullName: doctorName, specialty: doctorSpecialty },
                     websiteConfig: canvasConfig,
                     currentTier: isAdvancedOrHigher ? 'ADVANCED' : 'BASIC',
-                    tier: { navbarType: 'basic' },
+                    tier: { navbarType: isPremium ? "premium" : isAdvanced ? "advanced" : "basic" },
                     slug: slug,
                     activeTheme: activeTheme,
                     buttonShapeClass: cornerRadiusClass,
@@ -1261,17 +1131,21 @@ export default function WebsiteBuilderPage() {
                   
                   switch (canvasConfig.templateId) {
                     case 'oceanic-pro':
+                    case 'oceanic_pro':
                       return <OceanicPro {...templateProps} />;
                     case 'care-grid':
+                    case 'care_grid':
                       return <CareGrid {...templateProps} />;
                     case 'clean-clinic':
+                    case 'clean_clinic':
                       return <CleanClinic {...templateProps} />;
                     case 'minimal-solo':
+                    case 'minimal_solo':
                     default:
                       return <MinimalSolo {...templateProps} />;
                   }
-                })()
-              )}
+                })()}
+              </div>
 
               {/* 3. Clinical Consultation & Treatments Catalog Section */}
               <div className={`py-3.5 px-4 border-t transition-colors ${

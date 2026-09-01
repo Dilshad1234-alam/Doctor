@@ -17,6 +17,8 @@ import {
   Stethoscope,
   Hotel,
   Sparkles,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 const providerMetadata = {
@@ -72,6 +74,7 @@ function RegisterFormContent() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const activeProvider = providerMetadata[provider_type] || providerMetadata.individual_doctor;
   const ActiveIcon = activeProvider.icon;
@@ -127,15 +130,8 @@ function RegisterFormContent() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        const { user } = data;
-        if (user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") {
-          window.location.href = "/admin";
-        } else if (!user?.isOnboardingCompleted && !user?.hasCompletedOnboarding) {
-          // Force smooth direct transition to onboarding wizard
-          window.location.href = "/dashboard/onboarding";
-        } else {
-          window.location.href = data.redirectUrl || "/dashboard";
-        }
+        // Redirect to login page with success flag and email pre-filled
+        window.location.href = `/login?registered=true&email=${encodeURIComponent(formData.email)}`;
       } else {
         setError(data.error || data.message || "Registration failed. Please try again.");
       }
@@ -334,13 +330,25 @@ function RegisterFormContent() {
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent outline-none text-xs text-slate-900 placeholder:text-slate-400 transition-all font-medium"
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-600 focus:border-transparent outline-none text-xs text-slate-900 placeholder:text-slate-400 transition-all font-medium"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                  tabIndex="-1"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
               </div>
             </div>
 
