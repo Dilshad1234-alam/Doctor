@@ -12,6 +12,10 @@ import PublicFooter from '../../components/public/Footer.js';
 import MinimalSolo from '../../components/public/templates/MinimalSolo.js';
 import OceanicPro from '../../components/public/templates/OceanicPro.js';
 import CareGrid from '../../components/public/templates/CareGrid.js';
+import CleanClinic from '../../components/public/templates/CleanClinic.js';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 import { SPECIALTY_PRESETS, getSpecialtyPreset, detectSpecialtyFromText } from '../../lib/specialtyPresets.js';
 import { getPlanTier } from '../../lib/planLimits.js';
 import { getThemeConfig, getButtonShapeClass } from '../../lib/themeColors.js';
@@ -23,8 +27,6 @@ import {
 import Link from 'next/link';
 import LiveSyncWatcher from './LiveSyncWatcher.js';
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export async function generateMetadata(props) {
   const params = await props.params;
@@ -178,10 +180,30 @@ export default async function PublicClinicPage(props) {
 
   // Active theme mapping (kept for backward compatibility where activeTheme.primary is used)
   const activeTheme = getThemeConfig(config.themeColor || specialtyPreset?.color || 'teal');
-  // Override activeTheme primary if a custom hex was provided
-  activeTheme.primary = themeColor;
-  
-  const buttonShapeClass = buttonRadius;
+  const rawTemplate = (doctor?.websiteConfig?.template || config.templateId || 'minimal-solo').toLowerCase();
+  const activeTemplate = (rawTemplate === 'clean-clinic' || rawTemplate === 'clean_clinic') ? 'clean-clinic' : 'minimal-solo';
+  const themeHex = doctor?.websiteConfig?.themeColor || config.themeColor || '#0A8692';
+  const selectedButtonStyle = doctor?.websiteConfig?.buttonStyle || config.buttonStyle || 'pill';
+
+  const getButtonShapeClass = (style) => {
+    switch (style) {
+      case 'sharp':
+        return 'rounded-none';
+      case 'soft':
+        return 'rounded-xl';
+      case 'block':
+        return 'rounded-md';
+      case 'slight':
+        return 'rounded-sm';
+      case 'circle':
+      case 'pill':
+      default:
+        return 'rounded-full';
+    }
+  };
+
+  const buttonShapeClass = getButtonShapeClass(selectedButtonStyle);
+  const btnRadius = buttonShapeClass;
 
   // Dynamic Content with Dashboard Fallbacks
   const displayHeadline = websiteConfig?.headline || doctor?.headline || specialtyPreset.headline;
@@ -263,24 +285,172 @@ export default async function PublicClinicPage(props) {
         </div>
       )}
 
-      {(() => {
-        const templateProps = {
-          clinic, doctor, websiteConfig, currentTier, tier, slug,
-          activeTheme, buttonShapeClass, isDarkMode, containerClass, specialtyPreset,
-          isQuotaFull, availableSlots
-        };
-        
-        switch (config.templateId) {
-          case 'oceanic-pro':
-            return <OceanicPro {...templateProps} />;
-          case 'care-grid':
-            return <CareGrid {...templateProps} />;
-          case 'minimal-solo':
-          case 'clean-clinic':
-          default:
-            return <MinimalSolo {...templateProps} />;
-        }
-      })()}
+      {isBasic ? (
+        <>
+          <PublicNavbar 
+            clinic={clinic} 
+            doctor={doctor} 
+            planId={currentTier} 
+            navbarType={tier?.navbarType || 'basic'} 
+            slug={slug} 
+            activeTheme={activeTheme} 
+            buttonShapeClass={btnRadius} 
+          />
+          
+          {/* ===================== HERO SECTION ===================== */}
+          {activeTemplate === 'clean-clinic' ? (
+             /* --- TEMPLATE 2: CLEAN CLINIC (Centered Clinical Hero) --- */
+             <section id="home" className="w-full max-w-4xl mx-auto px-4 py-12 text-center transition-all duration-200">
+               {/* Doctor Avatar Bubble & Badges */}
+               <div className="flex flex-col items-center justify-center mb-5">
+                 <div className="w-24 h-24 rounded-full p-1 border-2 shadow-md mb-3 bg-white" style={{ borderColor: themeHex }}>
+                   <img 
+                     src={displayDoctorPhoto || '/images/default-doctor.jpg'} 
+                     alt={cleanDocName || 'Doctor'} 
+                     className="w-full h-full object-cover rounded-full"
+                   />
+                 </div>
+                 <div className="flex items-center gap-2">
+                   <span className="px-3 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide" style={{ backgroundColor: `${themeHex}15`, color: themeHex }}>
+                     {doctor?.specialty || 'Dentistry & Oral Surgery'}
+                   </span>
+                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">
+                     {displayExperience || '5+ Yrs Exp'}
+                   </span>
+                 </div>
+               </div>
+
+               {/* Centered Headline & Bio */}
+               <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-3 max-w-2xl mx-auto">
+                 {displayHeadline || 'Modern, Painless Dental Care & Precision Smile Aesthetics'}
+               </h1>
+               <p className="text-sm md:text-base text-slate-600 max-w-xl mx-auto mb-6 leading-relaxed">
+                 {displayBio || 'Comprehensive clinical care with verified digital appointments and zero queue wait times.'}
+               </p>
+
+               {/* Centered Action Buttons */}
+               <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+                 <a 
+                   href={`/${slug}/book`} 
+                   className={`px-7 py-3.5 ${btnRadius} text-white font-bold text-sm shadow-md transition-all hover:opacity-95`} 
+                   style={{ backgroundColor: themeHex }}
+                 >
+                   📅 Book Confirmed OPD Slot →
+                 </a>
+                 <a 
+                   href={`tel:${doctor?.phone || clinicPhone}`} 
+                   className={`px-6 py-3.5 ${btnRadius} bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-all`}
+                 >
+                   📞 Call Clinic
+                 </a>
+               </div>
+
+               {/* Centered 4-Pill Highlights Strip */}
+               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80 max-w-3xl mx-auto">
+                 {['Autoclave Sterilized', 'Painless Care', 'Digital RVG X-Ray', 'Zero Wait Token'].map((item, idx) => (
+                   <div key={idx} className="flex items-center justify-center gap-1.5 text-xs font-bold text-slate-700">
+                     <span className="text-emerald-500 font-black">✓</span>
+                     <span className="truncate">{item}</span>
+                   </div>
+                 ))}
+               </div>
+             </section>
+          ) : (
+            /* --- TEMPLATE 1: MINIMAL SOLO (Classic 2-Column Split Hero - Default Fallback) --- */
+            <section id="home" className="w-full max-w-6xl mx-auto px-4 md:px-6 py-10 md:py-14 transition-all duration-200">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                
+                {/* Left Column: Headline, Bio & CTAs */}
+                <div className="lg:col-span-7 space-y-5">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider" style={{ backgroundColor: `${themeHex}15`, color: themeHex }}>
+                      {doctor?.specialty || 'Dentistry & Oral Surgery'}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                      {displayDegree || 'BDS, MDS'}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+                      {displayExperience || '5+ Years Experience'}
+                    </span>
+                  </div>
+
+                  <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                    {displayHeadline || 'Modern, Painless Dental Care & Precision Smile Aesthetics'}
+                  </h1>
+
+                  <p className="text-sm md:text-base text-slate-600 leading-relaxed max-w-xl">
+                    {displayBio || 'Dental refers to anything relating to the teeth, gums, and overall oral cavity, including healthcare services, diagnostics, and treatments provided by a dentist.'}
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 py-2">
+                    {['100% Autoclave Sterilized', 'Painless Anesthesia', 'Digital RVG X-Ray', 'Zero Wait Token'].map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200/70 text-xs font-bold text-slate-700">
+                        <span className="text-emerald-600 font-black">✓</span>
+                        <span>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <a 
+                      href={`/${slug}/book`} 
+                      className={`px-6 py-3.5 ${btnRadius} text-white font-bold text-sm shadow-md transition-all hover:opacity-95`} 
+                      style={{ backgroundColor: themeHex }}
+                    >
+                      📅 Book Confirmed OPD Slot →
+                    </a>
+                    <a 
+                      href={`tel:${doctor?.phone || clinicPhone}`} 
+                      className={`px-5 py-3.5 ${btnRadius} bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition-all`}
+                    >
+                      📞 Call Clinic
+                    </a>
+                  </div>
+                </div>
+
+                {/* Right Column: Doctor Photo Card */}
+                <div className="lg:col-span-5 flex justify-center lg:justify-end">
+                  <div className="w-full max-w-sm bg-white rounded-3xl border border-slate-200/80 p-4 shadow-xl">
+                    <div className="relative w-full aspect-4/5 rounded-2xl overflow-hidden bg-slate-100 mb-4">
+                      <img 
+                        src={displayDoctorPhoto || '/images/default-doctor.jpg'} 
+                        alt={cleanDocName || 'Doctor'} 
+                        className="w-full h-full object-cover" 
+                      />
+                    </div>
+                    <div className="text-center pb-2">
+                      <h3 className="text-lg font-black text-slate-900">{cleanDocName || 'Alam'}</h3>
+                      <p className="text-xs font-bold mt-0.5" style={{ color: themeHex }}>{doctor?.specialty || 'Dentist & Oral Surgeon'}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{clinic?.name || 'Alam Dental Clinic'} • {doctor?.city || clinic?.city || 'Patna'}</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+          )}
+        </>
+      ) : (
+        (() => {
+          const templateProps = {
+            clinic, doctor, websiteConfig, currentTier, tier, slug,
+            activeTheme, buttonShapeClass, isDarkMode, containerClass, specialtyPreset,
+            isQuotaFull, availableSlots
+          };
+          
+          switch (config.templateId) {
+            case 'oceanic-pro':
+              return <OceanicPro {...templateProps} />;
+            case 'care-grid':
+              return <CareGrid {...templateProps} />;
+            case 'clean-clinic':
+              return <CleanClinic {...templateProps} />;
+            case 'minimal-solo':
+            default:
+              return <MinimalSolo {...templateProps} />;
+          }
+        })()
+      )}
 
       {/* 3. Services & Fees Section (#services) */}
       <section id="services" className={`py-12 sm:py-16 border-b ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-white'}`}>

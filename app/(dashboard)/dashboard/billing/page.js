@@ -57,13 +57,10 @@ export default function BillingPage() {
           localStorage.setItem("user_plan", planKey.toUpperCase());
         }
         setPaymentSuccess(true);
-        setTimeout(() => {
-          setCheckoutModal(null);
-          setPaymentSuccess(false);
-          alert(`${planKey.toUpperCase()} Plan Activated Successfully!`);
-          router.push("/dashboard");
-          router.refresh();
-        }, 1000);
+        setCheckoutModal(null);
+        setPaymentSuccess(false);
+        router.refresh();
+        router.push("/dashboard");
       } else {
         alert("Failed to upgrade: " + json.error);
       }

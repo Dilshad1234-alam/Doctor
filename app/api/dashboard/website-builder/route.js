@@ -40,7 +40,10 @@ async function handleSaveWebsiteBuilder(req) {
       showSections,
       customDomain,
       hideBranding,
-      videoBioUrl
+      videoBioUrl,
+      template,
+      typography,
+      mockupTheme
     } = body;
 
     const photoUrl = doctorPhoto || profilePhoto || image || avatarUrl || "";
@@ -78,7 +81,7 @@ async function handleSaveWebsiteBuilder(req) {
     const finalShapeClass = requestedShape === "pill" ? "rounded-full" : requestedShape === "sharp" ? "rounded-none" : "rounded-2xl";
 
     // 3. Strict Template Validation
-    let finalTemplate = templateId || "template-1";
+    let finalTemplate = templateId || template || body.websiteConfig?.template || "template-1";
     if (!tierConfig.allowedTemplates.includes(finalTemplate.toLowerCase())) {
       finalTemplate = "template-1"; // Fallback to basic template
     }
@@ -104,7 +107,14 @@ async function handleSaveWebsiteBuilder(req) {
         themeColor: finalColorId,
         primaryColor: finalColorHex,
         buttonShape: finalShape,
-        buttonStyle: finalShapeClass
+        buttonStyle: finalShapeClass,
+        websiteConfig: {
+          template: (template || templateId || 'minimal-solo').toLowerCase(),
+          themeColor: themeColor || primaryColor || '#0A8692',
+          buttonStyle: buttonStyle || 'pill',
+          typography: typography || fontStyle || 'modern-sans',
+          mockupTheme: mockupTheme || body.previewMode || 'light'
+        }
       },
       { new: true, upsert: true }
     );
@@ -128,6 +138,7 @@ async function handleSaveWebsiteBuilder(req) {
       buttonShape: finalShape,
       buttonStyle: finalShapeClass,
       templateId: finalTemplate,
+      template: finalTemplate,
       fontStyle: fontStyle || "Plus Jakarta Sans",
       hideBranding: finalHideBranding,
       videoBioUrl: finalVideoBioUrl,

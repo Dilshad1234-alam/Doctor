@@ -17,7 +17,8 @@ export default function PublicNavbar({
   buttonShapeClass,
   slug = "",
   activeTopTab,
-  setActiveTopTab
+  setActiveTopTab,
+  isCompact = false
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeHash, setActiveHash] = useState("home");
@@ -67,45 +68,45 @@ export default function PublicNavbar({
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-900 shadow-xs w-full px-4 sm:px-8 lg:px-12">
-      <div className="w-full flex items-center justify-between h-20 gap-4">
+    <header className={`sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-900 shadow-xs w-full ${isCompact ? 'px-3' : 'px-4 sm:px-8 lg:px-12'}`}>
+      <div className={`w-full flex items-center justify-between ${isCompact ? 'h-14 gap-2' : 'h-20 gap-4'}`}>
         
         {/* 1. Left Side: Logo & Clinic Info (Far Left) */}
-        <div className="flex items-center justify-start flex-1 min-w-0">
+        <div className={`flex items-center justify-start ${isCompact ? '' : 'flex-1'} min-w-0`}>
           <Link href={`/${slug}`} className="flex items-center gap-3 group shrink-0">
             {clinic?.logo ? (
               <img 
                 src={clinic.logo} 
                 alt={clinicTitle} 
-                className="h-11 w-11 rounded-2xl object-cover border border-slate-200 shadow-sm group-hover:scale-105 transition-transform" 
+                className={`${isCompact ? 'h-8 w-8 rounded-xl' : 'h-11 w-11 rounded-2xl'} object-cover border border-slate-200 shadow-sm group-hover:scale-105 transition-transform`} 
               />
             ) : (
               <div 
                 style={{ backgroundColor: theme.primary }}
-                className="w-11 h-11 rounded-2xl flex items-center justify-center font-black shadow-md group-hover:scale-105 transition-transform text-white"
+                className={`${isCompact ? 'h-8 w-8 rounded-xl' : 'h-11 w-11 rounded-2xl'} flex items-center justify-center font-black shadow-md group-hover:scale-105 transition-transform text-white`}
               >
-                <Stethoscope className="w-6 h-6" />
+                <Stethoscope className={`${isCompact ? 'w-4 h-4' : 'w-6 h-6'}`} />
               </div>
             )}
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-black text-base sm:text-lg tracking-tight text-slate-900 truncate">
+                <span className={`font-black ${isCompact ? 'text-xs' : 'text-base sm:text-lg'} tracking-tight text-slate-900 truncate`}>
                   {clinicTitle}
                 </span>
                 {isPremium ? (
-                  <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-700 border border-amber-400/40 flex items-center gap-1 shrink-0">
-                    <Crown className="w-3 h-3 text-amber-600" /> VIP Clinic
+                  <span className={`${isCompact ? 'text-[8px] px-1.5' : 'text-[10px] px-2'} font-black uppercase py-0.5 rounded-full bg-amber-400/20 text-amber-700 border border-amber-400/40 flex items-center gap-1 shrink-0`}>
+                    <Crown className={`${isCompact ? 'w-2 h-2' : 'w-3 h-3'} text-amber-600`} /> VIP Clinic
                   </span>
                 ) : isAdvanced ? (
                   <span 
                     style={{ backgroundColor: `${theme.primary}15`, color: theme.primary, borderColor: `${theme.primary}30` }}
-                    className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full border flex items-center gap-1 shrink-0"
+                    className={`${isCompact ? 'text-[8px] px-1.5' : 'text-[10px] px-2'} font-black uppercase py-0.5 rounded-full border flex items-center gap-1 shrink-0`}
                   >
-                    <ShieldCheck className="w-3 h-3" /> Verified
+                    <ShieldCheck className={`${isCompact ? 'w-2 h-2' : 'w-3 h-3'}`} /> Verified
                   </span>
                 ) : null}
               </div>
-              <p className="text-xs font-semibold text-slate-500 truncate">
+              <p className={`${isCompact ? 'text-[9px]' : 'text-xs'} font-semibold text-slate-500 truncate`}>
                 Dr. {cleanDocName} • {specialization}
               </p>
             </div>
@@ -113,7 +114,7 @@ export default function PublicNavbar({
         </div>
 
         {/* 2. Center: Navigation Links (Exact Center) */}
-        <nav className="hidden md:flex items-center justify-center gap-8 text-xs font-bold text-slate-600 flex-1 whitespace-nowrap">
+        <nav className={`hidden md:flex items-center justify-center ${isCompact ? 'gap-3 text-[9px]' : 'gap-8 text-xs'} font-bold text-slate-600 flex-1 whitespace-nowrap`}>
           {navLinks.map(link => {
             const targetId = link.href.replace("#", "");
             const isActive = activeHash === targetId;
@@ -133,14 +134,14 @@ export default function PublicNavbar({
         </nav>
 
         {/* 3. Right Side: Book Appointment CTA (Far Right) */}
-        <div className="hidden md:flex items-center justify-end flex-1 shrink-0">
+        <div className={`hidden md:flex items-center justify-end ${isCompact ? '' : 'flex-1'} shrink-0`}>
           <Link
             href={`/${slug}/book`}
             style={{ backgroundColor: theme.primary }}
-            className={`px-6 py-2.5 ${shape} font-black transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2 text-white shadow-sm text-xs whitespace-nowrap`}
+            className={`${isCompact ? 'px-3 py-1.5 text-[9px]' : 'px-6 py-2.5 text-xs'} ${shape} font-black transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2 text-white shadow-sm whitespace-nowrap`}
           >
-            <Calendar className="w-4 h-4" />
-            <span>Book Appointment</span>
+            <Calendar className={`${isCompact ? 'w-3 h-3' : 'w-4 h-4'}`} />
+            <span>Book {isCompact ? 'Slot' : 'Appointment'}</span>
           </Link>
         </div>
 
