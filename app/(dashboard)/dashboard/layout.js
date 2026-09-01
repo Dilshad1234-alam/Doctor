@@ -14,6 +14,8 @@ export default function DashboardLayout({ children }) {
   const [isPremium, setIsPremium] = useState(false);
   const [isAdvanced, setIsAdvanced] = useState(false);
   const [planId, setPlanId] = useState("BASIC");
+  const [planName, setPlanName] = useState("Basic Tier");
+  const [trialDaysLeft, setTrialDaysLeft] = useState(null);
   const [showVipModal, setShowVipModal] = useState(false);
   const [userState, setUserState] = useState({
     name: "Doctor",
@@ -57,10 +59,24 @@ export default function DashboardLayout({ children }) {
         if (subJson.success) {
           if (subJson.isPremium) setIsPremium(true);
           if (subJson.isAdvanced) setIsAdvanced(true);
-          if (subJson.planId) {
-            setPlanId(subJson.planId);
+          if (subJson.planId || subJson.subscription?.planId) {
+            const currentPlan = subJson.planId || subJson.subscription?.planId || "BASIC";
+            setPlanId(currentPlan);
+            setPlanName(subJson.subscription?.planName || currentPlan + " Tier");
+            
+            // Calculate 14-day trial for Basic/Starter plans
+            if (currentPlan === "BASIC" || currentPlan === "STARTER") {
+              const startDate = subJson.subscription?.startDate || subJson.subscription?.createdAt || new Date();
+              const trialEnd = new Date(startDate);
+              trialEnd.setDate(trialEnd.getDate() + 14);
+              const daysLeft = Math.max(0, Math.ceil((trialEnd - new Date()) / (1000 * 60 * 60 * 24)));
+              setTrialDaysLeft(daysLeft);
+            } else {
+              setTrialDaysLeft(null);
+            }
+
             if (typeof window !== "undefined") {
-              localStorage.setItem("user_plan", subJson.planId);
+              localStorage.setItem("user_plan", currentPlan);
             }
           }
         }
@@ -113,7 +129,7 @@ export default function DashboardLayout({ children }) {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <HeartPulse className="w-5 h-5 text-[#00A1AC]" />
               <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
                 Doctor Suite Portal
@@ -121,6 +137,29 @@ export default function DashboardLayout({ children }) {
               <span className="hidden sm:inline-block text-[11px] font-bold text-[#00A1AC] bg-[#00A1AC]/10 px-2.5 py-0.5 rounded-full border border-[#00A1AC]/20">
                 Doctor: {userState.name}
               </span>
+              
+              {/* Active Plan Indicator */}
+              <span className={`hidden sm:inline-block text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                isPremium 
+                  ? "bg-amber-100 text-amber-800 border-amber-300" 
+                  : isAdvanced 
+                    ? "bg-indigo-100 text-indigo-800 border-indigo-300"
+                    : "bg-slate-100 text-slate-700 border-slate-300"
+              }`}>
+                {planName}
+              </span>
+
+              {/* Free Trial Countdown Indicator */}
+              {trialDaysLeft !== null && (
+                <span className={`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                  trialDaysLeft <= 3 
+                    ? "bg-rose-100 text-rose-700 border-rose-300 animate-pulse" 
+                    : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                }`}>
+                  <span>⏳</span>
+                  {trialDaysLeft > 0 ? `${trialDaysLeft} Days Free Trial Left` : "Trial Expired"}
+                </span>
+              )}
             </div>
           </div>
 

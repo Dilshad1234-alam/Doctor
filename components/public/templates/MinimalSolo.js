@@ -60,6 +60,14 @@ export default function MinimalSolo({
               
               {/* Left Hero Text */}
               <div className={`${compact ? 'col-span-7 space-y-3' : 'lg:col-span-8 space-y-10'}`}>
+                {/* Emergency Closed Banner */}
+                {clinic?.emergencyClosed && (
+                  <div className={`mb-4 inline-flex items-center gap-2 ${compact ? 'px-2 py-1 text-[9px]' : 'px-3 py-1.5 text-xs'} rounded-xl bg-red-100 text-red-700 border border-red-200 font-bold animate-pulse`}>
+                    <span className="w-2 h-2 rounded-full bg-red-600"></span>
+                    🚨 Clinic Closed Today for Emergency Duty
+                  </div>
+                )}
+
                 {/* Specialty & Degree Badges */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <span 
@@ -112,20 +120,20 @@ export default function MinimalSolo({
                 <div className={`flex items-center ${compact ? 'gap-2 pt-1' : 'gap-4 pt-4'} flex-wrap`}>
                   {compact ? (
                      <button
-                     style={{ backgroundColor: isQuotaFull ? '#e11d48' : activeTheme.primary }}
-                     className={`px-3.5 py-1.5 ${buttonShapeClass} font-bold text-[10px] shadow-sm flex items-center gap-1 text-white`}
+                     style={{ backgroundColor: clinic?.emergencyClosed ? '#ef4444' : (isQuotaFull ? '#e11d48' : activeTheme.primary) }}
+                     className={`px-3.5 py-1.5 ${buttonShapeClass} font-bold text-[10px] shadow-sm flex items-center gap-1 text-white ${clinic?.emergencyClosed ? 'opacity-80 cursor-not-allowed' : ''}`}
                    >
-                     {isQuotaFull ? "📅 Today Full • Book Tomorrow" : "📅 Book Confirmed OPD Slot"}
+                     {clinic?.emergencyClosed ? "🚨 Emergency Closed" : (isQuotaFull ? "📅 Today Full • Book Tomorrow" : "📅 Book Confirmed OPD Slot")}
                    </button>
                   ) : (
                     <Link
-                      href={`/${slug}/book`}
-                      style={{ backgroundColor: isQuotaFull ? '#e11d48' : activeTheme.primary }}
-                      className={`px-8 py-4 ${buttonShapeClass} font-black text-sm transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2.5 text-white`}
+                      href={clinic?.emergencyClosed ? '#' : `/${slug}/book`}
+                      style={{ backgroundColor: clinic?.emergencyClosed ? '#ef4444' : (isQuotaFull ? '#e11d48' : activeTheme.primary) }}
+                      className={`px-8 py-4 ${buttonShapeClass} font-black text-sm transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2.5 text-white ${clinic?.emergencyClosed ? 'opacity-80 cursor-not-allowed pointer-events-none' : ''}`}
                     >
                       <Calendar className="w-5 h-5" />
-                      <span>{isQuotaFull ? "Today Full • Book For Tomorrow" : "Book Confirmed OPD Slot"}</span>
-                      <ArrowRight className="w-4 h-4" />
+                      <span>{clinic?.emergencyClosed ? "🚨 Emergency Closed" : (isQuotaFull ? "Today Full • Book For Tomorrow" : "Book Confirmed OPD Slot")}</span>
+                      {!clinic?.emergencyClosed && <ArrowRight className="w-4 h-4" />}
                     </Link>
                   )}
                   

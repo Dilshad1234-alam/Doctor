@@ -7,7 +7,7 @@ import DoctorProfile from "../../../backend/models/DoctorProfile.js";
 import Availability from "../../../backend/models/Availability.js";
 import WebsiteConfig from "../../../backend/models/WebsiteConfig.js";
 import Appointment from "../../../backend/models/Appointment.js";
-import BookingClientWrapper from "../../../frontend/components/booking/BookingClient.js";
+import BookingClientWrapper from "./BookingClient.js";
 import { getSpecialtyPreset, detectSpecialtyFromText } from "../../../lib/specialtyPresets.js";
 import { getThemeConfig, getButtonShapeClass } from "../../../lib/themeColors.js";
 

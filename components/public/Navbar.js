@@ -136,23 +136,23 @@ export default function PublicNavbar({
         {/* 3. Right Side: Book Appointment CTA (Far Right) */}
         <div className={`hidden md:flex items-center justify-end ${isCompact ? '' : 'flex-1'} shrink-0`}>
           <Link
-            href={`/${slug}/book`}
-            style={{ backgroundColor: theme.primary }}
-            className={`${isCompact ? 'px-3 py-1.5 text-[9px]' : 'px-6 py-2.5 text-xs'} ${shape} font-black transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2 text-white shadow-sm whitespace-nowrap`}
+            href={clinic?.emergencyClosed ? '#' : `/${slug}/book`}
+            style={{ backgroundColor: clinic?.emergencyClosed ? '#ef4444' : theme.primary }}
+            className={`${isCompact ? 'px-3 py-1.5 text-[9px]' : 'px-6 py-2.5 text-xs'} ${shape} font-black transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2 text-white shadow-sm whitespace-nowrap ${clinic?.emergencyClosed ? 'opacity-80 cursor-not-allowed pointer-events-none' : ''}`}
           >
             <Calendar className={`${isCompact ? 'w-3 h-3' : 'w-4 h-4'}`} />
-            <span>Book {isCompact ? 'Slot' : 'Appointment'}</span>
+            <span>{clinic?.emergencyClosed ? "Emergency Closed" : `Book ${isCompact ? 'Slot' : 'Appointment'}`}</span>
           </Link>
         </div>
 
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center gap-2">
           <Link
-            href={`/${slug}/book`}
-            style={{ backgroundColor: theme.primary }}
-            className={`px-3.5 py-2 text-white ${shape} font-bold text-xs shadow-md`}
+            href={clinic?.emergencyClosed ? '#' : `/${slug}/book`}
+            style={{ backgroundColor: clinic?.emergencyClosed ? '#ef4444' : theme.primary }}
+            className={`px-3.5 py-2 text-white ${shape} font-bold text-xs shadow-md ${clinic?.emergencyClosed ? 'opacity-80 cursor-not-allowed pointer-events-none' : ''}`}
           >
-            Book Slot
+            {clinic?.emergencyClosed ? "Closed" : "Book Slot"}
           </Link>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -189,13 +189,13 @@ export default function PublicNavbar({
               );
             })}
             <Link 
-              href={`/${slug}/book`}
+              href={clinic?.emergencyClosed ? '#' : `/${slug}/book`}
               onClick={() => setMobileMenuOpen(false)}
-              style={{ backgroundColor: theme.primary }}
-              className={`w-full text-center text-white text-xs font-black py-2.5 ${shape} shadow-md mt-2 flex items-center justify-center gap-1.5`}
+              style={{ backgroundColor: clinic?.emergencyClosed ? '#ef4444' : theme.primary }}
+              className={`w-full text-center text-white text-xs font-black py-2.5 ${shape} shadow-md mt-2 flex items-center justify-center gap-1.5 ${clinic?.emergencyClosed ? 'opacity-80 cursor-not-allowed pointer-events-none' : ''}`}
             >
               <Calendar className="w-4 h-4" />
-              <span>Book Appointment</span>
+              <span>{clinic?.emergencyClosed ? "Emergency Closed" : "Book Appointment"}</span>
             </Link>
           </div>
         </div>

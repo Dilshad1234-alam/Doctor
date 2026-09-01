@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { Check, CheckCircle2, Loader2, Sparkles, AlertCircle } from "lucide-react";
-import { PRICING_PLANS } from "../../../frontend/constants/plans.js";
+import { PRICING_PLANS } from "../../../lib/plans.js";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 

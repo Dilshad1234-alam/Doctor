@@ -56,6 +56,14 @@ export default function CleanClinic({
       <section id="home" className={`relative overflow-hidden ${compact ? 'py-8 border-b-2' : 'py-20 sm:py-28 border-b'} ${isDarkMode ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-gradient-to-b from-white via-slate-50 to-white'}`}>
           <div className={`${compact ? 'px-6' : containerClass} relative z-10 flex flex-col items-center text-center`}>
             
+            {/* Emergency Closed Banner */}
+            {clinic?.emergencyClosed && (
+              <div className={`mb-6 inline-flex items-center gap-2 ${compact ? 'px-2 py-1 text-[9px]' : 'px-4 py-2 text-sm'} rounded-xl bg-red-100 text-red-700 border border-red-200 font-bold animate-pulse shadow-sm`}>
+                <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                🚨 Clinic Closed Today for Emergency Duty
+              </div>
+            )}
+
             {/* Top: Centered doctor avatar & verified clinical badges */}
             <div className={`relative aspect-square ${compact ? 'w-16 h-16 rounded-xl mb-4' : 'w-28 h-28 sm:w-32 sm:h-32 rounded-3xl mb-6'} overflow-hidden bg-slate-100 flex items-center justify-center border-4 shadow-lg`} style={{ borderColor: `${activeTheme.primary}20` }}>
               {displayDoctorPhoto ? (
@@ -109,19 +117,19 @@ export default function CleanClinic({
             <div className={`flex flex-col sm:flex-row items-center justify-center ${compact ? 'gap-2 mb-4' : 'gap-4 mb-8'}`}>
               {compact ? (
                   <button
-                  style={{ backgroundColor: isQuotaFull ? '#e11d48' : activeTheme.primary }}
-                  className={`px-3.5 py-1.5 ${buttonShapeClass} font-bold text-[10px] shadow-sm flex items-center gap-1 text-white`}
+                  style={{ backgroundColor: clinic?.emergencyClosed ? '#ef4444' : (isQuotaFull ? '#e11d48' : activeTheme.primary) }}
+                  className={`px-3.5 py-1.5 ${buttonShapeClass} font-bold text-[10px] shadow-sm flex items-center gap-1 text-white ${clinic?.emergencyClosed ? 'opacity-80 cursor-not-allowed' : ''}`}
                 >
-                  {isQuotaFull ? "📅 Full • Book Tomorrow" : "📅 Book Confirmed OPD Slot"}
+                  {clinic?.emergencyClosed ? "🚨 Emergency Closed" : (isQuotaFull ? "📅 Full • Book Tomorrow" : "📅 Book Confirmed OPD Slot")}
                 </button>
               ) : (
                 <Link
-                  href={`/${slug}/book`}
-                  style={{ backgroundColor: isQuotaFull ? '#e11d48' : activeTheme.primary }}
-                  className={`px-8 py-4 ${buttonShapeClass} font-black text-sm transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2.5 text-white w-full sm:w-auto justify-center`}
+                  href={clinic?.emergencyClosed ? '#' : `/${slug}/book`}
+                  style={{ backgroundColor: clinic?.emergencyClosed ? '#ef4444' : (isQuotaFull ? '#e11d48' : activeTheme.primary) }}
+                  className={`px-8 py-4 ${buttonShapeClass} font-black text-sm transition-all shadow-xl hover:scale-105 active:scale-95 flex items-center gap-2.5 text-white w-full sm:w-auto justify-center ${clinic?.emergencyClosed ? 'opacity-80 cursor-not-allowed pointer-events-none' : ''}`}
                 >
                   <Calendar className="w-5 h-5" />
-                  <span>{isQuotaFull ? "Today Full • Book For Tomorrow" : "Book Confirmed OPD Slot"}</span>
+                  <span>{clinic?.emergencyClosed ? "🚨 Emergency Closed" : (isQuotaFull ? "Today Full • Book For Tomorrow" : "Book Confirmed OPD Slot")}</span>
                 </Link>
               )}
               

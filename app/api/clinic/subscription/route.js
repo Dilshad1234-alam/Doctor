@@ -4,7 +4,7 @@ import connectDB from "../../../../backend/config/db.js";
 import Clinic from "../../../../backend/models/Clinic.js";
 import Subscription from "../../../../backend/models/Subscription.js";
 import { verifyToken } from "../../../../backend/utils/jwt.js";
-import { PRICING_PLANS } from "../../../../frontend/constants/plans.js";
+import { PRICING_PLANS } from "../../../../lib/plans.js";
 
 async function authenticate() {
   await connectDB();
